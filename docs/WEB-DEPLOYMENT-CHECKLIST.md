@@ -1,77 +1,69 @@
-# دليل تجهيز ونشر منصة استراحة أهل الأثر
+# دليل نشر منصة استراحة أهل الأثر على Cloudflare
 
-هذا الدليل خاص بنشر نسخة الويب فقط. لا ينشئ تطبيق Android ولا يغيّر قاعدة Supabase تلقائيًا.
+هذا الإعداد يجعل Cloudflare Workers نقطة الدخول العامة للموقع، ويقدم الملفات الثابتة ويوجه طلبات API إلى خادم Node.js منفصل. خادم Node الحالي يعتمد على `node:http` ونظام الملفات وتخزين Telegram؛ لذلك لا يُشغّل مباشرة داخل Worker بصيغته الحالية.
 
-## 1. ترتيب النشر
+## 1. بنية النشر
 
-1. جهّز قاعدة Supabase ونفّذ المخطط والترحيلات حسب الترتيب أدناه.
-2. انشر خادم Node.js من المستودع باستخدام Dockerfile على Render أو استضافة Docker مماثلة.
-3. بعد ظهور عنوان HTTPS للخادم، أضفه إلى متغير GitHub Actions باسم `AHL_API_BASE_URL`.
-4. أضف إعدادات Supabase العامة إلى GitHub Actions Variables، ثم شغّل سير عمل **Deploy GitHub Pages** بعد دمج النسخة المعتمدة إلى `main`.
-5. اختبر رابط الصفحة الرئيسية ورابط التطبيق والوظائف التي تتطلب الخادم وقاعدة البيانات.
+- Cloudflare Worker: `cloudflare/worker.mjs`، يستقبل طلبات `/api/*` ويمررها إلى خادم Node عبر HTTPS.
+- Static Assets: ينتجها `npm run build:cloudflare` داخل `dist/` وتشمل الصفحة التعريفية والتطبيق وملفات assets وscreens.
+- Node.js backend: يستضيفه مزود يدعم Docker/Node.js، مع الاحتفاظ بالخدمات الحالية والتخزين الدائم عند الحاجة.
 
-## 2. GitHub Pages Variables
+## 2. ربط Cloudflare بالمستودع
 
-أضف المتغيرات العامة التالية إلى **Settings → Secrets and variables → Actions → Variables** (أو إلى Environment المسمى `Main` إذا كانت المتغيرات مقيدة به):
+في Workers & Pages أنشئ/افتح Worker باسم `hares` واربط مستودع `aboserag925-alt/Haress` بفرع النشر المعتمد بعد الموافقة على PR.
 
-| الاسم | القيمة |
-|---|---|
-| `SUPABASE_URL` | عنوان مشروع Supabase، مثل `https://project-ref.supabase.co` |
-| `SUPABASE_ANON_KEY` | مفتاح Supabase العام anon/publishable فقط |
-| `AHL_API_BASE_URL` | أصل خادم Node المنشور، HTTPS دون مسار أو شرطة أخيرة |
-| `TURNSTILE_SITE_KEY` | مفتاح Cloudflare Turnstile العام، اختياري |
+إعدادات البناء:
+- Build command: `npm ci && npm run build:cloudflare`
+- Deploy command: `npx wrangler deploy`
+- Root directory: جذر المستودع
+- Node.js: الإصدار 22
 
-لا تضع `SUPABASE_SERVICE_ROLE_KEY` أو Gemini أو Grok أو Telegram في GitHub Pages Variables أو ملفات الواجهة.
+يعتمد المشروع ملف `wrangler.toml` واحدًا. لا تُنشئ إعدادًا موازيًا باسم `wrangler.jsonc`.
 
-## 3. خادم Node.js
+## 3. متغير Worker
 
-أنشئ Web Service من المستودع `aboserag925-alt/Haress` باستخدام Dockerfile. يجب أن يستمع التطبيق إلى `0.0.0.0` والمنفذ الذي توفره بيئة الاستضافة. مسار فحص الصحة هو:
+في Worker → Settings → Variables and Secrets أضف:
 
-`/api/health`
+| الاسم | النوع | القيمة |
+|---|---|---|
+| `AHL_API_BASE_URL` | Variable | أصل خادم Node المنشور، مثل `https://api.example.com` |
 
-أضف متغيرات الخادم التالية في لوحة الاستضافة:
+يجب أن يكون العنوان HTTPS فقط، دون مسار أو شرطة أخيرة. لا تضع مفاتيح Supabase أو Gemini أو Telegram في هذا المتغير.
 
+عند عدم ضبطه، يعيد Worker استجابة 503 واضحة لطلبات API بدلًا من الادعاء بأن الخادم متاح.
+
+## 4. خادم Node.js ومتغيراته السرية
+
+شغّل الخادم الحالي باستخدام Dockerfile على مزود Node/Docker. يجب أن يستمع إلى `0.0.0.0` والمنفذ الذي توفره الاستضافة، وأن ينجح المسار `/api/health`.
+
+متغيرات الخادم (تُضبط في مزود الخادم فقط):
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` — سر خادمي فقط.
-- `ALLOWED_ORIGINS=https://aboserag925-alt.github.io`
-- `GEMINI_API_KEY` — مطلوب لمسار صياغة مسودات الأسئلة.
-- `GROK_API_KEY` — اختياري للنموذج الثاني.
-- `TURNSTILE_SECRET_KEY` و`TURNSTILE_ENABLED=true` عند تفعيل حماية Turnstile؛ ويجب أن يطابق المفتاح العام إعداد Pages.
-- `TELEGRAM_BOT_TOKEN` و`TELEGRAM_CHAT_ID` عند تفعيل البوت.
-- `SITE_URL=https://aboserag925-alt.github.io/Haress/`
+- `GEMINI_API_KEY`
+- `GROK_API_KEY` — اختياري.
+- `TELEGRAM_BOT_TOKEN` و`TELEGRAM_CHAT_ID` عند تفعيل Telegram.
+- `TURNSTILE_SECRET_KEY` عند تفعيل Turnstile.
+- `ALLOWED_ORIGINS=https://hares.aboserag925.workers.dev`
 
-اترك `TELEGRAM_BOT_ENABLED=false` و`TELEGRAM_MEDIA_ENABLED=false` حتى تضبط البوت ومجموعة الملفات. لا تفعّل استقبال ملفات Telegram قبل التأكد من أن البوت لا يستخدم webhook أو مستهلك تحديثات آخر.
+أضف أصل معاينة Workers مؤقتًا إلى `ALLOWED_ORIGINS` فقط إذا كنت تختبر API من تلك المعاينة. لا تستخدم wildcard لمصادر CORS. احتفظ بتخزين دائم لمسار `/srv/ahl-athar/storage` إذا فُعّلت ملفات Telegram.
 
-إذا فُعّلت مكتبة ملفات Telegram، اربط وحدة تخزين دائمة بمسار الحاوية `/srv/ahl-athar/storage` حتى لا تضيع الملفات عند إعادة إنشاء الحاوية. لا تعتمد على نظام ملفات مؤقت للتخزين الدائم.
+## 5. إعداد Supabase
 
-## 4. قاعدة Supabase
+إعدادات الواجهة العامة فقط:
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
 
-في SQL Editor نفّذ أولًا `supabase/schema.sql`، ثم راجع ونفّذ ملفات الترحيل بالترتيب:
+تُمرر إلى أمر البناء في بيئة Cloudflare كمتغيرات بناء عامة؛ لا تستخدم مفتاح service role في البناء أو الواجهة.
 
-1. `202611020001_suggestions_ai.sql`
-2. `202611070002_member_accounts.sql`
-3. `202611070003_community_moderation.sql`
-4. `202611070004_daily_visitors.sql`
-5. `202611070005_ai_approval_hardening.sql`
-6. `202611070006_telegram_privacy_preferences.sql`
+لا تنفذ migrations على قاعدة الإنتاج من هذا الدليل. راجع أولًا `supabase/schema.sql` ثم migrations بالترتيب الموثق في هذا الملف سابقًا، وتحقق من الحالة الحالية للقاعدة قبل أي تغيير. حافظ على RLS وسياسات `admin_users`.
 
-هذه الخطوة لا تُنفذ تلقائيًا من GitHub Actions. افحص حالة قاعدة البيانات قبل التطبيق، ولا تعِد تطبيق ترحيل على قاعدة إنتاج دون مراجعة.
+## 6. التحقق بعد النشر
 
-فعّل Google وApple من **Supabase Auth → Providers** وأدخل بيانات المزود المطلوبة. اضبط Site URL على:
+1. افتح `https://hares.aboserag925.workers.dev/` و`/app/`.
+2. اختبر `/api/health`؛ يجب أن تأتي الاستجابة من خادم Node عبر Worker.
+3. اختبر تسجيل الدخول وقراءة المحاضرات والمنتدى وصلاحيات الإدارة.
+4. اختبر الاقتراحات وTelegram فقط بعد إعداد أسرارهما على خادم Node.
+5. راجع Cloudflare Worker Logs وخادم Node logs لأي 5xx.
 
-`https://aboserag925-alt.github.io/Haress/`
-
-وأضف Redirect URL:
-
-`https://aboserag925-alt.github.io/Haress/**`
-
-أنشئ حساب المشرف ثم أضف معرفه إلى `public.admin_users` من SQL Editor. لا تمنح صلاحية الإدارة اعتمادًا على البريد أو الواجهة وحدهما.
-
-## 5. الروابط النهائية بعد النشر
-
-- الصفحة الرئيسية: `https://aboserag925-alt.github.io/Haress/`
-- التطبيق الكامل: `https://aboserag925-alt.github.io/Haress/app/`
-- لوحة إدارة المحاضرات: `https://aboserag925-alt.github.io/Haress/app/admin.html`
-
-لا تعتبر المنصة مكتملة تشغيليًا قبل نجاح `/api/health` من الخادم، وتسجيل الدخول، وقراءة المحاضرات، وإرسال اقتراح، وفتح المنتدى والمناظرات، وعمل لوحة المشرف، والتحقق من استقبال Telegram إذا تم تفعيله.
+لا تعتبر المنصة مكتملة تشغيليًا قبل نجاح هذه الاختبارات. هذا التغيير لا ينشر Worker تلقائيًا ولا يعدل إعدادات حساب Cloudflare أو قاعدة Supabase.
