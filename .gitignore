@@ -3,3 +3,4 @@ storage/
 .env
 .env.*
 !.env.example
+dist/\n
