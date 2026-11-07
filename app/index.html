@@ -150,7 +150,7 @@ textarea::placeholder{color:#777e75}
 .captcha-box{display:flex;justify-content:flex-start;min-height:65px;margin-top:2px}
 .auth-recovery{display:grid;gap:12px;max-width:520px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
 .google-signin,.apple-signin{display:flex;width:100%;min-height:46px;align-items:center;justify-content:center;gap:10px;margin:0 0 12px;border:1px solid rgba(213,171,100,.35);border-radius:14px;background:#18221d;color:var(--gold2);font:700 14px Cairo,sans-serif}
-.google-signin span{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#f8f7f4;color:#4285f4;font:800 15px Arial,sans-serif}.apple-signin span{font:700 21px Arial,sans-serif;line-height:1}
+.google-signin span{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#f8f7f4;color:#4285f4;font:800 15px Arial,sans-serif}.apple-signin svg{width:19px;height:19px;fill:currentColor}
 .auth-divider{display:flex;align-items:center;gap:12px;margin:8px 0 12px;color:var(--muted);font-size:12px}
 .auth-divider:before,.auth-divider:after{height:1px;flex:1;background:var(--line);content:''}
 .account-email{color:var(--gold2);font-weight:700;direction:ltr;text-align:right}
@@ -560,7 +560,7 @@ header h1,header p,.doctor,.blessing,.methodology{font-family:'Noto Naskh Arabic
 <div id="authConfigMissing" class="notice" hidden>تسجيل الدخول غير مفعّل بعد. أنشئ مشروع Supabase، ونفّذ <code>supabase/schema.sql</code> في SQL Editor، ثم أضف رابط المشروع والمفتاح العام إلى <code>app/supabase-config.js</code> وشغّل <code>npm.cmd run build:app</code>. لا تضع مفتاح service_role هنا.</div>
 <form id="authForm" class="auth-form" hidden>
 <button id="googleSignInBtn" class="google-signin" type="button" hidden><span aria-hidden="true">G</span> المتابعة باستخدام Google</button>
-<button id="appleSignInBtn" class="apple-signin" type="button" hidden><span aria-hidden="true">●</span> المتابعة باستخدام Apple</button>
+<button id="appleSignInBtn" class="apple-signin" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 13.1c0-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.1-1.7-1.3-.1-2.6.8-3.3.8-.7 0-1.8-.8-2.9-.8-1.5 0-2.9.9-3.7 2.2-1.6 2.8-.4 6.9 1.1 9.1.7 1.1 1.5 2.3 2.6 2.2 1-.1 1.4-.7 2.7-.7s1.7.7 2.8.7 1.8-1.1 2.5-2.2c.8-1.2 1.1-2.4 1.1-2.4s-2.2-.8-2.2-3.8ZM14.1 6.5c.6-.7 1-1.7.9-2.7-.9 0-2 .6-2.7 1.3-.6.6-1.1 1.6-1 2.6 1 .1 2.1-.5 2.8-1.2Z"/></svg> المتابعة باستخدام Apple</button>
 <div class="auth-divider">أو باستخدام البريد الإلكتروني</div>
 <label class="field" for="authEmail">البريد الإلكتروني
 <input id="authEmail" type="email" autocomplete="email" inputmode="email" required placeholder="name@example.com">
