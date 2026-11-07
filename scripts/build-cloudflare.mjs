@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const output = resolve(root, "dist");
-const publicApi = (process.env.AHL_PUBLIC_API_BASE_URL || "").trim().replace(/\\/+$/, "");
+const publicApi = (process.env.AHL_PUBLIC_API_BASE_URL || "").trim();
 if (publicApi) {
   const parsed = new URL(publicApi);
   if (parsed.protocol !== "https:" || parsed.origin !== publicApi) {
@@ -19,7 +19,7 @@ for (const entry of ["index.html", "app", "assets", "screens"]) {
   await cp(resolve(root, entry), resolve(output, entry), { recursive: true });
 }
 
-const runtimeConfig = "window.AHL_API_BASE_URL = " + JSON.stringify(publicApi) + ";\\n";
+const runtimeConfig = "window.AHL_API_BASE_URL = " + JSON.stringify(publicApi) + ";";
 await writeFile(resolve(output, "runtime-config.js"), runtimeConfig, "utf8");
 await writeFile(resolve(output, "app", "runtime-config.js"), runtimeConfig, "utf8");
 console.log("Cloudflare static package created in dist/");
