@@ -24,10 +24,19 @@ jobs:
       - run: npm ci
       - name: Check JavaScript syntax across the website and server
         run: |
-          find app server src assets -type f -name '*.js' -print0 | xargs -0 -n1 node --check
-          find scripts -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
+          find app server src assets cloudflare -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+          find scripts cloudflare -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
       - run: npm test
       - run: npm run build:app
+      - name: Build and verify Cloudflare Worker package
+        run: |
+          npm run build:cloudflare
+          test -s dist/index.html
+          test -s dist/app/index.html
+          test -s dist/runtime-config.js
+          test -s dist/app/runtime-config.js
+          node --check dist/runtime-config.js
+          node --check dist/app/runtime-config.js
       - name: Verify GitHub Pages package
         env:
           AHL_API_BASE_URL: ""

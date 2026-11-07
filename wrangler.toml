@@ -1,6 +1,9 @@
 name = "hares"
+main = "cloudflare/worker.mjs"
 compatibility_date = "2026-11-05"
-previews = {}
+workers_dev = true
 
 [assets]
-directory = "./app"
+directory = "./dist"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
