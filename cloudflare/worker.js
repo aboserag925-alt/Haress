@@ -23,27 +23,32 @@ function backendOrigin(value) {
   }
 }
 
+export async function proxyApi(request, env, fetchImpl = fetch) {
+  const incoming = new URL(request.url);
+  const origin = backendOrigin(env && env.AHL_API_BASE_URL);
+  if (!origin) {
+    return unavailable("خدمة API غير مهيأة. اضبط AHL_API_BASE_URL على عنوان خادم HTTPS.");
+  }
+
+  const upstream = new URL(origin);
+  upstream.pathname = incoming.pathname;
+  upstream.search = incoming.search;
+  try {
+    const forwarded = new Request(upstream.toString(), request);
+    return await fetchImpl(forwarded);
+  } catch {
+    return new Response(JSON.stringify({ error: "تعذر الاتصال بالخادم الخلفي." }), {
+      status: 502,
+      headers: JSON_HEADERS
+    });
+  }
+}
+
 export default {
   async fetch(request, env) {
     const incoming = new URL(request.url);
     if (incoming.pathname.startsWith("/api/")) {
-      const origin = backendOrigin(env && env.AHL_API_BASE_URL);
-      if (!origin) {
-        return unavailable("خدمة API غير مهيأة. اضبط AHL_API_BASE_URL على عنوان خادم HTTPS.");
-      }
-
-      const upstream = new URL(origin);
-      upstream.pathname = incoming.pathname;
-      upstream.search = incoming.search;
-      try {
-        const forwarded = new Request(upstream.toString(), request);
-        return await fetch(forwarded);
-      } catch {
-        return new Response(JSON.stringify({ error: "تعذر الاتصال بالخادم الخلفي." }), {
-          status: 502,
-          headers: JSON_HEADERS
-        });
-      }
+      return proxyApi(request, env);
     }
 
     if (env && env.ASSETS && typeof env.ASSETS.fetch === "function") {
