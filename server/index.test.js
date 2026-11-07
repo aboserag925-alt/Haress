@@ -65,6 +65,17 @@ test('serves the app and health status without exposing environment values', asy
     assert.equal(turnstileConfig.status, 200);
     assert.match(await turnstileConfig.text(), /AHL_TURNSTILE_SITE_KEY/);
 
+    const landing = await fetch(baseUrl + '/');
+    assert.equal(landing.status, 200);
+    const landingHtml = await landing.text();
+    assert.match(landingHtml, /href="app\/index\.html"/);
+    assert.doesNotMatch(landingHtml, /نسخة تجريبية — المنصة تحت التطوير/);
+
+    const appleIcon = await fetch(baseUrl + '/app/apple-touch-icon.png');
+    assert.equal(appleIcon.status, 200);
+    assert.equal(appleIcon.headers.get('content-type'), 'image/png');
+    assert.ok((await appleIcon.arrayBuffer()).byteLength > 0);
+
     const envFile = await fetch(baseUrl + '/.env');
     assert.equal(envFile.status, 404);
   });
