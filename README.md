@@ -136,8 +136,9 @@ select id from auth.users where email = 'admin@example.com';
 4. `supabase/migrations/202611070004_daily_visitors.sql` — عداد الزوار اليومي؛ لا يقرأ الجدول إلا دور الخادم `service_role`.
 5. `supabase/migrations/202611070005_ai_approval_hardening.sql` — ترقية أمان لمن سبق أن طبق ترحيل الذكاء الاصطناعي؛ تجعل `tainted` افتراضيًا true وتعيد تثبيت دالة الموافقة بـ`search_path` فارغ.
 
-### تسجيل Google والتحقق الأمني
+### تسجيل Google وApple والتحقق الأمني
 - فعّل مزوّد Google في Supabase Auth وأضف رابط التطبيق المنشور إلى قائمة Redirect URLs.
+- زر Apple متاح في واجهة الحساب؛ فعّل مزوّد Apple في Supabase Auth وأكمل بيانات Apple Developer المطلوبة وعنوان callback الذي تعرضه لوحة Supabase قبل استخدامه. لا تضع مفتاح Apple الخاص أو أي بيانات سرية في ملفات الواجهة أو GitHub Pages.
 - `TURNSTILE_SITE_KEY` مفتاح علني اختياري يمر عبر إعدادات بناء الموقع.
 - سر CAPTCHA الخاص بـSupabase Auth يُضبط في لوحة Supabase، ولا يوضع في ملفات الواجهة.
 - `TURNSTILE_SECRET_KEY` في الخادم مخصص للتحقق من إرسال الأسئلة إلى API؛ لا تضعه في المتصفح.
