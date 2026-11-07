@@ -28,6 +28,19 @@ jobs:
           find scripts -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
       - run: npm test
       - run: npm run build:app
+      - name: Verify GitHub Pages package
+        env:
+          AHL_API_BASE_URL: ""
+        run: |
+          mkdir -p _site
+          cp index.html _site/index.html
+          cp index.html _site/404.html
+          cp -R app assets screens _site/
+          touch _site/.nojekyll
+          node -e 'const fs = require("node:fs"); const value = (process.env.AHL_API_BASE_URL || "").trim().replace(/\\/+$/, ""); if (value) { const url = new URL(value); if (url.protocol !== "https:" || url.origin !== value) throw new Error("AHL_API_BASE_URL must be an HTTPS origin without a trailing path."); } fs.writeFileSync("_site/runtime-config.js", "window.AHL_API_BASE_URL = " + JSON.stringify(value) + ";\\n", "utf8"); fs.writeFileSync("_site/app/runtime-config.js", "window.AHL_API_BASE_URL = " + JSON.stringify(value) + ";\\n", "utf8");'
+          for asset in index.html 404.html app/tailwind.css app/supabase-config.js app/auth-client.js app/runtime-config.js app/manifest.json app/sw.js app/icon.svg app/apple-touch-icon.png assets/lectures.js assets/logo.jpg runtime-config.js; do
+            test -s "_site/$asset" || { echo "Missing Pages asset: $asset" >&2; exit 1; }
+          done
       - run: docker build --tag ahl-athar:verify .
       - name: Check patch whitespace
         env:
