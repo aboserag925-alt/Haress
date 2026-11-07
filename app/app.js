@@ -798,12 +798,14 @@ function setAccountState(state) {
     form.hidden = true;
     signedIn.hidden = true;
     document.getElementById('googleSignInBtn').hidden = true;
+    document.getElementById('appleSignInBtn').hidden = true;
     setStatus(message, 'أضف إعدادات Supabase لتفعيل الحسابات.');
     return;
   }
   configMissing.hidden = true;
   accountUser = state.user;
   document.getElementById('googleSignInBtn').hidden = Boolean(state.user) || passwordRecoveryMode;
+  document.getElementById('appleSignInBtn').hidden = Boolean(state.user) || passwordRecoveryMode;
   if (passwordRecoveryMode) {
     form.hidden = true;
     signedIn.hidden = true;
@@ -846,6 +848,7 @@ function setAuthBusy(busy) {
   document.getElementById('signUpBtn').disabled = busy;
   document.getElementById('resetPasswordBtn').disabled = busy;
   document.getElementById('googleSignInBtn').disabled = busy;
+  document.getElementById('appleSignInBtn').disabled = busy;
 }
 
 function handleSignIn(event) {
@@ -914,6 +917,17 @@ function handleGoogleSignIn() {
     if (result.error) throw result.error;
   }).catch(function (error) {
     setStatus(document.getElementById('authMessage'), 'تعذر تسجيل الدخول باستخدام Google: ' + error.message, true);
+    setAuthBusy(false);
+  });
+}
+
+function handleAppleSignIn() {
+  setAuthBusy(true);
+  setStatus(document.getElementById('authMessage'), 'جارٍ تحويلك إلى Apple لتسجيل الدخول…');
+  window.ahlAuth.signInWithApple().then(function (result) {
+    if (result.error) throw result.error;
+  }).catch(function (error) {
+    setStatus(document.getElementById('authMessage'), 'تعذر تسجيل الدخول باستخدام Apple. تأكد من تفعيل مزود Apple في Supabase: ' + error.message, true);
     setAuthBusy(false);
   });
 }
@@ -995,6 +1009,7 @@ function initAuth() {
   document.getElementById('authForm').addEventListener('submit', handleSignIn);
   document.getElementById('signUpBtn').addEventListener('click', handleSignUp);
   document.getElementById('googleSignInBtn').addEventListener('click', handleGoogleSignIn);
+  document.getElementById('appleSignInBtn').addEventListener('click', handleAppleSignIn);
   document.getElementById('resetPasswordBtn').addEventListener('click', handlePasswordReset);
   document.getElementById('saveNewPasswordBtn').addEventListener('click', handlePasswordUpdate);
   document.getElementById('cancelPasswordRecoveryBtn').addEventListener('click', function () {

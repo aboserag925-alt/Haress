@@ -143,6 +143,13 @@ window.ahlAuth = {
       options: { redirectTo: redirectTo, queryParams: { prompt: 'select_account' } }
     });
   },
+  signInWithApple: function () {
+    const redirectTo = window.location.origin + window.location.pathname;
+    return requireClient().auth.signInWithOAuth({
+      provider: 'apple',
+      options: { redirectTo: redirectTo }
+    });
+  },
   getCurrentUser: async function () {
     const result = await requireClient().auth.getUser();
     if (result.error) throw result.error;

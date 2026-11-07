@@ -9,7 +9,7 @@
 
 ## النشر على GitHub Pages
 
-يُنشر الموقع والتطبيق الثابتان تلقائيًا عبر `.github/workflows/pages.yml` عند الدفع إلى فرع `main` أو يدويًا من تبويب Actions. من إعدادات المستودع، اختر **Settings → Pages → Build and deployment → Source → GitHub Actions**. بعد نجاح سير العمل سيكون الموقع على `https://aboserag925-alt.github.io/Haress/`.
+يُنشر الموقع والتطبيق الثابتان تلقائيًا عبر `.github/workflows/pages.yml` عند الدفع إلى فرع `main` أو يدويًا من تبويب Actions. من إعدادات المستودع، اختر **Settings → Pages → Build and deployment → Source → GitHub Actions**. بعد نجاح سير العمل سيكون الموقع على `https://aboserag925-alt.github.io/Haress/`، وتفتح الواجهة الكاملة من زر «دخول المنصة» أو مباشرة عبر `/Haress/app/`.
 
 ينشئ سير العمل صفحة `404.html` من الصفحة الرئيسية، ويبني موارد التطبيق ويتحقق من وجود الملفات المطلوبة قبل رفعها إلى Pages. عند غياب `AHL_API_BASE_URL` تبقى الصفحات الثابتة متاحة دون إرسال طلبات إلى API غير مهيأ.
 
@@ -128,7 +128,7 @@ select id from auth.users where email = 'admin@example.com';
 
 ## إعداد الإضافات الجديدة في فرع التجميع
 
-هذه الملفات جاهزة في الفرع، لكنها **لا تُفعّل على الإنتاج بمجرد إضافتها**. قبل تفعيل الميزات، راجع ثم طبّق ترحيلات Supabase بالترتيب:
+هذه الملفات جاهزة في الفرع، لكنها **لا تُفعّل على الإنتاج بمجرد إضافتها**. قبل تفعيل الميزات، راجع ثم طبّق ترحيلات Supabase بالترتيب: ابدأ بتنفيذ `supabase/schema.sql` أولًا لإنشاء الجداول الأساسية و`admin_users`، ثم نفّذ ملفات migrations الستة بالترتيب الرقمي. لا تنفذ ترحيلًا مرتين يدويًا إلا بعد مراجعة حالته؛ الملفات تستخدم `if not exists` في معظم المواضع لكن لا تُعد بديلًا عن فحص حالة قاعدة البيانات.
 
 1. `supabase/migrations/202611020001_suggestions_ai.sql` — الاقتراحات ومهام الذكاء الاصطناعي، ودالة الموافقة محمية بـ `SET search_path = ''`.
 2. `supabase/migrations/202611070002_member_accounts.sql` — ملفات الأعضاء وسجل النشاط مع RLS لكل عضو.
@@ -136,8 +136,9 @@ select id from auth.users where email = 'admin@example.com';
 4. `supabase/migrations/202611070004_daily_visitors.sql` — عداد الزوار اليومي؛ لا يقرأ الجدول إلا دور الخادم `service_role`.
 5. `supabase/migrations/202611070005_ai_approval_hardening.sql` — ترقية أمان لمن سبق أن طبق ترحيل الذكاء الاصطناعي؛ تجعل `tainted` افتراضيًا true وتعيد تثبيت دالة الموافقة بـ`search_path` فارغ.
 
-### تسجيل Google والتحقق الأمني
+### تسجيل Google وApple والتحقق الأمني
 - فعّل مزوّد Google في Supabase Auth وأضف رابط التطبيق المنشور إلى قائمة Redirect URLs.
+- زر Apple متاح في واجهة الحساب؛ فعّل مزوّد Apple في Supabase Auth وأكمل بيانات Apple Developer المطلوبة وعنوان callback الذي تعرضه لوحة Supabase قبل استخدامه. لا تضع مفتاح Apple الخاص أو أي بيانات سرية في ملفات الواجهة أو GitHub Pages.
 - `TURNSTILE_SITE_KEY` مفتاح علني اختياري يمر عبر إعدادات بناء الموقع.
 - سر CAPTCHA الخاص بـSupabase Auth يُضبط في لوحة Supabase، ولا يوضع في ملفات الواجهة.
 - `TURNSTILE_SECRET_KEY` في الخادم مخصص للتحقق من إرسال الأسئلة إلى API؛ لا تضعه في المتصفح.
