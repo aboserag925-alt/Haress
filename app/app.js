@@ -1163,7 +1163,7 @@ function initQuranRadio() {
   button.addEventListener('click', function () {
     panel.hidden = !panel.hidden;
     syncButton();
-    if (!panel.hidden && station.value === 'cairo' && audio.paused && !audio.src) playCairo();
+    if (!panel.hidden && station.value === 'cairo' && audio.paused) playCairo();
   });
   station.addEventListener('change', function () {
     if (station.value === 'saudi') {
