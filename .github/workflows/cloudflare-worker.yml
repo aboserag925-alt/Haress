@@ -45,18 +45,20 @@ jobs:
         run: |
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
+          import vm from 'node:vm';
           const source = fs.readFileSync('app/supabase-config.js', 'utf8');
-          const url = source.match(/url:\s*['"]([^'"]*)['"]/);
-          const key = source.match(/anonKey:\s*['"]([^'"]*)['"]/);
-          if (!url?.[1] || !key?.[1]) {
+          const sandbox = { window: {} };
+          vm.runInNewContext(source, sandbox, { timeout: 1000 });
+          const config = sandbox.window.AHL_SUPABASE_CONFIG;
+          if (!config?.url || !config?.anonKey) {
             console.error('Supabase build configuration is missing.');
             process.exit(1);
           }
-          if (!/^https:\/\/uzepglfimareggswjzlf\.supabase\.co$/.test(url[1])) {
+          if (config.url !== 'https://uzepglfimareggswjzlf.supabase.co') {
             console.error('Supabase URL does not match the approved doc project.');
             process.exit(1);
           }
-          console.log('Supabase URL and publishable/anon key are present; values withheld.');
+          console.log('Supabase URL and anon/publishable key are present; values withheld.');
           NODE
 
   deploy:
