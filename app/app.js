@@ -1101,6 +1101,104 @@ document.getElementById('adhanAudio').addEventListener('ended', function () {
   setStatus(audioStatus, 'انتهى التسجيل.');
 });
 
+
+/* Quran Radio: Cairo stream with a graceful official Saudi web-player fallback. */
+function initQuranRadio() {
+  var button = document.getElementById('quranRadioButton');
+  var panel = document.getElementById('quranRadioPanel');
+  var station = document.getElementById('quranRadioStation');
+  var audio = document.getElementById('quranRadioAudio');
+  var openButton = document.getElementById('quranRadioOpen');
+  var muteButton = document.getElementById('quranRadioMute');
+  var status = document.getElementById('quranRadioStatus');
+  if (!button || !panel || !station || !audio || !openButton || !muteButton || !status) return;
+
+  var cairoUrl = 'https://stream.radiojar.com/8s5u5tpdtwzuv';
+  var cairoOfficial = 'https://misrquran.gov.eg/';
+  var saudiOfficial = 'https://radioplus.sba.sa/ar/live/4';
+  var volumeTimer = null;
+
+  function setStatus(message) { status.textContent = message; }
+  function syncButton() {
+    button.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
+    button.textContent = panel.hidden ? 'إذاعة القرآن الكريم' : 'إغلاق الإذاعة';
+  }
+  function syncMute() {
+    muteButton.textContent = audio.muted ? 'إلغاء الكتم' : 'كتم الإذاعة';
+    muteButton.setAttribute('aria-pressed', audio.muted ? 'true' : 'false');
+  }
+  function stopAudio() {
+    if (volumeTimer) window.clearTimeout(volumeTimer);
+    audio.pause();
+    audio.removeAttribute('src');
+    audio.load();
+  }
+  function raiseVolumeAfterFiveSeconds() {
+    if (volumeTimer) window.clearTimeout(volumeTimer);
+    volumeTimer = window.setTimeout(function () {
+      if (!audio.paused && !audio.muted && station.value === 'cairo') audio.volume = 0.16;
+    }, 5000);
+  }
+  function playCairo() {
+    stopAudio();
+    audio.src = cairoUrl;
+    audio.volume = 0.06;
+    openButton.href = cairoOfficial;
+    openButton.textContent = 'الموقع الرسمي لإذاعة القاهرة';
+    if (audio.muted) {
+      setStatus('الإذاعة مكتومة. ألغِ الكتم ثم اضغط تشغيل.');
+      return;
+    }
+    var result = audio.play();
+    if (result && typeof result.catch === 'function') {
+      result.then(function () {
+        setStatus('إذاعة القرآن الكريم — القاهرة تعمل بصوت منخفض.');
+        raiseVolumeAfterFiveSeconds();
+        syncButton();
+      }).catch(function () {
+        setStatus('قد يمنع المتصفح التشغيل التلقائي. اضغط تشغيل من مشغل الصوت.');
+      });
+    }
+  }
+  button.addEventListener('click', function () {
+    panel.hidden = !panel.hidden;
+    syncButton();
+    if (!panel.hidden && station.value === 'cairo' && audio.paused) playCairo();
+  });
+  station.addEventListener('change', function () {
+    if (station.value === 'saudi') {
+      stopAudio();
+      openButton.href = saudiOfficial;
+      openButton.textContent = 'فتح البث الرسمي السعودي';
+      setStatus('البث السعودي الرسمي متاح عبر مشغل هيئة الإذاعة والتلفزيون. افتح الرابط الرسمي؛ لم نعتمد رابط بث مباشر غير موثّق.');
+    } else {
+      playCairo();
+    }
+    syncButton();
+  });
+  muteButton.addEventListener('click', function () {
+    audio.muted = !audio.muted;
+    syncMute();
+    if (!audio.muted && station.value === 'cairo' && audio.paused) playCairo();
+    else if (audio.muted && volumeTimer) window.clearTimeout(volumeTimer);
+  });
+  audio.addEventListener('play', function () {
+    if (station.value === 'cairo') {
+      setStatus('إذاعة القرآن الكريم — القاهرة تعمل.');
+      raiseVolumeAfterFiveSeconds();
+    }
+    syncButton();
+  });
+  audio.addEventListener('error', function () {
+    setStatus('تعذر تحميل بث القاهرة حاليًا. يمكنك فتح الموقع الرسمي للإذاعة.');
+  });
+  audio.addEventListener('pause', syncButton);
+  syncMute();
+  openButton.href = cairoOfficial;
+  /* Best-effort autoplay; browsers may require a user gesture. */
+  playCairo();
+}
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(function () {
     setStatus(prayerStatus, 'تعذر تفعيل الاستخدام دون اتصال في هذا المتصفح.', true);
@@ -1113,6 +1211,7 @@ updateLessonCountdown();
 loadSavedSettings();
 renderAdhkar();
 initAuth();
+initQuranRadio();
 setInterval(updateLessonCountdown, 1000);
 setInterval(function () { updatePrayerTimes(false); }, 60000);
 setInterval(updateNextPrayerCountdown, 1000);

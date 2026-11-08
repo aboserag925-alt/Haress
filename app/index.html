@@ -273,13 +273,15 @@ body,.app-shell,button,input,textarea,select{
 @media(max-width:520px){.development-notice{gap:9px;padding:10px 11px}.development-notice-icon{width:32px;height:32px;flex-basis:32px}.development-notice-copy strong{font-size:12px}.development-notice-copy span{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.development-notice-dot{animation:none}}
 </style>
+<link href="brand-motion.css" rel="stylesheet">
 </head>
 <body>
 <div class="wrap">
 <header>
 <img class="logo" src="icon.svg" alt="">
 <h1>استراحة أهل الأثر</h1>
-<p>مجلس تدارس العلم والأدب</p>
+<p>علم شرعي بمنهج أهل السنة</p>
+<span class="methodology">القرآن والسنة بفهم وأخلاق سلف الأمة</span>
 <span class="doctor">بإشراف الدكتور خالد الحارس</span>
 <nav class="social-links app-social" aria-label="حسابات المجلس على المنصات">
 <a class="social-link" href="https://www.youtube.com/@Khaled_Najm" target="_blank" rel="noopener noreferrer" aria-label="قناة يوتيوب">
@@ -331,7 +333,23 @@ body,.app-shell,button,input,textarea,select{
 <button class="tab" id="t6" type="button" aria-pressed="false" onclick="show('q')">الأسئلة</button>
 <button class="tab" id="t7" type="button" aria-pressed="false" onclick="show('about')">عن المجلس</button>
 <button class="tab" id="t8" type="button" aria-pressed="false" onclick="show('account')">حسابي</button>
+<button class="tab radio-tab" id="quranRadioButton" type="button" aria-expanded="false" aria-controls="quranRadioPanel">إذاعة القرآن الكريم</button>
 </nav>
+<section class="radio-panel" id="quranRadioPanel" hidden aria-label="مشغل إذاعة القرآن الكريم">
+  <div class="radio-panel-head"><strong>إذاعة القرآن الكريم</strong><span>القاهرة — مصر افتراضيًا</span></div>
+  <label class="field" for="quranRadioStation">اختر الإذاعة
+    <select id="quranRadioStation">
+      <option value="cairo" selected>إذاعة القرآن الكريم — القاهرة</option>
+      <option value="saudi">إذاعة القرآن الكريم — السعودية (الموقع الرسمي)</option>
+    </select>
+  </label>
+  <audio id="quranRadioAudio" controls preload="none" playsinline aria-label="بث إذاعة القرآن الكريم من القاهرة"></audio>
+  <div class="radio-controls">
+    <button class="btn" id="quranRadioMute" type="button" aria-pressed="false">كتم الإذاعة</button>
+    <a class="btn radio-official" id="quranRadioOpen" href="https://misrquran.gov.eg/" target="_blank" rel="noopener noreferrer">الموقع الرسمي للإذاعة</a>
+  </div>
+  <p id="quranRadioStatus" class="status" role="status" aria-live="polite">محاولة تشغيل إذاعة القاهرة. إذا منع المتصفح التشغيل التلقائي، اضغط تشغيل من المشغل.</p>
+</section>
 <section id="sched" aria-label="جدول الدروس الأسبوعي"></section>
 <section id="prayers" hidden>
 <div class="card">
@@ -511,6 +529,7 @@ window.copySupportNumber = async function(button) {
 <script src="vendor/adhan.umd.min.js"></script>
 <script src="turnstile-config.js"></script>
 <script src="auth-client.js"></script>
+<script src="brand-intro.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
