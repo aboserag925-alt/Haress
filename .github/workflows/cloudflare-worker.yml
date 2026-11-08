@@ -1,0 +1,97 @@
+name: Build and Deploy Cloudflare Worker
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-worker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and test application
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run test suite
+        run: npm test
+
+      - name: Build application assets
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+        run: npm run build:app
+
+      - name: Verify generated Supabase configuration without exposing key
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import vm from 'node:vm';
+          const source = fs.readFileSync('app/supabase-config.js', 'utf8');
+          const sandbox = { window: {} };
+          vm.runInNewContext(source, sandbox, { timeout: 1000 });
+          const config = sandbox.window.AHL_SUPABASE_CONFIG;
+          if (!config?.url || !config?.anonKey) {
+            console.error('Supabase build configuration is missing.');
+            process.exit(1);
+          }
+          if (config.url !== 'https://uzepglfimareggswjzlf.supabase.co') {
+            console.error('Supabase URL does not match the approved doc project.');
+            process.exit(1);
+          }
+          console.log('Supabase URL and anon/publishable key are present; values withheld.');
+          NODE
+
+  deploy:
+    name: Deploy production Worker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: https://hares.aboserag925.workers.dev
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application assets
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+        run: npm run build:app
+
+      - name: Deploy Worker with Wrangler
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
