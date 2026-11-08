@@ -1,0 +1,58 @@
+name: Cloudflare deploy diagnostics
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-diagnostics-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    name: Test and validate Cloudflare deployment (dry run)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build application
+        run: npm run build:app
+
+      - name: Validate Wrangler deployment without publishing
+        id: wrangler
+        if: always()
+        shell: bash
+        run: |
+          set -o pipefail
+          npx --yes wrangler@4 deploy --dry-run --outdir .wrangler-dry-run 2>&1 | tee wrangler-dry-run.log
+
+      - name: Upload diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-deploy-diagnostics
+          path: |
+            wrangler-dry-run.log
+            .wrangler-dry-run/
+          if-no-files-found: warn
+          retention-days: 14
