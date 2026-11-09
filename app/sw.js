@@ -2,15 +2,21 @@
    Authenticated/API and third-party responses are deliberately never cached. */
 'use strict';
 
-var CACHE_NAME = 'ahl-athar-v3';
+var CACHE_NAME = 'ahl-athar-v4';
 var APP_FILES = [
   './',
   './index.html',
   './manifest.json',
   './icon.svg',
+  './icon-192.png',
+  './icon-512.png',
+  './apple-touch-icon.png',
+  './share-1200x630.jpg',
   './istiraha.css',
+  './brand-motion.css',
   './istiraha-content.js',
-  './istiraha.js'
+  './istiraha.js',
+  './brand-intro.js'
 ];
 var STATIC_FILE = /\.(?:css|js|mjs|json|svg|png|jpe?g|webp|ico|woff2?|ttf|eot)$/i;
 

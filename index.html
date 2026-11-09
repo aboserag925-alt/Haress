@@ -4,14 +4,39 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#070908">
-<title>استراحة أهل الأثر</title>
+<meta name="description" content="إستراحة أهل الأثر — مجلس علم شرعي بمنهج أهل السنة بإشراف الدكتور خالد الحارس: دروس ومحاضرات وبث مباشر ومكتبة وأرشيف.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://aboserag925-alt.github.io/Haress/">
+<link rel="icon" href="app/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="app/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ar_EG">
+<meta property="og:title" content="إستراحة أهل الأثر — علم شرعي بمنهج أهل السنة">
+<meta property="og:description" content="دروس في مصطلح الحديث والفقه والسيرة والعقيدة، وبث مباشر ومكتبة وأرشيف — بإشراف الدكتور خالد الحارس.">
+<meta property="og:url" content="https://aboserag925-alt.github.io/Haress/">
+<meta property="og:image" content="https://aboserag925-alt.github.io/Haress/app/share-1200x630.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="إستراحة أهل الأثر">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="إستراحة أهل الأثر">
+<meta name="twitter:description" content="علم شرعي بمنهج أهل السنة — دروس وبث مباشر ومكتبة بإشراف الدكتور خالد الحارس.">
+<meta name="twitter:image" content="https://aboserag925-alt.github.io/Haress/app/share-1200x630.jpg">
+<title>استراحة أهل الأثر — علم شرعي بمنهج أهل السنة</title>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://www.youtube.com" crossorigin>
+<link rel="dns-prefetch" href="https://www.youtube.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="app/tailwind.css" rel="stylesheet">
 <link href="app/istiraha.css" rel="stylesheet">
 <style>
 body{margin:0;background:#0b0e0d}
 html{scroll-behavior:smooth}
+.skip-link{position:absolute;top:-60px;right:16px;z-index:120;background:#f2d9a4;color:#070908;padding:10px 18px;border-radius:12px;font-weight:800;text-decoration:none;transition:top .2s}
+.skip-link:focus{top:12px}
+:focus-visible{outline:3px solid #f2d9a4;outline-offset:3px}
 .site{background:#0b0e0d;color:#f4f0e7;font-family:'Cairo',sans-serif;overflow-x:clip;position:relative}
 .site *{box-sizing:border-box}
 .wrap{max-width:1180px;margin:0 auto;padding:0 24px;position:relative}
@@ -100,7 +125,12 @@ dialog.support-dialog::backdrop{background:rgba(0,0,0,.76);backdrop-filter:blur(
 .support-dialog form{margin-top:18px}
 .support-footer{display:flex;justify-content:center;padding:24px;border-top:1px solid #29332d;background:#101513}
 .majlis{display:grid;grid-template-columns:300px 1fr;gap:48px;align-items:center;padding:36px;border-radius:28px;border:1px solid #39443d;background:linear-gradient(160deg,#19201d,#101513)}
-.mlogo{width:100%;border-radius:50%;box-shadow:0 0 70px rgba(212,162,76,.25);animation:float 8s ease-in-out infinite}
+.mlogo{width:100%;height:auto;aspect-ratio:1/1;border-radius:50%;box-shadow:0 0 70px rgba(212,162,76,.25);animation:float 8s ease-in-out infinite}
+.majlis picture{display:block;width:100%;height:auto;aspect-ratio:1/1}
+.majlis picture img{width:100%;height:100%;display:block;object-fit:cover;border-radius:50%}
+@media (max-width:860px){.majlis picture{max-width:240px;margin:0 auto}}
+.emblem picture{display:block;width:100%;height:100%;aspect-ratio:1/1}
+.emblem picture img{width:100%;height:100%;display:block;object-fit:cover;border-radius:50%}
 @media (max-width:860px){.majlis{grid-template-columns:1fr;padding:24px}.mlogo{max-width:240px;margin:0 auto}}
 @media (max-width:860px){.hero .wrap{grid-template-columns:1fr}.emblem{max-width:280px}h1.big{font-size:56px}.row{grid-template-columns:1fr}.nav .nl{display:none}h2.t{font-size:34px}.hero{padding:50px 0 70px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -160,14 +190,14 @@ body,.app-shell,button,input,textarea,select{
 
 </head>
 <body>
-
+<a class="skip-link" href="#top">تخطَّ إلى المحتوى الرئيسي</a>
 <div class="site">
 <div class="orb" style="width:420px;height:420px;background:rgba(212,162,76,.18);top:40px;right:-80px"></div>
 <div class="orb" style="width:340px;height:340px;background:rgba(138,100,32,.22);top:520px;left:-100px;animation-delay:-4s"></div>
 <header class="ist-nav">
   <div class="ist-nav__inner">
     <a class="ist-brand" href="#top" aria-label="إستراحة أهل الأثر — الرئيسية">
-      <img src="assets/logo.jpg" alt="">
+      <picture><source type="image/avif" srcset="assets/logo-320.avif 320w, assets/logo-640.avif 640w" sizes="36px"><source type="image/webp" srcset="assets/logo-320.webp 320w, assets/logo-640.webp 640w" sizes="36px"><img src="assets/logo-640.jpg" width="36" height="36" fetchpriority="high" decoding="async" alt=""></picture>
       <span>إستراحة أهل الأثر</span>
     </a>
     <nav class="ist-nav__links" aria-label="التنقل الرئيسي">
@@ -202,7 +232,7 @@ body,.app-shell,button,input,textarea,select{
 </nav>
 
 </div>
-<div class="emblem in d2"><div class="ring"></div><div class="ring b"></div><div class="core"><img src="assets/logo.jpg" alt="شعار استراحة أهل الأثر" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div></div>
+<div class="emblem in d2"><div class="ring"></div><div class="ring b"></div><div class="core"><picture><source type="image/avif" srcset="assets/logo-320.avif 320w, assets/logo-640.avif 640w" sizes="(max-width:860px) 240px, 360px"><source type="image/webp" srcset="assets/logo-320.webp 320w, assets/logo-640.webp 640w" sizes="(max-width:860px) 240px, 360px"><img src="assets/logo-640.jpg" width="640" height="640" fetchpriority="high" decoding="async" alt="شعار استراحة أهل الأثر" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></picture></div></div>
 </div></div>
 <div class="strip"><div class="track">
 <span class="g">مصطلح الحديث</span><span>الفقه</span><span class="g">السيرة</span><span>العقيدة</span><span class="g">صحيح مسلم</span><span>أصول الفقه</span><span class="g">عظماء الإسلام</span><span>منوعات</span>
@@ -336,7 +366,7 @@ body,.app-shell,button,input,textarea,select{
     <p class="ist-note">رقم الدعم: <b dir="ltr" data-istiraha-support-number>—</b></p>
   </div>
 </div></section>
-<section class="s" id="majlis"><div class="wrap"><div class="majlis rv"><img class="mlogo" src="assets/logo.jpg" alt="شعار استراحة أهل الأثر"><div><h2 class="t gold" style="margin:0 0 10px">استراحة أهل الأثر</h2><p class="lead" style="margin:0 0 22px">مجلس تدارس العلم والأدب: مجموعة على تيليجرام لدروس في العلوم الشرعية والحديث، بإشراف الشيخ.</p><a class="btn fill" href="https://t.me/+H-Rpxhc371VhYzU0">انضم إلى المجلس</a></div></div></div></section>
+<section class="s" id="majlis"><div class="wrap"><div class="majlis rv"><picture><source type="image/avif" srcset="assets/logo-320.avif 320w, assets/logo-640.avif 640w" sizes="300px"><source type="image/webp" srcset="assets/logo-320.webp 320w, assets/logo-640.webp 640w" sizes="300px"><img class="mlogo" src="assets/logo-640.jpg" width="300" height="300" loading="lazy" decoding="async" alt="شعار استراحة أهل الأثر"></picture><div><h2 class="t gold" style="margin:0 0 10px">استراحة أهل الأثر</h2><p class="lead" style="margin:0 0 22px">مجلس تدارس العلم والأدب: مجموعة على تيليجرام لدروس في العلوم الشرعية والحديث، بإشراف الشيخ.</p><a class="btn fill" href="https://t.me/+H-Rpxhc371VhYzU0">انضم إلى المجلس</a></div></div></div></section>
 </main>
 <dialog class="support-dialog" id="supportDialog" aria-labelledby="supportDialogTitle">
 <h2 class="t gold" id="supportDialogTitle">ادعم تطوير المنصة</h2>
@@ -374,7 +404,7 @@ window.copySupportNumber = async function(button) {
 <script src="app/runtime-config.js"></script>
 <script>
 (function(){
-  var base=typeof window.AHL_API_BASE_URL==='string'?window.AHL_API_BASE_URL.replace(/\\/+$/,''):'';
+  var base=typeof window.AHL_API_BASE_URL==='string'?window.AHL_API_BASE_URL.replace(/\/+$/,''):'';
   var schedule=document.getElementById('scheduleRows'), archive=document.getElementById('lectureArchive'), broadcast=document.getElementById('broadcastNotice');
   function link(text,url){var a=document.createElement('a');a.className='btn line';a.textContent=text;a.href=url;a.target='_blank';a.rel='noopener noreferrer';return a;}
   fetch(base+'/api/lectures',{cache:'no-store'}).then(function(r){if(!r.ok)throw new Error('request failed');return r.json();}).then(function(data){
