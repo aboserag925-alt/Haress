@@ -5,7 +5,24 @@
  */
 import { getLiveStatus, jsonResponse } from './live.mjs';
 
+// حد معدل بسيط ضد السبام في Cloudflare Function (60/دقيقة/IP) — ذاكرة Worker.
+const buckets = new Map();
+function isRateLimited(ip) {
+  const now = Date.now();
+  const entry = buckets.get(ip);
+  if (!entry || now - entry.start > 60000) {
+    buckets.set(ip, { start: now, count: 1 });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > 60;
+}
+
 async function handleLive(request, env) {
+  const ip = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || 'unknown';
+  if (isRateLimited(ip)) {
+    return jsonResponse({ live: false, videoId: null }, { 'Retry-After': '60' });
+  }
   if (request.method === 'OPTIONS') {
     const headers = new Headers();
     headers.set('Access-Control-Allow-Origin', '*');

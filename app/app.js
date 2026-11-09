@@ -117,7 +117,17 @@ async function loadPublishedLectures() {
     var response = await fetch(apiUrl('/api/lectures'), { cache: 'no-store' });
     if (!response.ok) throw new Error('Lecture request failed');
     var result = await response.json();
-    if (!Array.isArray(result.items) || result.items.length === 0) return;
+    if (!Array.isArray(result.items) || result.items.length === 0) {
+      // حالة "قريبًا" بأناقة عند غياب الجداول (PGRST205) أو فراغها — تعمل تلقائيًا عند توفرها.
+      var schedBox = document.getElementById('sched');
+      if (schedBox) {
+        var soon = document.createElement('p');
+        soon.className = 'notice';
+        soon.textContent = 'المحاضرات قادمة قريبًا — تُعرض المنشورات تلقائيًا عند توفرها.';
+        schedBox.appendChild(soon);
+      }
+      return;
+    }
     var box = document.getElementById('sched'); box.textContent = '';
     result.items.forEach(function (item) {
       var card = document.createElement('article'); card.className = 'card';
@@ -236,7 +246,7 @@ function renderMediaLibrary() {
   if (visibleItems.length === 0) {
     status.textContent = mediaItems.length
       ? 'لا توجد مواد في هذا التصنيف.'
-      : 'لا توجد مواد منشورة بعد. تُضاف الملفات من مجموعة Telegram بعد اعتمادها.';
+      : 'المكتبة قادمة قريبًا — تُعرض المواد تلقائيًا بعد اعتمادها ونشرها.';
     return;
   }
   status.textContent = 'عدد المواد: ' + visibleItems.length;
@@ -954,12 +964,22 @@ function resetQuestionTurnstile() {
   }
 }
 
+var lastQuestionSentAt = 0;
 async function sendQuestion() {
+  // حد معدل عميل بسيط ضد السبام (سؤال/دقيقة) — يكمّله حد الخادم (5/15 دقيقة).
+  var now = Date.now();
+  if (now - lastQuestionSentAt < 60000) {
+    setStatus(document.getElementById('qm'), 'انتظر دقيقة قبل إرسال سؤال آخر.', true);
+    return;
+  }
   var question = document.getElementById('qt').value.trim();
   var consent = document.getElementById('questionConsent').checked;
   var button = document.getElementById('sendQuestionBtn');
   var status = document.getElementById('qm');
   var draftBox = document.getElementById('questionDraft');
+
+  // تعقيم عميل خفيف (الخادم يعقّم أيضًا): إزالة الوسوم للعرض الآمن.
+  question = question.replace(/<\/?[a-zA-Z][^>]*>/g, ' ').replace(/\s+/g, ' ');
 
   if (question.length < 5 || question.length > 1600) {
     setStatus(status, 'اكتب سؤالًا بين 5 و1600 حرف.', true);
@@ -1008,6 +1028,8 @@ async function sendQuestion() {
       draftBox.hidden = false;
     }
     if (!response.ok) throw new Error(result.error || 'تعذر إرسال السؤال. حاول لاحقًا.');
+    lastQuestionSentAt = Date.now();
+    document.getElementById('qt').value = '';
     setStatus(status, 'وصل السؤال والمسودة إلى Telegram للمراجعة. المسودة ليست فتوى معتمدة.');
   } catch (error) {
     var message = error instanceof TypeError
@@ -1200,7 +1222,48 @@ function initQuranRadio() {
 }
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(function () {
+  navigator.serviceWorker.register('sw.js').then(function (registration) {
+    function showUpdateBanner(waitingWorker) {
+      if (!waitingWorker || document.getElementById('swUpdateBanner')) return;
+      var banner = document.createElement('div');
+      banner.id = 'swUpdateBanner';
+      banner.setAttribute('role', 'status');
+      banner.style.cssText = 'position:fixed;bottom:14px;right:14px;left:14px;z-index:120;display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px 16px;border:1px solid rgba(201,163,91,.4);border-radius:16px;background:rgba(18,23,21,.98);color:#f2d9a4;font-size:13px';
+      var text = document.createElement('span');
+      text.textContent = 'يتوفر تحديث جديد للتطبيق.';
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = 'تحديث الآن';
+      btn.style.cssText = 'background:#c9a35b;color:#15130d;border:0;border-radius:10px;padding:8px 14px;font-weight:800;cursor:pointer';
+      btn.addEventListener('click', function () {
+        waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+        waitingWorker.addEventListener('statechange', function () {
+          if (waitingWorker.state === 'activated') window.location.reload();
+        });
+        window.setTimeout(function () { window.location.reload(); }, 2500);
+      });
+      banner.appendChild(text);
+      banner.appendChild(btn);
+      document.body.appendChild(banner);
+    }
+    if (registration.waiting) showUpdateBanner(registration.waiting);
+    registration.addEventListener('updatefound', function () {
+      var worker = registration.installing;
+      if (!worker) return;
+      worker.addEventListener('statechange', function () {
+        if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+          showUpdateBanner(worker);
+        }
+      });
+    });
+    window.addEventListener('controllerchange', function () {
+      // عند تفعيل نسخة جديدة دون تفاعل، أعد التحميل مرة واحدة بأمان.
+      if (!window.__ahlSwReloaded) {
+        window.__ahlSwReloaded = true;
+        window.location.reload();
+      }
+    });
+  }).catch(function () {
     setStatus(prayerStatus, 'تعذر تفعيل الاستخدام دون اتصال في هذا المتصفح.', true);
   });
 }
