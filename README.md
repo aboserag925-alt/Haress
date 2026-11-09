@@ -130,3 +130,61 @@ select id from auth.users where email = 'admin@example.com';
 اضبط متغيرات البيئة على خادم Node.js: `SUPABASE_URL` و`SUPABASE_ANON_KEY` و`SUPABASE_SERVICE_ROLE_KEY`. مفتاح `service_role` سري ولا يوضع في المتصفح أو GitHub Pages أو ملفات المشروع. أضف أصل الموقع إلى `ALLOWED_ORIGINS`. إذا كان الخادم على نطاق منفصل عن GitHub Pages، اضبط `AHL_API_BASE_URL` في إعدادات بناء Pages على أصل الخادم، وأعد تشغيل النشر. يحتاج بناء واجهة المصادقة إلى `SUPABASE_URL` و`SUPABASE_ANON_KEY` العامين؛ ينشئ `build:app` ملف إعداد المتصفح منهما، ولا يضمّن مفتاح `service_role`.
 
 تسمح واجهة القراءة العامة بعرض المحاضرات المنشورة فقط. إنشاء المحاضرات وتعديلها وحذفها يتطلبان جلسة Supabase صالحة ووجود المستخدم في `admin_users`؛ يتحقق الخادم من الاثنين في كل طلب. روابط البث والتسجيل تقبل HTTPS فقط. لا تعتبر اللوحة جاهزة للإنتاج قبل إضافة مفاتيح الخادم، وتسجيل مشرف موثوق، واختبار النشر على بيئة فعلية.
+
+## التشغيل المحلي
+
+```powershell
+npm.cmd install
+npm.cmd run build:app
+npm.cmd start
+# ثم افتح http://localhost:8080/
+```
+
+- خادم التطوير يخدم الواجهة + `/api/*` محليًا.
+- نقطة `/api/live` المحلية ترجع `{"live":false,"videoId":null}` آمنًا عند غياب مفاتيح يوتيوب.
+
+## البث المباشر (Cloudflare Worker)
+
+الواجهة لا تحتوي مفتاح يوتيوب أبدًا. الحالة تأتي من `/api/live`:
+
+- **Worker كامل:** `worker/index.mjs` + `worker/live.mjs` — يقرأ `YOUTUBE_API_KEY` و`YOUTUBE_CHANNEL_ID` من بيئة Worker فقط، ويعيد `{ live, videoId }`، ويلتحقق من معرّف الفيديو، ويخزّن النتيجة 5 دقائق (`Cache-Control: public, max-age=300`).
+- **إعداد:** في Cloudflare Dashboard → Workers & Pages → `hares` → Settings → Variables أضف `YOUTUBE_API_KEY` و`YOUTUBE_CHANNEL_ID` (سرّي). لا يتوفر هذان المتغيران في GitHub؛ أضفهما من لوحة Cloudflare فقط.
+- **مناطق التحقق:** الأيقونة الحمراء تظهر فقط عند `live=true` ومعرّف صالح؛ عند الفشل تعرض الواجهة «غير مباشر» وتعيد المحاولة كل دقيقتين.
+- **نشر:** `wrangler.jsonc` مهيأ بـ `main: worker/index.mjs` و`ASSETS` للأصول؛ `.github/workflows/cloudflare-worker.yml` ينشر تلقائيًا بعد الاختبارات. معاينة PR عبر `wrangler deploy --dry-run` أو Workers Builds.
+
+## إعدادات موجودة (أسماء ثابتة لا تغيّر)
+
+| المتغير | الخدمة | المصدر | يعمل؟ |
+|---|---|---|---|
+| `SUPABASE_URL` | Supabase | GitHub Variable | نعم |
+| `SUPABASE_ANON_KEY` (عام) | Supabase | GitHub Variable | نعم |
+| `AHL_SUPABASE_URL` | Supabase | GitHub Variable | نعم |
+| `AHL_API_BASE_URL` | Railway API | GitHub Variable (`https://haress-production.up.railway.app`) | نعم (أُضيف في هذه الجولة) |
+| `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` | Cloudflare | `production` Environment Secret | نعم |
+| `SUPABASE_SERVICE_ROLE_KEY`، `GEMINI_API_KEY`، `TELEGRAM_BOT_TOKEN`، `TURNSTILE_SECRET` | سريّة | خادم فقط (Railway) | لا تُرفع للمشروع |
+| `YOUTUBE_API_KEY` / `YOUTUBE_CHANNEL_ID` | Cloudflare Worker | لوحة Cloudflare فقط | **يجب إضافتها يدويًا** — بدونه يبقى البث offline |
+
+لا تُنشئ ملفات `.env` جديدة ولا تُنسخ قيمًا هنا؛ استخدم الأسماء أعلاه فقط.
+
+## قيم قابلة للتعديل (آمنة)
+
+- المحتوى والنصوص: `app/istiraha-content.js`
+- منطق الواجهة: `app/istiraha.js`
+- الأنماط: `app/istiraha.css` و`app/brand-motion.css`
+- SEO ومشاركة: بطاقات OG/Twitter في `index.html` و`app/index.html` والصورة `app/share-1200x630.jpg`
+- الأيقونات: `app/icon.svg` و`app/icon-192.png` و`app/icon-512.png` و`app/apple-touch-icon.png`
+- ترويسات الأمان: `app/_headers` (تُطبق على Cloudflare Assets فقط؛ إصدارات Worker تضبط ترويساتها بنفسها)
+
+## الأمان والأداء
+
+- كل روابط خارجية تحمل `rel="noopener noreferrer"`؛ إدخال المستخدم يُعرض عبر `textContent` فقط (لا XSS).
+- `app/_headers` يوفر CSP وHSTS و`X-Content-Type-Options` و`Referrer-Policy` و`Permissions-Policy` و`X-Frame-Options` للأصول الثابتة.
+- الصور: WebP/AVIF بأحجام + `loading="lazy"`/`decoding="async"` + أبعاد صريحة و`<picture>`؛ الخطوط `display=swap` + `preconnect`.
+- التخزين المؤقت: `app/sw.js` هو `ahl-athar-v4` ويشمل الأصول الجديدة؛ وردود `/api/*` لا تُخزّن أبدًا.
+
+## اختبارات
+
+```powershell
+npm.cmd test
+node --test worker/live.test.mjs
+```
