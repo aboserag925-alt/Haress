@@ -1,8 +1,13 @@
 {
   "name": "hares",
   "compatibility_date": "2026-11-05",
+  "main": "worker/index.mjs",
   "assets": {
-    "directory": "./app"
+    "directory": "./app",
+    "binding": "ASSETS"
+  },
+  "vars": {
+    "AHL_LIVE_API": "/api/live"
   },
   "previews": {}
 }

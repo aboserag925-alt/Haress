@@ -46,16 +46,20 @@
       saudiRadio: { label: 'إذاعة القرآن الكريم — السعودية', url: 'https://radioplus.sba.sa/ar/live/4' }
     },
     live: {
-      /* لا تُغيّر state إلى live إلا بعد التحقق من حالة بث فعلية.
-         الشارة الحمراء لا تظهر إلا عندما state === 'live' و verified === true
-         ويكون الرابط HTTPS صالحًا. */
+      /* الحالة الحالية تأتي من /api/live (Worker). عند غيابها تبقى الواجهة offline آمنة.
+         الشارة الحمراء تظهر فقط عندما live=true ومعرّف فيديو صالح. */
       state: 'offline',
       verified: false,
       url: '',
-      platform: '',
+      platform: 'يوتيوب',
       title: 'البث المباشر',
-      offlineMessage: 'لا يوجد بث مباشر موثّق الآن.',
-      note: 'لا نعرض شارة LIVE إلا عند توفر حالة بث موثوقة ومصدر رسمي. يوتيوب وتيليجرام نقاط تكامل مستقبلية فقط، وليست تكاملات منفّذة.'
+      apiPath: '/api/live',
+      apiFallbackUrl: 'https://hares.aboserag925.workers.dev/api/live',
+      refreshMs: 120000,
+      offlineMessage: 'لا يوجد بث مباشر الآن.',
+      note: 'يتم التحقق من حالة البث عبر خادم آمن كل دقيقتين. مفتاح يوتيوب لا يظهر في المتصفح أبدًا.',
+      checkingLabel: 'جارٍ التحقق من حالة البث…',
+      errorLabel: 'تعذّر التحقق من البث الآن. ستتم إعادة المحاولة تلقائيًا.'
     },
     forum: {
       status: 'coming-soon',

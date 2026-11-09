@@ -20,7 +20,12 @@ const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.ico': 'image/x-icon',
   '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.avif': 'image/avif',
   '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.txt': 'text/plain; charset=utf-8'
@@ -372,6 +377,12 @@ function createServer(options) {
     if (await adminApi(request, response, requestUrl.pathname)) return;
     if (requestUrl.pathname === '/api/health' && request.method === 'GET') {
       sendJson(response, 200, { ok: true });
+      return;
+    }
+    if (requestUrl.pathname === '/api/live' && request.method === 'GET') {
+      // محليًا/احتياطيًا: بدون مفاتيح يوتيوب نرجع offline آمنًا بدل 404.
+      // في Cloudflare Worker يُستبدل هذا بمنطق worker/live.mjs الكامل.
+      sendJson(response, 200, { live: false, videoId: null });
       return;
     }
     if (requestUrl.pathname === '/api/library' && request.method === 'GET') {

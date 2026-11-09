@@ -61,9 +61,16 @@
 .ist-brand img {
   width: 36px;
   height: 36px;
+  display: block;
   border: 1px solid var(--ist-line);
   border-radius: 50%;
   object-fit: cover;
+}
+
+.ist-brand picture {
+  display: inline-flex;
+  flex: 0 0 auto;
+  line-height: 0;
 }
 
 .ist-brand span {
@@ -332,6 +339,58 @@
   font-size: 17px;
   font-weight: 750;
   line-height: 1.7;
+}
+
+.ist-live-player {
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid var(--ist-line);
+  border-radius: 16px;
+  background: #000;
+  aspect-ratio: 16 / 9;
+}
+
+.ist-live-player iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.ist-live-chatwrap {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--ist-line);
+  border-radius: 16px;
+  background: var(--ist-surface-2);
+  padding: 14px;
+}
+
+.ist-live-chattitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ist-gold-2);
+}
+
+.ist-live-chatwrap iframe {
+  width: 100%;
+  min-height: 320px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 12px;
+  background: #0d0f0e;
+}
+
+@media (min-width: 900px) {
+  .ist-live-chatwrap iframe {
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 720px) {
+  .ist-live-chatwrap iframe {
+    min-height: 280px;
+  }
 }
 
 .ist-actions {

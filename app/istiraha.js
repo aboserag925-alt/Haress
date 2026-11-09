@@ -65,10 +65,112 @@
     });
   }
 
+  var VIDEO_ID_RE = /^[A-Za-z0-9_-]{11}$/;
+  var liveRuntime = { state: 'checking', videoId: null, error: false };
+
+  function isValidVideoId(value) {
+    return typeof value === 'string' && VIDEO_ID_RE.test(value);
+  }
+
   function liveState() {
-    if (!cfg.live) return 'offline';
-    if (cfg.live.state !== 'live' || cfg.live.verified !== true) return 'offline';
-    return safeHttps(cfg.live.url) ? 'live' : 'offline';
+    if (liveRuntime.state === 'checking') return 'checking';
+    if (liveRuntime.state !== 'live') return 'offline';
+    return isValidVideoId(liveRuntime.videoId) ? 'live' : 'offline';
+  }
+
+  function liveWatchUrl(videoId) {
+    return 'https://www.youtube.com/watch?v=' + videoId;
+  }
+
+  function liveEmbedUrl(videoId) {
+    return 'https://www.youtube.com/embed/' + videoId + '?rel=0&playsinline=1';
+  }
+
+  function liveChatUrl(videoId) {
+    var domain = '';
+    try { domain = window.location.hostname || ''; } catch (e) { domain = ''; }
+    return 'https://www.youtube.com/live_chat?embed_domain=' + encodeURIComponent(domain) + '&v=' + videoId;
+  }
+
+  function fetchWithTimeout(url, timeoutMs) {
+    var controller = null;
+    var options = { method: 'GET', headers: { Accept: 'application/json' }, credentials: 'omit' };
+    if (typeof AbortController !== 'undefined') {
+      controller = new AbortController();
+      options.signal = controller.signal;
+      window.setTimeout(function () { try { controller.abort(); } catch (e) { /* noop */ } }, timeoutMs || 8000);
+    }
+    return window.fetch(url, options).then(function (res) {
+      if (!res.ok) throw new Error('live-http-' + res.status);
+      return res.json();
+    });
+  }
+
+  function checkLiveStatus() {
+    if (!cfg.live || !cfg.live.apiPath) {
+      liveRuntime.state = 'offline';
+      renderLive();
+      return Promise.resolve();
+    }
+    var primary = cfg.live.apiPath;
+    // Fallback عبر Origin آخر مطلوب فقط عند فتح الملف أو على GitHub Pages (موقع ثابت بلا Worker).
+    // على Workers/localhost يُستخدم same-origin فقط لتجنب أخطاء CORS في السجل.
+    var isFile = false;
+    var isPages = false;
+    try {
+      isFile = window.location.protocol === 'file:' || window.location.hostname === '';
+      isPages = window.location.hostname === 'aboserag925-alt.github.io';
+    } catch (e) { isFile = false; }
+    var useFallback = isFile || isPages;
+    var attempt = fetchWithTimeout(primary, 8000);
+    return attempt.then(function (data) {
+      if (data && data.live === true && isValidVideoId(data.videoId)) {
+        liveRuntime.state = 'live';
+        liveRuntime.videoId = data.videoId;
+        liveRuntime.error = false;
+      } else {
+        liveRuntime.state = 'offline';
+        liveRuntime.videoId = null;
+        liveRuntime.error = false;
+      }
+      renderLive();
+    }).catch(function () {
+      // عند فشل المسار الأساسي جرّب Fallback فقط على Pages/file — خلاف ذلك ابقَ offline دون طلب عبر CORS.
+      if (useFallback && cfg.live.apiFallbackUrl && safeHttps(cfg.live.apiFallbackUrl)) {
+        return fetchWithTimeout(cfg.live.apiFallbackUrl, 8000).then(function (data) {
+          if (data && data.live === true && isValidVideoId(data.videoId)) {
+            liveRuntime.state = 'live';
+            liveRuntime.videoId = data.videoId;
+            liveRuntime.error = false;
+          } else {
+            liveRuntime.state = 'offline';
+            liveRuntime.videoId = null;
+            liveRuntime.error = false;
+          }
+          renderLive();
+        }).catch(function () {
+          liveRuntime.state = 'offline';
+          liveRuntime.videoId = null;
+          liveRuntime.error = true;
+          renderLive();
+        });
+      }
+      liveRuntime.state = 'offline';
+      liveRuntime.videoId = null;
+      liveRuntime.error = true;
+      renderLive();
+    });
+  }
+
+  function startLivePolling() {
+    checkLiveStatus();
+    var ms = Number(cfg.live && cfg.live.refreshMs) || 120000;
+    window.setInterval(function () {
+      if (!document.hidden) checkLiveStatus();
+    }, ms);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) checkLiveStatus();
+    });
   }
 
   function hydrateLinks() {
@@ -131,6 +233,7 @@
   function renderLive() {
     var state = liveState();
     var isLive = state === 'live';
+    var isChecking = state === 'checking';
 
     $$('[data-istiraha-live]').forEach(function (container) {
       container.textContent = '';
@@ -141,33 +244,65 @@
       var dot = el('span', 'ist-live-dot');
       dot.setAttribute('aria-hidden', 'true');
       badge.appendChild(dot);
-      badge.appendChild(document.createTextNode(isLive ? 'مباشر الآن' : 'غير مباشر'));
+      badge.appendChild(document.createTextNode(
+        isLive ? 'مباشر الآن' : isChecking ? 'جارٍ التحقق…' : 'غير مباشر'
+      ));
       container.appendChild(badge);
 
-      var status = el('p', 'ist-live-status', isLive
+      var statusText = isLive
         ? 'البث جارٍ الآن' + (cfg.live.platform ? ' على ' + cfg.live.platform : '') + '.'
-        : cfg.live.offlineMessage);
+        : isChecking
+          ? (cfg.live.checkingLabel || 'جارٍ التحقق من حالة البث…')
+          : (liveRuntime.error ? (cfg.live.errorLabel || cfg.live.offlineMessage) : cfg.live.offlineMessage);
+
+      var status = el('p', 'ist-live-status', statusText);
       status.setAttribute('role', 'status');
       status.setAttribute('aria-live', 'polite');
       container.appendChild(status);
+
+      if (isLive && isValidVideoId(liveRuntime.videoId)) {
+        var playerWrap = el('div', 'ist-live-player');
+        var iframe = document.createElement('iframe');
+        iframe.src = liveEmbedUrl(liveRuntime.videoId);
+        iframe.title = 'مشغل البث المباشر — ' + cfg.live.title;
+        iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+        iframe.setAttribute('allowfullscreen', '');
+        iframe.setAttribute('loading', 'lazy');
+        iframe.setAttribute('frameborder', '0');
+        playerWrap.appendChild(iframe);
+        container.appendChild(playerWrap);
+
+        var chatWrap = el('div', 'ist-live-chatwrap');
+        var chatTitle = el('h3', 'ist-live-chattitle', 'دردشة البث المباشر');
+        chatWrap.appendChild(chatTitle);
+        var chatFrame = document.createElement('iframe');
+        chatFrame.src = liveChatUrl(liveRuntime.videoId);
+        chatFrame.title = 'دردشة يوتيوب المباشرة';
+        chatFrame.setAttribute('loading', 'lazy');
+        chatFrame.setAttribute('frameborder', '0');
+        chatFrame.setAttribute('allowfullscreen', '');
+        chatWrap.appendChild(chatFrame);
+        var chatNote = el('p', 'ist-note', 'إذا لم تظهر الدردشة هنا، فهي تعمل في صفحة يوتيوب فقط لتقييدات النطاق (embed_domain).');
+        chatWrap.appendChild(chatNote);
+        container.appendChild(chatWrap);
+      }
 
       var schedule = el('p', 'ist-note',
         'مواعيد المجالس: ' + cfg.schedule.days + ' — ' + cfg.schedule.times + '. ' + cfg.schedule.friday + '.');
       container.appendChild(schedule);
 
       var actions = el('div', 'ist-actions');
-      if (isLive) {
-        var liveLink = el('a', 'ist-btn ist-btn--live', 'افتح البث المباشر');
-        liveLink.href = cfg.live.url;
+      if (isLive && isValidVideoId(liveRuntime.videoId)) {
+        var liveLink = el('a', 'ist-btn ist-btn--live', 'افتح في يوتيوب');
+        liveLink.href = liveWatchUrl(liveRuntime.videoId);
         liveLink.target = '_blank';
         liveLink.rel = 'noopener noreferrer';
         actions.appendChild(liveLink);
-      } else {
-        var channel = linkNode('youtube', 'ist-btn ist-btn--primary');
-        if (channel) {
-          channel.textContent = 'متابعة القناة على يوتيوب';
-          actions.appendChild(channel);
-        }
+      }
+      var channel = linkNode('youtube', 'ist-btn ist-btn--primary');
+      if (channel) {
+        channel.textContent = 'متابعة القناة على يوتيوب';
+        actions.appendChild(channel);
       }
       container.appendChild(actions);
 
@@ -177,7 +312,7 @@
 
     $$('[data-ist-live-trigger]').forEach(function (trigger) {
       trigger.classList.toggle('is-live', isLive);
-      trigger.setAttribute('aria-label', 'البث المباشر — ' + (isLive ? 'مباشر الآن' : 'غير مباشر'));
+      trigger.setAttribute('aria-label', 'البث المباشر — ' + (isLive ? 'مباشر الآن' : isChecking ? 'جارٍ التحقق…' : 'غير مباشر'));
     });
   }
 
@@ -397,6 +532,7 @@
     renderSocial();
     renderDoctor();
     renderLive();
+    startLivePolling();
     renderForum();
     renderNotes();
     initSupport();
