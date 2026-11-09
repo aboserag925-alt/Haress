@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#2a140e">
+<meta name="theme-color" content="#0B5E3C">
 <title>استراحة أهل الأثر</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800&family=Tajawal:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="app/tailwind.css" rel="stylesheet">
 <style>
 body{margin:0;background:#0b0e0d}
@@ -254,6 +254,45 @@ body,.app-shell,button,input,textarea,select{
 @keyframes development-pulse{70%{box-shadow:0 0 0 8px rgba(181,139,66,0)}100%{box-shadow:0 0 0 0 rgba(181,139,66,0)}}
 @media(max-width:600px){.development-notice{width:calc(100% - 28px);margin-top:10px;padding:10px 12px;gap:9px;border-radius:13px}.development-notice-icon{width:32px;height:32px;flex-basis:32px}.development-notice-copy strong{font-size:12px}.development-notice-copy span{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.development-notice-dot{animation:none}}
+
+/* HARES brand system v2 — light emerald, ivory and gold */
+:root{--hares-green:#0B5E3C;--hares-gold:#D4AF37;--hares-ivory:#F7F5EF;--hares-sage:#A7C4B0;--hares-ink:#20372B}
+html,body,.site{background:var(--hares-ivory)!important;color:var(--hares-ink)!important}
+.site{font-family:'Tajawal','Alexandria',sans-serif!important}
+.site h1,.site h2,.site h3,.site .logo,.site .brand-lockup{font-family:'Alexandria','Tajawal',sans-serif!important}
+.site .nav{background:rgba(247,245,239,.94)!important;border-bottom:1px solid rgba(11,94,60,.14)!important;box-shadow:0 8px 28px rgba(11,94,60,.06)}
+.site .nav a{color:var(--hares-green)!important}
+.site .logo{color:var(--hares-green)!important;gap:12px}
+.site .brand-lockup{display:grid;gap:1px;line-height:1.35}
+.site .brand-lockup strong{font-size:17px;font-weight:800}
+.site .brand-lockup small{font-family:'Tajawal',sans-serif;font-size:11px;font-weight:600;color:#718477}
+.site .gold,.site h1.big,.site h2.t{background:none!important;-webkit-text-fill-color:var(--hares-green)!important;color:var(--hares-green)!important;animation:none!important}
+.site .lead,.site .sub,.site .card p,.site footer{color:#5D6E63!important}
+.site .eyebrow,.site .sheikh{background:#fff!important;color:var(--hares-green)!important;border-color:rgba(212,175,55,.42)!important}
+.site .dot{background:var(--hares-gold)!important}
+.site .btn.fill,.site .support-button{background:var(--hares-green)!important;color:#fff!important;border:1px solid var(--hares-gold)!important;box-shadow:0 10px 26px rgba(11,94,60,.13)!important}
+.site .btn.line{color:var(--hares-green)!important;border-color:var(--hares-green)!important}
+.site .social-icon{background:#fff!important;color:var(--hares-green)!important;border-color:rgba(11,94,60,.18)!important}
+.site .strip,.site .support-footer{background:#fff!important;border-color:rgba(11,94,60,.12)!important}
+.site .track span{color:#708477!important}.site .track span.g{color:#9B7B24!important}
+.site .card,.site .row,.site .majlis{background:#fff!important;color:var(--hares-ink)!important;border-color:rgba(11,94,60,.13)!important;box-shadow:0 12px 32px rgba(11,94,60,.055)!important}
+.site .card h3,.site .row b,.site .section-heading h2{color:var(--hares-green)!important}
+.site .card .n,.site .tag{color:var(--hares-green)!important}
+.site .tag{background:#F2E9C9!important}
+.site .thumb{background:linear-gradient(145deg,#fff,#EEF4EF)!important;color:var(--hares-green)!important}
+.site .emblem .core{background:#fff!important;border-color:var(--hares-gold)!important}
+.site .emblem .core img,.site .mlogo,.site .logo img{object-fit:contain!important;padding:7px!important;background:#fff!important;border:1px solid rgba(212,175,55,.65)!important;border-radius:20px!important}
+.site .hero-motto span{border-color:rgba(212,175,55,.45)!important;background:#fff!important;color:var(--hares-green)!important}
+.site .hero-motto span:first-child{font-weight:800}
+.site .support-bottom{background:#fff!important;border-color:rgba(212,175,55,.45)!important}
+.site footer a{color:var(--hares-green)!important}
+.site .orb{opacity:.12!important}
+.site .mobile-site-menu{background:rgba(247,245,239,.98)!important;border-color:rgba(212,175,55,.5)!important}
+.site .mobile-site-menu a{color:var(--hares-green)!important}
+.site .development-notice{background:#fff!important;border-color:rgba(212,175,55,.5)!important}
+@media(max-width:600px){.site .brand-lockup strong{font-size:14px}.site .brand-lockup small{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.site *{animation:none!important;transition:none!important}}
+
 </style>
 
 </head>
@@ -263,7 +302,7 @@ body,.app-shell,button,input,textarea,select{
 <div class="orb" style="width:420px;height:420px;background:rgba(212,162,76,.18);top:40px;right:-80px"></div>
 <div class="orb" style="width:340px;height:340px;background:rgba(138,100,32,.22);top:520px;left:-100px;animation-delay:-4s"></div>
 <header class="nav"><div class="wrap">
-<a class="logo" href="#top" style="display:flex;align-items:center;gap:12px"><img src="assets/logo.jpg" alt="" style="width:44px;height:44px;border-radius:50%;border:1px solid #d5ab64">استراحة أهل الأثر</a>
+<a class="logo" href="#top" style="display:flex;align-items:center;gap:12px"><img src="assets/brand-mark-light.svg" alt="" style="width:44px;height:44px;border-radius:50%;border:1px solid #d5ab64"><span class="brand-lockup"><strong>استراحة أهل الأثر</strong><small>لأن المعرفة أمانة</small></span></a>
 <nav class="desktop-links" aria-label="التنقل الرئيسي"><a class="nl" href="#sections">الأقسام</a><a class="nl" href="#schedule">الجدول</a><a class="nl" href="#archive">الأرشيف</a><a class="nl" href="#majlis">المجلس</a></nav>
 <button class="mobile-menu-toggle" type="button" aria-expanded="false" aria-controls="mobileSiteMenu" onclick="toggleSiteMenu()" aria-label="فتح قائمة التنقل"><span></span><span></span><span></span></button>
 <a class="btn fill nav-cta" href="#live" style="height:42px;padding:0 20px;color:#0b0e0d">تابع البث</a>
@@ -290,7 +329,7 @@ body,.app-shell,button,input,textarea,select{
 </nav>
 
 </div>
-<div class="emblem in d2"><div class="ring"></div><div class="ring b"></div><div class="core"><img src="assets/logo.jpg" alt="شعار استراحة أهل الأثر" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div></div>
+<div class="emblem in d2"><div class="ring"></div><div class="ring b"></div><div class="core"><img src="assets/brand-mark-light.svg" alt="شعار استراحة أهل الأثر" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div></div>
 </div></div>
 <div class="strip"><div class="track">
 <span class="g">مصطلح الحديث</span><span>الفقه</span><span class="g">السيرة</span><span>العقيدة</span><span class="g">صحيح مسلم</span><span>أصول الفقه</span><span class="g">عظماء الإسلام</span><span>منوعات</span>
@@ -322,7 +361,7 @@ body,.app-shell,button,input,textarea,select{
 <article class="card rv"><div class="thumb"><svg width="46" height="46" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></div><span class="tag">العقيدة</span><h3>جميل حليم يزعم أن الحسن البصري ينفي علو الله على عرشه</h3><p>19:21 · يوتيوب</p></article>
 <article class="card rv"><div class="thumb"><svg width="46" height="46" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></div><span class="tag">العقيدة</span><h3>الفرق بين نسبة الخلق إلى الله ونسبته إلى الإنسان</h3><p>[التاريخ] · تيك توك</p></article>
 </div></div></section>
-<section class="s" id="majlis"><div class="wrap"><div class="majlis rv"><img class="mlogo" src="assets/logo.jpg" alt="شعار استراحة أهل الأثر"><div><h2 class="t gold" style="margin:0 0 10px">استراحة أهل الأثر</h2><p class="lead" style="margin:0 0 22px">مجلس تدارس العلم والأدب: مجموعة على تيليجرام لدروس في العلوم الشرعية والحديث، بإشراف الشيخ.</p><a class="btn fill" href="https://t.me/+H-Rpxhc371VhYzU0">انضم إلى المجلس</a></div></div></div></section>
+<section class="s" id="majlis"><div class="wrap"><div class="majlis rv"><img class="mlogo" src="assets/brand-mark-light.svg" alt="شعار استراحة أهل الأثر"><div><h2 class="t gold" style="margin:0 0 10px">استراحة أهل الأثر</h2><p class="lead" style="margin:0 0 22px">مجلس تدارس العلم والأدب: مجموعة على تيليجرام لدروس في العلوم الشرعية والحديث، بإشراف الشيخ.</p><a class="btn fill" href="https://t.me/+H-Rpxhc371VhYzU0">انضم إلى المجلس</a></div></div></div></section>
 </main>
 <dialog class="support-dialog" id="supportDialog" aria-labelledby="supportDialogTitle">
 <h2 class="t gold" id="supportDialogTitle">ادعم تطوير المنصة</h2>
