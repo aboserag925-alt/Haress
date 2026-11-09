@@ -114,6 +114,10 @@ test('stores group uploads privately until an administrator approves them', asyn
       storageDirectory: context.storageDirectory
     });
     assert.equal((await restarted.listApproved()).length, 1);
+    const restoredFile = await restarted.getApprovedFile(published[0].id);
+    assert.equal(restoredFile.item.status, 'approved');
+    assert.equal(restoredFile.item.fileName, 'lesson.mp3');
+    assert.equal(restoredFile.data.toString('utf8'), 'audio bytes');
   });
 });
 
@@ -226,10 +230,14 @@ test('respects STORAGE_DIRECTORY env when storageDirectory option is omitted', a
       fetch: async function () { throw new Error('Unexpected Telegram request'); }
     });
     await library.start(); // should be a no-op with media disabled
-    const indexPath = path.join(storageDirectory, 'media-index.json');
-    await assert.doesNotReject(fs.access(indexPath).then(function () {}, function () { return Promise.resolve(); }));
-    // index may not exist until first write; verify library uses resolved directory by checking list behavior and no throw
     assert.deepEqual(await library.listApproved(), []);
+
+    const indexPath = path.join(storageDirectory, 'media-index.json');
+    const filesDirectory = path.join(storageDirectory, 'media');
+    const storedIndex = JSON.parse(await fs.readFile(indexPath, 'utf8'));
+
+    assert.deepEqual(storedIndex, { offset: null, items: [] });
+    await assert.doesNotReject(fs.access(filesDirectory));
   } finally {
     await fs.rm(storageDirectory, { recursive: true, force: true });
   }
