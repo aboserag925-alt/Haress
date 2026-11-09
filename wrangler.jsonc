@@ -6,8 +6,5 @@
     "directory": "./app",
     "binding": "ASSETS"
   },
-  "vars": {
-    "AHL_LIVE_API": "/api/live"
-  },
   "previews": {}
 }
