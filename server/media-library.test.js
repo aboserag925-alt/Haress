@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const { createMediaLibrary } = require('./media-library');
+const { MemoryStore } = require('./media-storage');
 
 function telegramResponse(payload) {
   return {
@@ -322,5 +323,71 @@ test('STORAGE_DIRECTORY: invalid/unwritable path fails clearly and safely', asyn
     });
   } finally {
     await fs.rm(parent, { recursive: true, force: true });
+  }
+});
+
+test('R2 storage: upload verifies object via injected MemoryStore', async function () {
+  const storageDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'ahl-r2-test-'));
+  const storage = new MemoryStore();
+  const fetch = async function (url) {
+    if (url.includes('/getFile')) return telegramResponse({ file_path: 'documents/lesson.mp3' });
+    if (url.includes('/getChatMember')) return telegramResponse({ status: 'administrator' });
+    if (url.includes('/sendMessage')) return telegramResponse({ message_id: 101 });
+    if (url.includes('/answerCallbackQuery')) return telegramResponse(true);
+    if (url.includes('/editMessageText')) return telegramResponse({ message_id: 101 });
+    if (url.includes('/file/bot')) return { ok: true, arrayBuffer: async function () { return Buffer.from('audio bytes'); } };
+    throw new Error('Unexpected mocked Telegram request');
+  };
+  const env = { TELEGRAM_BOT_TOKEN: 'test-token', TELEGRAM_MEDIA_ENABLED: 'false', TELEGRAM_MEDIA_GROUP_ID: '-100123' };
+  try {
+    const library = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
+    await library.processUpdate({
+      update_id: 1,
+      message: { chat: { id: -100123 }, date: 1793500000, caption: 'درس الخميس #كتب', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', mime_type: 'audio/mpeg', file_size: 11 } }
+    });
+    // verify: object stored via R2 adapter, not on disk
+    const keys = await storage.listKeys('');
+    assert.equal(keys.length, 1);
+    assert.ok(keys[0].endsWith('.mp3'));
+    // approve -> served from R2 memory
+    const index = JSON.parse(await fs.readFile(path.join(storageDirectory, 'media-index.json'), 'utf8'));
+    const itemId = index.items[0].id;
+    // pull callback data from fetch log via re-run? need id. Simulate approval directly via stored index? Instead use getApprovedFile after pushing through processUpdate callback: build callback_data
+    // Simpler: approve via direct manipulation is not possible; use callback with id
+    await library.processUpdate({
+      update_id: 2,
+      callback_query: { id: 'cb', data: 'media:approve:' + itemId, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } }
+    });
+    assert.equal((await library.listApproved()).length, 1);
+    const file = await library.getApprovedFile(itemId);
+    assert.equal(file.data.toString('utf8'), 'audio bytes');
+    assert.equal(file.item.mimeType, 'audio/mpeg');
+  } finally {
+    await fs.rm(storageDirectory, { recursive: true, force: true });
+  }
+});
+
+test('R2 storage: approval pending file delete uses storage.delete', async function () {
+  const storageDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'ahl-r2-del-'));
+  const storage = new MemoryStore();
+  const fetch = async function (url) {
+    if (url.includes('/getFile')) return telegramResponse({ file_path: 'documents/lesson.mp3' });
+    if (url.includes('/getChatMember')) return telegramResponse({ status: 'administrator' });
+    if (url.includes('/sendMessage')) return telegramResponse({ message_id: 101 });
+    if (url.includes('/answerCallbackQuery')) return telegramResponse(true);
+    if (url.includes('/editMessageText')) return telegramResponse({ message_id: 101 });
+    if (url.includes('/file/bot')) return { ok: true, arrayBuffer: async function () { return Buffer.from('audio bytes'); } };
+    throw new Error('Unexpected mocked Telegram request');
+  };
+  const env = { TELEGRAM_BOT_TOKEN: 'test-token', TELEGRAM_MEDIA_ENABLED: 'false', TELEGRAM_MEDIA_GROUP_ID: '-100123' };
+  try {
+    const library = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
+    await library.processUpdate({ update_id: 1, message: { chat: { id: -100123 }, caption: 'درس جديد', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', file_size: 11 } } });
+    const index = JSON.parse(await fs.readFile(path.join(storageDirectory, 'media-index.json'), 'utf8'));
+    const itemId = index.items[0].id;
+    await library.processUpdate({ update_id: 2, callback_query: { id: 'cb', data: 'media:reject:' + itemId, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } } });
+    assert.deepEqual(await storage.listKeys(''), []);
+  } finally {
+    await fs.rm(storageDirectory, { recursive: true, force: true });
   }
 });

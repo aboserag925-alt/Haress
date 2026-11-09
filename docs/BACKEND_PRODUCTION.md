@@ -1,4 +1,4 @@
-# Backend production readiness (Node server)
+﻿# Backend production readiness (Node server)
 
 This repository includes a Node.js server (`server/index.js`) for `/api/*` features (health, questions, library/media, admin, suggestions/AI workflows, integrations). **Static frontend deployment (GitHub Pages / Cloudflare Workers assets from `wrangler.jsonc`) does not run this server.**
 
@@ -24,3 +24,12 @@ See `.env.example`. Typical production needs depend on enabled features:
 
 ## External blocker (owner/hosting action required)
 No authenticated backend hosting provider was available through existing tools in this session. **Single external action required:** provision a trusted Node-capable production host (container/PaaS/VM) with HTTPS, persistent storage if needed, and the required environment variables/secrets; deploy the server; then verify `GET /api/health` and safe frontend API connectivity against the real backend URL.
+
+## Cloudflare R2 library storage
+- Primary file bytes: Cloudflare R2 bucket haress-media (private, standard). Via S3-compatible API (@aws-sdk/client-s3) server-side only. No public bucket, no presigned URLs in this phase; files are served through GET /api/library/files/:id with Range support.
+- Metadata: media-index.json (in STORAGE_DIRECTORY) remains the library catalog (items/status/title) for Telegram polling/offset and approval workflow. R2 stores only file bytes keyed by storedName. media-index.json is NOT a new R2 source-of-truth flag.
+- Backend selects R2 when all five vars are set: R2_BUCKET, R2_ACCOUNT_ID, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY. Otherwise falls back to local STORAGE_DIRECTORY/media.
+- Upload flow: validate (size, type, limit 500) -> storage.put -> storage.head verify (size match) -> save metadata -> review. On failure: no success recorded; stored object removed.
+- Delete paths (reject/remove): storage.delete. Never delete legacy Railway Volume or media-index.json location.
+- Railway vars (server-only): R2_BUCKET, R2_ACCOUNT_ID, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY (names only, see .env.example). Restricted token: Object Read & Write scoped to haress-media only.
+- Legacy Railway Volume haress-production-storage at /srv/ahl-athar/storage: UNCHANGED per migration constraint.
