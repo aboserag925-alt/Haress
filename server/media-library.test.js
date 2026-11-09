@@ -324,3 +324,62 @@ test('STORAGE_DIRECTORY: invalid/unwritable path fails clearly and safely', asyn
     await fs.rm(parent, { recursive: true, force: true });
   }
 });
+
+test('Supabase storage: upload verifies via injected MemoryStore', async function () {
+  const { MemoryStore: MS } = require('./media-storage');
+  const storageDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'ahl-sb-test-'));
+  const storage = new MS();
+  const fetch = async function (url) {
+    if (url.includes('/getFile')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: { file_path: 'documents/lesson.mp3' } })) };
+    if (url.includes('/getChatMember')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: { status: 'administrator' } })) };
+    if (url.includes('/sendMessage')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: { message_id: 101 } })) };
+    if (url.includes('/answerCallbackQuery')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: true })) };
+    if (url.includes('/editMessageText')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: { message_id: 101 } })) };
+    if (url.includes('/file/bot')) return { ok: true, arrayBuffer: async () => Buffer.from('audio bytes') };
+    throw new Error('Unexpected');
+  };
+  const env = { TELEGRAM_BOT_TOKEN: 't', TELEGRAM_MEDIA_ENABLED: 'false', TELEGRAM_MEDIA_GROUP_ID: '-100123' };
+  try {
+    const library = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
+    await library.processUpdate({ update_id: 1, message: { chat: { id: -100123 }, date: 1793500000, caption: 'درس الخميس #كتب', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', mime_type: 'audio/mpeg', file_size: 11 } } });
+    const keys = await storage.listKeys('');
+    assert.equal(keys.length, 1);
+    assert.ok(keys[0].startsWith('library/audio/'));
+    assert.ok(keys[0].endsWith('lesson.mp3'));
+    const index = JSON.parse(await fs.readFile(path.join(storageDirectory, 'media-index.json'), 'utf8'));
+    const id = index.items[0].id;
+    assert.equal(index.items[0].objectKey, keys[0]);
+    await library.processUpdate({ update_id: 2, callback_query: { id: 'cb', data: 'media:approve:' + id, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } } });
+    assert.equal((await library.listApproved()).length, 1);
+    const f = await library.getApprovedFile(id);
+    assert.equal(f.data.toString('utf8'), 'audio bytes');
+  } finally {
+    await fs.rm(storageDirectory, { recursive: true, force: true });
+  }
+});
+
+test('Supabase storage: reject deletes remote object', async function () {
+  const { MemoryStore: MS } = require('./media-storage');
+  const storageDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'ahl-sb-del-'));
+  const storage = new MS();
+  const fetch = async function (url) {
+    if (url.includes('/getFile')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: { file_path: 'documents/lesson.mp3' } })) };
+    if (url.includes('/getChatMember')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: { status: 'administrator' } })) };
+    if (url.includes('/sendMessage')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: { message_id: 101 } })) };
+    if (url.includes('/answerCallbackQuery')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: true })) };
+    if (url.includes('/editMessageText')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: { message_id: 101 } })) };
+    if (url.includes('/file/bot')) return { ok: true, arrayBuffer: async () => Buffer.from('audio bytes') };
+    throw new Error('Unexpected');
+  };
+  const env = { TELEGRAM_BOT_TOKEN: 't', TELEGRAM_MEDIA_ENABLED: 'false', TELEGRAM_MEDIA_GROUP_ID: '-100123' };
+  try {
+    const library = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
+    await library.processUpdate({ update_id: 1, message: { chat: { id: -100123 }, caption: 'درس جديد', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', file_size: 11 } } });
+    const index = JSON.parse(await fs.readFile(path.join(storageDirectory, 'media-index.json'), 'utf8'));
+    const id = index.items[0].id;
+    await library.processUpdate({ update_id: 2, callback_query: { id: 'cb', data: 'media:reject:' + id, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } } });
+    assert.deepEqual(await storage.listKeys(''), []);
+  } finally {
+    await fs.rm(storageDirectory, { recursive: true, force: true });
+  }
+});
