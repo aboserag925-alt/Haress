@@ -346,13 +346,14 @@ test('Supabase storage: upload verifies via injected MemoryStore', async functio
     assert.equal(keys.length, 1);
     assert.ok(keys[0].startsWith('library/audio/'));
     assert.ok(keys[0].endsWith('lesson.mp3'));
-    const index = JSON.parse(await fs.readFile(path.join(storageDirectory, 'media-index.json'), 'utf8'));
-    const id = index.items[0].id;
-    assert.equal(index.items[0].objectKey, keys[0]);
+    // In Supabase mode there is no local media-index.json; extract id from object key path
+    const id = keys[0].split('/')[2];
+    assert.match(id, /^[0-9a-f-]{36}$/i);
     await library.processUpdate({ update_id: 2, callback_query: { id: 'cb', data: 'media:approve:' + id, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } } });
     assert.equal((await library.listApproved()).length, 1);
     const f = await library.getApprovedFile(id);
     assert.equal(f.data.toString('utf8'), 'audio bytes');
+    assert.deepEqual(await storage.listKeys(''), [keys[0]]);
   } finally {
     await fs.rm(storageDirectory, { recursive: true, force: true });
   }
@@ -375,9 +376,30 @@ test('Supabase storage: reject deletes remote object', async function () {
   try {
     const library = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
     await library.processUpdate({ update_id: 1, message: { chat: { id: -100123 }, caption: 'درس جديد', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', file_size: 11 } } });
-    const index = JSON.parse(await fs.readFile(path.join(storageDirectory, 'media-index.json'), 'utf8'));
-    const id = index.items[0].id;
+    // after fix, Supabase mode does not write media-index.json locally
+    await assert.rejects(fs.readFile(path.join(storageDirectory, 'media-index.json'), 'utf8'), { code: 'ENOENT' });
+    const keys = await storage.listKeys('');
+    assert.equal(keys.length, 1);
+    const id = keys[0].split('/')[2];
+    assert.match(id, /^[0-9a-f-]{36}$/i);
+    // clean: reject path also deletes
     await library.processUpdate({ update_id: 2, callback_query: { id: 'cb', data: 'media:reject:' + id, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } } });
+    assert.deepEqual(await storage.listKeys(''), []);
+  } finally {
+    await fs.rm(storageDirectory, { recursive: true, force: true });
+  }
+});
+
+test('Supabase storage: listApproved works without local index file', async function () {
+  const { MemoryStore: MS } = require('./media-storage');
+  const storageDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'ahl-sb-nofile-'));
+  const storage = new MS();
+  const env = { TELEGRAM_BOT_TOKEN: 't', TELEGRAM_MEDIA_ENABLED: 'false', TELEGRAM_MEDIA_GROUP_ID: '-100123' };
+  const fetch = async function () { throw new Error('no telegram'); };
+  try {
+    const library = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
+    assert.deepEqual(await library.listApproved(), []);
+    // no files created on disk (root-owned volume simulated by empty dir)
     assert.deepEqual(await storage.listKeys(''), []);
   } finally {
     await fs.rm(storageDirectory, { recursive: true, force: true });
