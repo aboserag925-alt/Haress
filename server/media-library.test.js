@@ -218,19 +218,109 @@ test('does not contact Telegram when media intake is disabled', async function (
   });
 });
 
-test('respects STORAGE_DIRECTORY env when storageDirectory option is omitted', async function () {
-  const storageDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'ahl-media-env-'));
+test('STORAGE_DIRECTORY: explicit options.storageDirectory takes highest precedence', async function () {
+  const explicitDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ahl-storage-explicit-'));
+  const envDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ahl-storage-env-'));
+  try {
+    const library = createMediaLibrary({
+      env: { STORAGE_DIRECTORY: envDir, TELEGRAM_MEDIA_ENABLED: 'false' },
+      fetch: async function () { throw new Error('Unexpected Telegram request'); },
+      storageDirectory: explicitDir
+    });
+    assert.deepEqual(await library.listApproved(), []); // initialize + save creates index
+    await fs.access(path.join(explicitDir, 'media-index.json'));
+    await assert.rejects(fs.access(path.join(envDir, 'media-index.json')), { code: 'ENOENT' });
+  } finally {
+    await fs.rm(explicitDir, { recursive: true, force: true });
+    await fs.rm(envDir, { recursive: true, force: true });
+  }
+});
+
+test('STORAGE_DIRECTORY: options.env.STORAGE_DIRECTORY is used when option omitted', async function () {
+  const storageDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'ahl-storage-opt-env-'));
   try {
     const library = createMediaLibrary({
       env: { STORAGE_DIRECTORY: storageDirectory, TELEGRAM_MEDIA_ENABLED: 'false' },
       fetch: async function () { throw new Error('Unexpected Telegram request'); }
     });
-    await library.start(); // should be a no-op with media disabled
-    const indexPath = path.join(storageDirectory, 'media-index.json');
-    await assert.doesNotReject(fs.access(indexPath).then(function () {}, function () { return Promise.resolve(); }));
-    // index may not exist until first write; verify library uses resolved directory by checking list behavior and no throw
     assert.deepEqual(await library.listApproved(), []);
+    await fs.access(path.join(storageDirectory, 'media-index.json'));
+    const restarted = createMediaLibrary({
+      env: { STORAGE_DIRECTORY: storageDirectory, TELEGRAM_MEDIA_ENABLED: 'false' },
+      fetch: async function () { throw new Error('Unexpected Telegram request'); }
+    });
+    assert.deepEqual(await restarted.listApproved(), []);
   } finally {
     await fs.rm(storageDirectory, { recursive: true, force: true });
+  }
+});
+
+test('STORAGE_DIRECTORY: process.env.STORAGE_DIRECTORY works when options.env omitted', async function () {
+  const storageDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'ahl-storage-process-'));
+  const previous = process.env.STORAGE_DIRECTORY;
+  process.env.STORAGE_DIRECTORY = storageDirectory;
+  try {
+    const library = createMediaLibrary({
+      fetch: async function () { throw new Error('Unexpected Telegram request'); }
+    });
+    assert.deepEqual(await library.listApproved(), []);
+    await fs.access(path.join(storageDirectory, 'media-index.json'));
+  } finally {
+    if (previous === undefined) delete process.env.STORAGE_DIRECTORY;
+    else process.env.STORAGE_DIRECTORY = previous;
+    await fs.rm(storageDirectory, { recursive: true, force: true });
+  }
+});
+
+test('STORAGE_DIRECTORY: default storage/ behavior remains backward compatible', async function () {
+  const previous = process.env.STORAGE_DIRECTORY;
+  delete process.env.STORAGE_DIRECTORY;
+  try {
+    const library = createMediaLibrary({
+      env: { TELEGRAM_MEDIA_ENABLED: 'false' },
+      fetch: async function () { throw new Error('Unexpected Telegram request'); }
+    });
+    assert.deepEqual(await library.listApproved(), []);
+    await fs.access(path.join(__dirname, '..', 'storage', 'media-index.json'));
+  } finally {
+    if (previous === undefined) delete process.env.STORAGE_DIRECTORY;
+    else process.env.STORAGE_DIRECTORY = previous;
+  }
+});
+
+test('STORAGE_DIRECTORY: blank or whitespace-only value falls back safely', async function () {
+  const previous = process.env.STORAGE_DIRECTORY;
+  delete process.env.STORAGE_DIRECTORY;
+  try {
+    const library = createMediaLibrary({
+      env: { STORAGE_DIRECTORY: '   ', TELEGRAM_MEDIA_ENABLED: 'false' },
+      fetch: async function () { throw new Error('Unexpected Telegram request'); }
+    });
+    assert.deepEqual(await library.listApproved(), []);
+    await fs.access(path.join(__dirname, '..', 'storage', 'media-index.json'));
+    await assert.rejects(fs.access(path.join(process.cwd(), '   ')), function (error) {
+      return error && error.code === 'ENOENT';
+    });
+  } finally {
+    if (previous === undefined) delete process.env.STORAGE_DIRECTORY;
+    else process.env.STORAGE_DIRECTORY = previous;
+  }
+});
+
+test('STORAGE_DIRECTORY: invalid/unwritable path fails clearly and safely', async function () {
+  const parent = await fs.mkdtemp(path.join(os.tmpdir(), 'ahl-storage-bad-'));
+  const blocker = path.join(parent, 'not-a-directory');
+  await fs.writeFile(blocker, 'x', 'utf8');
+  try {
+    const library = createMediaLibrary({
+      env: { TELEGRAM_MEDIA_ENABLED: 'false' },
+      fetch: async function () { throw new Error('Unexpected Telegram request'); },
+      storageDirectory: path.join(blocker, 'child')
+    });
+    await assert.rejects(library.listApproved(), function (error) {
+      return error && (error.code === 'ENOTDIR' || error.code === 'EEXIST' || error.code === 'ENOENT');
+    });
+  } finally {
+    await fs.rm(parent, { recursive: true, force: true });
   }
 });

@@ -347,7 +347,7 @@ function createServer(options) {
   const mediaLibrary = options.mediaLibrary || createMediaLibrary({
     env: env,
     fetch: fetchImpl,
-    storageDirectory: options.storageDirectory || env.STORAGE_DIRECTORY
+    storageDirectory: options.storageDirectory
   });
 
   return http.createServer(async function (request, response) {
@@ -557,7 +557,7 @@ if (require.main === module) {
     throw new Error('PORT must be a valid TCP port.');
   }
   const host = process.env.HOST || '127.0.0.1';
-  const mediaLibrary = createMediaLibrary({ env: process.env, storageDirectory: process.env.STORAGE_DIRECTORY });
+  const mediaLibrary = createMediaLibrary({ env: process.env });
   const server = createServer({ mediaLibrary: mediaLibrary });
   server.listen(port, host, function () {
     console.log('Ahl Athar server listening on port ' + port);
