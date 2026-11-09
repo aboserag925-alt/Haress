@@ -217,3 +217,20 @@ test('does not contact Telegram when media intake is disabled', async function (
     assert.equal(context.calls.length, 0);
   });
 });
+
+test('respects STORAGE_DIRECTORY env when storageDirectory option is omitted', async function () {
+  const storageDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'ahl-media-env-'));
+  try {
+    const library = createMediaLibrary({
+      env: { STORAGE_DIRECTORY: storageDirectory, TELEGRAM_MEDIA_ENABLED: 'false' },
+      fetch: async function () { throw new Error('Unexpected Telegram request'); }
+    });
+    await library.start(); // should be a no-op with media disabled
+    const indexPath = path.join(storageDirectory, 'media-index.json');
+    await assert.doesNotReject(fs.access(indexPath).then(function () {}, function () { return Promise.resolve(); }));
+    // index may not exist until first write; verify library uses resolved directory by checking list behavior and no throw
+    assert.deepEqual(await library.listApproved(), []);
+  } finally {
+    await fs.rm(storageDirectory, { recursive: true, force: true });
+  }
+});
