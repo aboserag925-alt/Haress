@@ -17,6 +17,12 @@ GitHub Pages لا يشغّل خادم Node.js؛ لذلك تحتاج الأسئل
 
 إن لم تضبط `AHL_API_BASE_URL` فستُنشر الواجهة وحدها، وستبقى ميزات API غير متاحة حتى ربط الخادم. لن يتم نشر ملف `.env` أو مجلد `storage/`.
 
+## مسارات النشر (حالة معمارية)
+
+- **GitHub Pages:** `.github/workflows/pages.yml` ينشر الواجهة الثابتة عند الدفع إلى `main` (يتطلب إعداد Source = GitHub Actions ومتغيرات البناء العامة عند الحاجة).
+- **Cloudflare Workers (أصول ثابتة):** الإعداد الموثوق في المستودع هو `wrangler.jsonc` فقط (`assets.directory = ./app`). يوجد مساران محتملان للنشر: تكامل **Cloudflare Workers Builds/Git** (إن كان مفعّلًا في حساب Cloudflare)، ومسار **GitHub Actions** عبر `.github/workflows/cloudflare-worker.yml` الذي ينشر عند الدفع إلى `main` بعد الاختبارات ويتطلب أسرار GitHub صالحة (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) بصلاحيات نشر العامل `hares`. يعتمد المسار الفعّال على إعدادات Cloudflare/GitHub الخارجية.
+- **خادم Node.js/API:** `server/index.js` وواجهات `/api/*` (الأسئلة، المكتبة، الإدارة، الاقتراحات، إلخ) تعمل كخادم Node منفصل؛ نشر الأصول الثابتة وحده لا يشغّل هذه الواجهات. جاهزية الواجهة الأمامية لا تعني جاهزية الخلفية للإنتاج دون استضافة/تهيئة خلفية موثوقة.
+
 ## تطوير CSS
 
 يستخدم المشروع Tailwind CSS 4. بعد تثبيت Node.js، ثبّت اعتماديات التطوير:
