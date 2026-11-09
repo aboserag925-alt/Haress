@@ -13,7 +13,9 @@ create table if not exists public.user_data (
   updated_at timestamptz not null default now()
 );
 alter table public.user_data enable row level security;
-revoke all on table public.user_data from anon, public;
+-- Revoke every existing authenticated privilege first (including DELETE/TRUNCATE),
+-- then grant only the operations protected by the row-level policies below.
+revoke all on table public.user_data from anon, authenticated, public;
 grant select, insert, update on table public.user_data to authenticated;
 drop policy if exists "Users can read their own data" on public.user_data;
 create policy "Users can read their own data"
