@@ -3,3 +3,15 @@ storage/
 .env
 .env.*
 !.env.example
+
+# Local tooling (OpenCode/MCP agent config) - do not commit secrets or personal setup
+.opencode.json
+.opencode.jsonc
+opencode.json
+skills-lock.json
+.agents/
+
+# Local automation artifacts
+wrangler-dry-run.log
+wrangler-error.txt
+hares-preview.zip
