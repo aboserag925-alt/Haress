@@ -114,6 +114,10 @@ function createMediaLibrary(options) {
 
   async function initialize() {
     if (initialized) return;
+    if (useRemote) {
+      initialized = true;
+      return;
+    }
     await fs.mkdir(filesDirectory, { recursive: true });
     try {
       const contents = await fs.readFile(indexPath, 'utf8');
@@ -132,6 +136,7 @@ function createMediaLibrary(options) {
   }
 
   async function save() {
+    if (useRemote) return;
     await fs.mkdir(storageDirectory, { recursive: true });
     const temporaryPath = indexPath + '.' + randomUUID() + '.tmp';
     await fs.writeFile(temporaryPath, JSON.stringify({ offset: offset, items: items }), 'utf8');
