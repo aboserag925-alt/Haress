@@ -12,7 +12,7 @@
     "smoke": "node scripts/smoke-check.mjs"
   },
   "devDependencies": {
-    "@tailwindcss/cli": "^4.1.0",
+    "@tailwindcss/cli": "^4.3.4",
     "esbuild": "^0.28.2",
     "tailwindcss": "^4.1.0"
   },
