@@ -3,6 +3,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
+const { resolveStorage, buildKey } = require('./media-storage');
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 const MAX_LIBRARY_ITEMS = 500;
@@ -101,6 +102,8 @@ function createMediaLibrary(options) {
   const storageDirectory = path.resolve(configuredStorageDirectory || path.join(__dirname, '..', 'storage'));
   const filesDirectory = path.join(storageDirectory, 'media');
   const indexPath = path.join(storageDirectory, 'media-index.json');
+  const storage = resolveStorage(env, options);
+  const useRemote = !!storage;
   const botToken = env.TELEGRAM_BOT_TOKEN;
   const mediaGroupId = env.TELEGRAM_MEDIA_GROUP_ID || env.TELEGRAM_CHAT_ID;
   let items = [];
@@ -133,6 +136,25 @@ function createMediaLibrary(options) {
     const temporaryPath = indexPath + '.' + randomUUID() + '.tmp';
     await fs.writeFile(temporaryPath, JSON.stringify({ offset: offset, items: items }), 'utf8');
     await fs.rename(temporaryPath, indexPath);
+  }
+
+  async function storeFile(item, data) {
+    if (useRemote) {
+      const objectKey = buildKey(item.kind, item.id, item.fileName);
+      await storage.put(objectKey, data, item.mimeType);
+      const head = await storage.head(objectKey);
+      if (!head || head.size !== data.length) throw new Error('Supabase object verification failed.');
+      item.objectKey = objectKey;
+      return objectKey;
+    }
+    const storedPath = path.join(filesDirectory, item.storedName);
+    await fs.writeFile(storedPath, data, { flag: 'wx' });
+    return item.storedName;
+  }
+
+  async function deleteStoredFile(item) {
+    if (useRemote && item.objectKey) await storage.delete(item.objectKey);
+    else await fs.rm(path.join(filesDirectory, item.storedName), { force: true });
   }
 
   async function telegram(method, payload) {
@@ -216,8 +238,6 @@ function createMediaLibrary(options) {
 
     const id = randomUUID();
     const storedName = id + attachment.extension;
-    const storedPath = path.join(filesDirectory, storedName);
-    await fs.writeFile(storedPath, data, { flag: 'wx' });
     const caption = typeof message.caption === 'string' ? message.caption : '';
     const item = {
       id: id,
@@ -231,12 +251,14 @@ function createMediaLibrary(options) {
       status: 'pending',
       uploadedAt: new Date((message.date || Date.now() / 1000) * 1000).toISOString()
     };
+    if (useRemote) item.objectKey = buildKey(item.kind, item.id, item.fileName);
+    await storeFile(item, data);
     items.push(item);
     try {
       await save();
     } catch (error) {
       items = items.filter(function (candidate) { return candidate.id !== id; });
-      await fs.rm(storedPath, { force: true });
+      await deleteStoredFile(item);
       throw error;
     }
     try {
@@ -244,7 +266,7 @@ function createMediaLibrary(options) {
     } catch (error) {
       items = items.filter(function (candidate) { return candidate.id !== id; });
       await save();
-      await fs.rm(storedPath, { force: true });
+      await deleteStoredFile(item);
       throw error;
     }
   }
@@ -291,7 +313,7 @@ function createMediaLibrary(options) {
       delete item.removedAt;
       throw error;
     }
-    await fs.rm(path.join(filesDirectory, item.storedName), { force: true });
+    await deleteStoredFile(item);
     await telegram('sendMessage', {
       chat_id: mediaGroupId,
       text: 'حُذفت المادة من مكتبة المنصة: ' + item.title
@@ -341,7 +363,7 @@ function createMediaLibrary(options) {
       throw error;
     }
     if (!approved) {
-      await fs.rm(path.join(filesDirectory, item.storedName), { force: true });
+      await deleteStoredFile(item);
     }
     try {
       await telegram('answerCallbackQuery', {
@@ -362,13 +384,16 @@ function createMediaLibrary(options) {
 
   async function processUpdate(update) {
     await initialize();
-    const message = update.message;
-    if (message && String(message.chat.id) === String(mediaGroupId)) {
-      if (await removeApprovedMedia(message)) return;
-      await receiveFile(message);
-      return;
+    const message = update?.message;
+    if (message) {
+      const chatId = message.chat?.id;
+      if (chatId != null && String(chatId) === String(mediaGroupId)) {
+        if (await removeApprovedMedia(message)) return;
+        await receiveFile(message);
+        return;
+      }
     }
-    if (update.callback_query) await processCallback(update.callback_query);
+    if (update?.callback_query) await processCallback(update.callback_query);
   }
 
   async function pollLoop() {
@@ -434,6 +459,17 @@ function createMediaLibrary(options) {
       return candidate.id === id && candidate.status === 'approved';
     });
     if (!item) return null;
+    if (useRemote && item.objectKey) {
+      const obj = await storage.get(item.objectKey);
+      if (!obj) return null;
+      return { item: item, data: obj.body };
+    }
+    if (useRemote) {
+      const objectKey = buildKey(item.kind, item.id, item.fileName);
+      const obj = await storage.get(objectKey);
+      if (!obj) return null;
+      return { item: item, data: obj.body };
+    }
     const filePath = path.join(filesDirectory, item.storedName);
     return { item: item, data: await fs.readFile(filePath) };
   }
