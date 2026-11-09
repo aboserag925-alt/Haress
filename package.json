@@ -8,7 +8,8 @@
     "build:auth": "node scripts/build-auth.mjs",
     "build:app": "npm run build:adhan && npm run build:auth && npm run build:css",
     "build:css": "tailwindcss -i ./src/tailwind.css -o ./app/tailwind.css",
-    "dev:css": "tailwindcss -i ./src/tailwind.css -o ./app/tailwind.css --watch"
+    "dev:css": "tailwindcss -i ./src/tailwind.css -o ./app/tailwind.css --watch",
+    "smoke": "node scripts/smoke-check.mjs"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.0",
