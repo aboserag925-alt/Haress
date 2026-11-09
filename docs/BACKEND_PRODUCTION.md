@@ -7,12 +7,13 @@ This repository includes a Node.js server (`server/index.js`) for `/api/*` featu
 - Health endpoint: `GET /api/health` returns `{"ok":true}` (verified locally in a safe test run).
 - CORS: allowlist via `ALLOWED_ORIGINS` (comma-separated origins) or same-origin fallback; no wildcard CORS.
 - Security boundaries preserved: server-side secrets only, admin authorization checks, Turnstile fail-closed behavior when enabled, Supabase service-role usage server-side only. No Supabase production data/RLS/migrations/admin_users modified by repo maintenance.
-- Persistent storage: file-based `storage/` (gitignored). Production hosting must provide persistent storage if Telegram/media library features are required.
+- Persistent storage: file-based `storage/` (gitignored). `STORAGE_DIRECTORY` precedence in `createMediaLibrary`/server: **1)** explicit `options.storageDirectory` (trimmed, non-blank) **2)** resolved `env.STORAGE_DIRECTORY` (trimmed, non-blank; uses `options.env` when provided, else `process.env`) **3)** historical default `<repo>/storage`. Blank/whitespace-only values are ignored (no accidental whitespace directory). Mount the persistent volume to the **actual resolved** `STORAGE_DIRECTORY` path; `media-index.json` and `media/` files are created there.
 - Container: `Dockerfile` + healthcheck present; Docker build validation may be environment-dependent.
 
 ## Required environment (configure on the hosting provider; never commit values)
 See `.env.example`. Typical production needs depend on enabled features:
 - Core: `HOST`, `PORT`, `ALLOWED_ORIGINS` (include the real frontend origin(s)).
+- Storage: `STORAGE_DIRECTORY` (optional; set to a persistent-volume mount path when Telegram/media library persistence is required).
 - Supabase/admin/AI/suggestions features: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (service role server-only).
 - Questions/AI/Telegram as applicable: `GEMINI_API_KEY`, `GEMINI_MODEL`, `TELEGRAM_*`, `TURNSTILE_*`.
 - Proxy/trust: set `TRUST_PROXY=true` only behind a trusted Cloudflare/reverse proxy that correctly sets client IP headers.

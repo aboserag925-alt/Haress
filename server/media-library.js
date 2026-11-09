@@ -95,9 +95,10 @@ function createMediaLibrary(options) {
   options = options || {};
   const env = options.env || process.env;
   const fetchImpl = options.fetch || global.fetch;
-  const storageDirectory = path.resolve(
-    options.storageDirectory || (options.env && options.env.STORAGE_DIRECTORY) || path.join(__dirname, '..', 'storage')
-  );
+  const configuredStorageDirectory = typeof options.storageDirectory === 'string' && options.storageDirectory.trim()
+    ? options.storageDirectory.trim()
+    : (typeof env.STORAGE_DIRECTORY === 'string' && env.STORAGE_DIRECTORY.trim() ? env.STORAGE_DIRECTORY.trim() : '');
+  const storageDirectory = path.resolve(configuredStorageDirectory || path.join(__dirname, '..', 'storage'));
   const filesDirectory = path.join(storageDirectory, 'media');
   const indexPath = path.join(storageDirectory, 'media-index.json');
   const botToken = env.TELEGRAM_BOT_TOKEN;
