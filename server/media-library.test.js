@@ -405,3 +405,52 @@ test('Supabase storage: listApproved works without local index file', async func
     await fs.rm(storageDirectory, { recursive: true, force: true });
   }
 });
+
+// Regression (Railway EACCES): in remote mode the library must not touch the
+// local storage directory at all. Point storageDirectory at a path that cannot
+// be used as a directory (an existing file). If initialize()/save() tried
+// fs.mkdir/writeFile here it would throw EEXIST/ENOTDIR/EACCES and break
+// GET /api/library (500 in Railway where the volume root is owned by root
+// and the app runs as node). In remote mode listApproved/processUpdate must
+// succeed without any filesystem access.
+test('Supabase storage: works when storage directory is unwritable (Railway EACCES)', async function () {
+  const { MemoryStore: MS } = require('./media-storage');
+  // A file, not a directory: fs.mkdir(filePath) would fail with EEXIST/ENOTDIR.
+  // Using a file (instead of chmod 555) keeps the test portable to Windows
+  // and to CI running as root, where read-only perms alone are not reliable.
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ahl-sb-eacces-'));
+  const notAValidDirectory = path.join(tmpDir, 'not-a-directory');
+  await fs.writeFile(notAValidDirectory, 'blocking file', 'utf8');
+  const storage = new MS();
+  const env = { TELEGRAM_BOT_TOKEN: 't', TELEGRAM_MEDIA_ENABLED: 'false', TELEGRAM_MEDIA_GROUP_ID: '-100123' };
+  const fetch = async function (url) {
+    if (url.includes('/getFile')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: { file_path: 'documents/lesson.mp3' } })) };
+    if (url.includes('/getChatMember')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: { status: 'administrator' } })) };
+    if (url.includes('/sendMessage')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: { message_id: 101 } })) };
+    if (url.includes('/answerCallbackQuery')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: true })) };
+    if (url.includes('/editMessageText')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: { message_id: 101 } })) };
+    if (url.includes('/file/bot')) return { ok: true, arrayBuffer: async () => Buffer.from('audio bytes') };
+    throw new Error('Unexpected');
+  };
+  try {
+    const library = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: notAValidDirectory, storage: storage });
+    // listApproved must resolve (GET /api/library -> 200, not 500)
+    assert.deepEqual(await library.listApproved(), []);
+    // processUpdate (upload path via storeFile/save) must not touch the fs either
+    await library.processUpdate({ update_id: 1, message: { chat: { id: -100123 }, date: 1793500000, caption: 'درس الخميس #كتب', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', mime_type: 'audio/mpeg', file_size: 11 } } });
+    const keys = await storage.listKeys('');
+    assert.equal(keys.length, 1);
+    assert.ok(keys[0].startsWith('library/audio/'));
+    assert.ok(keys[0].endsWith('lesson.mp3'));
+    const id = keys[0].split('/')[2];
+    await library.processUpdate({ update_id: 2, callback_query: { id: 'cb', data: 'media:approve:' + id, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } } });
+    assert.equal((await library.listApproved()).length, 1);
+    const f = await library.getApprovedFile(id);
+    assert.equal(f.data.toString('utf8'), 'audio bytes');
+    // The blocking file must remain untouched and no media-index.json may appear
+    assert.equal(await fs.readFile(notAValidDirectory, 'utf8'), 'blocking file');
+    await assert.rejects(fs.readFile(path.join(notAValidDirectory, 'media-index.json'), 'utf8'));
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
+});
