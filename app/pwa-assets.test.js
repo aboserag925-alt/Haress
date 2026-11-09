@@ -33,8 +33,9 @@ test('all PWA manifest and offline-cache files exist within the app', function (
   }
 
   const worker = fs.readFileSync(path.join(appDirectory, 'sw.js'), 'utf8');
-  assert.match(worker, /ahl-athar-v4/);
-  for (const asset of ['./index.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './share-1200x630.jpg', './istiraha.css', './brand-motion.css', './istiraha-content.js', './istiraha.js', './brand-intro.js']) {
+  assert.match(worker, /ahl-athar-v5/);
+  assert.ok(fs.existsSync(path.join(appDirectory, 'offline.html')), 'offline.html exists');
+  for (const asset of ['./index.html', './offline.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './share-1200x630.jpg', './istiraha.css', './brand-motion.css', './istiraha-content.js', './istiraha.js', './brand-intro.js']) {
     assert.ok(worker.includes("'" + asset + "'"), asset);
     assert.ok(fs.existsSync(path.join(appDirectory, asset.replace(/^\.\//, ''))), asset);
   }
@@ -44,6 +45,7 @@ test('SEO and security headers are present', function () {
   assert.match(html, /property="og:title"/);
   assert.match(html, /name="twitter:card"/);
   assert.match(html, /rel="canonical"/);
+  assert.match(html, /application\/ld\+json/);
   const headersPath = path.join(appDirectory, '_headers');
   assert.ok(fs.existsSync(headersPath), '_headers exists');
   const headers = fs.readFileSync(headersPath, 'utf8');

@@ -180,7 +180,7 @@ npm.cmd start
 - كل روابط خارجية تحمل `rel="noopener noreferrer"`؛ إدخال المستخدم يُعرض عبر `textContent` فقط (لا XSS).
 - `app/_headers` يوفر CSP وHSTS و`X-Content-Type-Options` و`Referrer-Policy` و`Permissions-Policy` و`X-Frame-Options` للأصول الثابتة.
 - الصور: WebP/AVIF بأحجام + `loading="lazy"`/`decoding="async"` + أبعاد صريحة و`<picture>`؛ الخطوط `display=swap` + `preconnect`.
-- التخزين المؤقت: `app/sw.js` هو `ahl-athar-v4` ويشمل الأصول الجديدة؛ وردود `/api/*` لا تُخزّن أبدًا.
+- التخزين المؤقت: `app/sw.js` هو `ahl-athar-v5` ويشمل الأصول الجديدة؛ وردود `/api/*` لا تُخزّن أبدًا.
 
 ## اختبارات
 
@@ -188,3 +188,32 @@ npm.cmd start
 npm.cmd test
 node --test worker/live.test.mjs
 ```
+
+## الجولة الثانية (فحص وطابور أسئلة وPWA)
+
+### قاعدة البيانات — ترحيل آمن (لا يُطبَّق تلقائيًا)
+- `supabase/migrations/20261109_ahl_safe_idempotent.sql`: نسخة آمنة idempotent من `schema.sql` (لا `DROP TABLE`/`TRUNCATE`/`DELETE`/`ALTER TYPE`) وآمنة للتشغيل المتكرر. تشمل جدول `audience_questions` الجديد (طابور أسئلة) مع RLS آمنة.
+- **لا يُطبَّق من الوكيل** — راجعه ثم نفّذه يدويًا من Supabase SQL Editor (راجع «ما يحتاج تدخلاً يدويًا» في الـPR).
+
+### الأسئلة
+- النموذج: تحقق طول (5–1600)، تعقيم وسوم، حد معدل عميل (سؤال/دقيقة) + حد خادم (5/15 دقيقة) + Turnstile. الحالات: تحميل/فشل/فارغ/نجاح واضحة.
+- الخادم (`server/index.js`): `sanitizeQuestion()` + إدخال best-effort إلى `audience_questions` عبر نفس `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`؛ عند غياب الجدول (`PGRST205`) يستمر الطلب دون فشل.
+- Worker: حد معدل `60/دقيقة/IP` لـ`/api/live` (ذاكرة Function).
+
+### الحالات غير المتصلة
+- المحاضرات/المكتبة: عند نقص الجداول أو فراغها تعرض الواجهة «قادمة قريبًا» بأناقة بدل الانهيار، وتعمل تلقائيًا عند توفر الجداول.
+
+### PWA
+- صفحة `app/offline.html` احترافية (عربي، زر إعادة المحاولة) تُخدم عند فقدان الشبكة.
+- `app/sw.js` أصبح `ahl-athar-v5` (يشمل `offline.html`). عند توفر نسخة جديدة يظهر شريط «يتوفر تحديث جديد» مع زر «تحديث الآن».
+
+### تحقق آلي
+```powershell
+npm.cmd run check:secure
+npm.cmd test
+```
+
+## ما يحتاج تدخلاً يدويًا (بالترتيب)
+1. Cloudflare: أضف `YOUTUBE_API_KEY` و`YOUTUBE_CHANNEL_ID` في Workers → `hares` → Variables (من اللوحة فقط؛ لا قيم هنا).
+2. Supabase: راجع `supabase/migrations/20261109_ahl_safe_idempotent.sql` ثم نفّذه في SQL Editor ثم تحقق من `audience_questions` و`lectures` و`user_data`.
+3. انشر Worker عبر سير العمل بعد الدمج، ثم اختبر `/api/live` من `hares.aboserag925.workers.dev`.

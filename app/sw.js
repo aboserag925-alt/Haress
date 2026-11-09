@@ -2,10 +2,11 @@
    Authenticated/API and third-party responses are deliberately never cached. */
 'use strict';
 
-var CACHE_NAME = 'ahl-athar-v4';
+var CACHE_NAME = 'ahl-athar-v5';
 var APP_FILES = [
   './',
   './index.html',
+  './offline.html',
   './manifest.json',
   './icon.svg',
   './icon-192.png',
@@ -24,8 +25,14 @@ self.addEventListener('install', function (event) {
   event.waitUntil((async function () {
     var cache = await caches.open(CACHE_NAME);
     await cache.addAll(APP_FILES);
-    await self.skipWaiting();
+    // لا نفعّل فورًا حتى يوافق المستخدم عبر زر «تحديث الآن» (إشعار تحديث).
   })());
+});
+
+self.addEventListener('message', function (event) {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', function (event) {
@@ -75,7 +82,8 @@ self.addEventListener('fetch', function (event) {
         }
         return response;
       } catch (error) {
-        return (await cache.match(shellUrl)) || new Response(
+        var offline = await cache.match(new URL('offline.html', appScope).href);
+        return offline || (await cache.match(shellUrl)) || new Response(
           'لا يوجد اتصال بالإنترنت. اتصل بالشبكة ثم أعد المحاولة.',
           { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
         );
