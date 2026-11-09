@@ -259,18 +259,18 @@ function renderMediaLibrary() {
       var player = document.createElement(item.kind);
       player.controls = true;
       player.preload = 'none';
-      player.src = item.url;
+      player.src = apiUrl(item.url);
       card.appendChild(player);
     } else if (item.kind === 'image') {
       var image = document.createElement('img');
-      image.src = item.url;
+      image.src = apiUrl(item.url);
       image.alt = item.title;
       image.loading = 'lazy';
       card.appendChild(image);
     } else {
       var link = document.createElement('a');
       link.className = 'media-download';
-      link.href = item.url;
+      link.href = apiUrl(item.url);
       link.textContent = 'تحميل ' + item.fileName;
       link.setAttribute('download', '');
       card.appendChild(link);
