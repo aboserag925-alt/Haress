@@ -20,5 +20,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - run: npm run build:app
+      - run: npm run build
+      - run: npm run check:secure
       - run: docker build --tag ahl-athar:verify .
