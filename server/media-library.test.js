@@ -454,3 +454,36 @@ test('Supabase storage: works when storage directory is unwritable (Railway EACC
     await fs.rm(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('Supabase storage: approved library index survives a simulated process restart',async function(){
+ const {MemoryStore}=require('./media-storage');
+ const storage=new MemoryStore();
+ const calls=[];
+ const fetch=async function(url,options){
+  calls.push({url,options});
+  if(url.includes('/getFile')) return {ok:true,arrayBuffer:async()=>Buffer.from(JSON.stringify({ok:true,result:{file_path:'documents/restart.mp3'}}))};
+  if(url.includes('/getChatMember')) return {ok:true,arrayBuffer:async()=>Buffer.from(JSON.stringify({ok:true,result:{status:'administrator'}}))};
+  if(url.includes('/sendMessage')) return {ok:true,arrayBuffer:async()=>Buffer.from(JSON.stringify({ok:true,result:{message_id:501}}))};
+  if(url.includes('/answerCallbackQuery')) return {ok:true,arrayBuffer:async()=>Buffer.from(JSON.stringify({ok:true,result:true}))};
+  if(url.includes('/editMessageText')) return {ok:true,arrayBuffer:async()=>Buffer.from(JSON.stringify({ok:true,result:{message_id:501}}))};
+  if(url.includes('/file/bot')) return {ok:true,arrayBuffer:async()=>Buffer.from('remote audio bytes')};
+  throw new Error('Unexpected mocked request');
+ };
+ const env={TELEGRAM_BOT_TOKEN:'test-token',TELEGRAM_MEDIA_ENABLED:'false',TELEGRAM_MEDIA_GROUP_ID:'-100123'};
+ const first=createMediaLibrary({env,fetch,storage});
+ await first.processUpdate({update_id:10,message:{chat:{id:-100123},from:{id:7},date:1793500000,caption:'درس الاستعادة #كتب',document:{file_id:'remote-file',file_unique_id:'remote-unique',file_name:'restart.mp3',mime_type:'audio/mpeg',file_size:18}}});
+ const approval=calls.find(x=>x.url.includes('/sendMessage'));
+ const payload=JSON.parse(approval.options.body);
+ const callback=payload.reply_markup.inline_keyboard[0][0].callback_data;
+ await first.processUpdate({update_id:11,callback_query:{id:'restart-callback',data:callback,from:{id:7},message:{message_id:501,chat:{id:-100123}}}});
+ assert.equal((await first.listApproved()).length,1);
+ assert.ok(await storage.get('library/_index.json'));
+ // A new library instance represents a fresh Node.js process; only the same remote
+ // object store survives, not the previous in-memory items array.
+ const restarted=createMediaLibrary({env,fetch,storage});
+ const restored=await restarted.listApproved();
+ assert.equal(restored.length,1);
+ assert.equal(restored[0].title,'درس الاستعادة');
+ assert.equal(restored[0].status,'approved');
+ assert.equal(restored[0].objectKey,(await first.listApproved())[0].objectKey);
+});
