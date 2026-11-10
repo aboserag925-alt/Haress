@@ -54,6 +54,10 @@ test('SEO and security headers are present', function () {
 });
 
 test('manual live UI only links to allowlisted HTTPS providers and does not embed streams', function () {
+  const { allowedUrl } = require('./live-client');
+  assert.equal(allowedUrl('https://www.tiktok.com/@example/live'), true);
+  assert.equal(allowedUrl('https://evil.example/live'), false);
+  assert.equal(allowedUrl('http://www.tiktok.com/live'), false);
   const client = fs.readFileSync(path.join(appDirectory, 'live-client.js'), 'utf8');
   const livePage = fs.readFileSync(path.join(appDirectory, 'live.html'), 'utf8');
   const adminPage = fs.readFileSync(path.join(appDirectory, 'live-admin.html'), 'utf8');
