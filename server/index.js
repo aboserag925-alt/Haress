@@ -20,7 +20,12 @@ const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.ico': 'image/x-icon',
   '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.avif': 'image/avif',
   '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.txt': 'text/plain; charset=utf-8'
@@ -62,6 +67,42 @@ function sendJson(response, statusCode, payload) {
     'X-Content-Type-Options': 'nosniff'
   });
   response.end(JSON.stringify(payload));
+}
+
+// تعقيم XSS للتخزين: نص عادي فقط، الوسوم تُحذف، مع بقاء العربية.
+function sanitizeQuestion(text) {
+  return String(text || '')
+    .replace(/<\/?[a-zA-Z][^>]*>/g, ' ')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// طابور Supabase لأ audience_questions — best-effort لا يفشل طلب المستخدم على PGRST205.
+async function queueQuestion(question, env, fetchImpl) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return false;
+  try {
+    const res = await fetchImpl(env.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/audience_questions', {
+      method: 'POST',
+      headers: {
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      signal: AbortSignal.timeout(8000),
+      body: JSON.stringify({ question: question, status: 'pending' })
+    });
+    if (!res.ok) {
+      // PGRST205 = الجدول غير موجود بعد — يجب ألا ينهار الطلب.
+      console.error('Question queue insert failed: ' + res.status);
+      return false;
+    }
+    return true;
+  } catch {
+    console.error('Question queue insert network failed');
+    return false;
+  }
 }
 
 function isAllowedOrigin(request, env) {
@@ -374,6 +415,12 @@ function createServer(options) {
       sendJson(response, 200, { ok: true });
       return;
     }
+    if (requestUrl.pathname === '/api/live' && request.method === 'GET') {
+      // محليًا/احتياطيًا: بدون مفاتيح يوتيوب نرجع offline آمنًا بدل 404.
+      // في Cloudflare Worker يُستبدل هذا بمنطق worker/live.mjs الكامل.
+      sendJson(response, 200, { live: false, videoId: null });
+      return;
+    }
     if (requestUrl.pathname === '/api/library' && request.method === 'GET') {
       try {
         sendJson(response, 200, { items: await mediaLibrary.listApproved() });
@@ -469,11 +516,13 @@ function createServer(options) {
         sendJson(response, 400, { error: 'اكتب السؤال بصيغة صحيحة.' });
         return;
       }
-      const question = body.question.trim();
+      const question = sanitizeQuestion(body.question);
       if (question.length < 5 || question.length > MAX_QUESTION_LENGTH) {
         sendJson(response, 400, { error: 'يجب أن يكون السؤال بين 5 و1600 حرف.' });
         return;
       }
+      // طابور Supabase (best-effort): لا يفشل الطلب إن غاب الجدول/الإعداد.
+      await queueQuestion(question, env, fetchImpl);
 
 
       const turnstileEnabled = env.TURNSTILE_ENABLED === 'true' || Boolean(env.TURNSTILE_SECRET_KEY);

@@ -1,41 +1,46 @@
-/* Haress brand identity — light emerald, white and restrained gold. */
-:root{
-  color-scheme:light;
-  --bg:#f6faf6;
-  --surface:#ffffff;
-  --surface-raised:#edf5ef;
-  --wood:#f4f7f2;
-  --gold:#c5a04a;
-  --gold2:#d9bd76;
-  --text:#20372b;
-  --muted:#64786b;
-  --line:rgba(11,94,60,.16);
-  --green:#0b5e3c;
-}
-html,body{background:var(--bg)!important;color:var(--text)!important}
-body{background-image:radial-gradient(ellipse at 12% 0%,rgba(22,128,82,.08),transparent 36%),radial-gradient(ellipse at 88% 12%,rgba(212,175,55,.10),transparent 30%)!important}
-header{border-color:rgba(197,160,74,.3)!important}
-header .logo,.logo{filter:drop-shadow(0 8px 16px rgba(11,94,60,.16));animation:haress-shield-glow 5s ease-in-out infinite}
-header h1,header p,.section-title{color:var(--green)!important}
-.methodology{display:block;color:#5b7464;font-weight:600;margin-top:5px}
-.tab{background:#fff!important;color:#315442!important;border:1px solid rgba(11,94,60,.14)!important;box-shadow:0 3px 12px rgba(11,94,60,.035)}
-.tab.on,.tab:focus-visible{background:#0b5e3c!important;color:#fff!important;border-color:#c5a04a!important}
-.card,.notice{background:#fff!important;color:var(--text)!important;border-color:rgba(11,94,60,.14)!important;box-shadow:0 10px 28px rgba(11,94,60,.055)}
-.btn{background:#0b5e3c!important;color:#fff!important;border-color:#c5a04a!important}
-input,textarea,select{background:#fff!important;color:#20372b!important;border-color:rgba(11,94,60,.2)!important}
-.radio-panel{margin:14px 0 20px;padding:18px;border:1px solid rgba(197,160,74,.48);border-radius:18px;background:linear-gradient(145deg,#fff,#f1f7f1);box-shadow:0 12px 32px rgba(11,94,60,.08)}
-.radio-panel[hidden]{display:none!important}
-.radio-panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;color:#0b5e3c;margin-bottom:12px}
-.radio-panel-head span{font-size:.88em;color:#64786b}
-.radio-panel audio{display:block;width:100%;margin:12px 0}
-.radio-controls{display:flex;gap:9px;flex-wrap:wrap}
-.radio-controls>*{flex:1 1 180px;text-align:center;text-decoration:none}
-.radio-official{display:inline-flex;align-items:center;justify-content:center}
-#quranRadioStatus{margin-bottom:0}
-@keyframes haress-shield-glow{0%,100%{filter:drop-shadow(0 6px 12px rgba(11,94,60,.12))}50%{filter:drop-shadow(0 9px 20px rgba(197,160,74,.25))}}
-@keyframes haress-soft-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.card{animation:haress-soft-rise .55s ease both}
-@media(max-width:600px){.radio-controls>*{flex-basis:100%}.radio-panel{padding:14px}.radio-panel-head{align-items:flex-start;flex-direction:column}}
-@media(prefers-reduced-motion:reduce){header .logo,.logo,.card{animation:none!important}}
+/* إستراحة أهل الأثر — هوية العلامة:
+   هوية داكنة سوداء بلمسة ذهبية فقط. لا تستخدم ثيم فاتحًا في أي مكان. */
 
-.haress-intro{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:rgba(248,251,247,.97);opacity:1;transition:opacity .45s ease}.haress-intro.is-leaving{opacity:0;pointer-events:none}.haress-intro__content{display:grid;justify-items:center;gap:14px;animation:haress-intro-in .7s ease both}.haress-intro__logo{width:min(42vw,190px);height:auto;filter:drop-shadow(0 14px 22px rgba(11,94,60,.2))}.haress-intro__name{font:700 clamp(24px,5vw,34px) 'Noto Naskh Arabic',serif;color:#0b5e3c}.haress-intro__tag{font:600 16px 'Noto Naskh Arabic',serif;color:#64786b}@keyframes haress-intro-in{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}@media(prefers-reduced-motion:reduce){.haress-intro{display:none}}
+/* شاشة الترحيب (Intro overlay) — داكنة، قصيرة، وتُغلق تلقائيًا */
+.haress-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: grid;
+  place-items: center;
+  background: rgba(7, 9, 8, .97);
+  opacity: 1;
+  transition: opacity .45s ease;
+}
+.haress-intro.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+.haress-intro__content {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  animation: haress-intro-in .7s ease both;
+}
+.haress-intro__logo {
+  width: min(42vw, 190px);
+  height: auto;
+  border-radius: 24px;
+  filter: drop-shadow(0 14px 22px rgba(0, 0, 0, .55));
+}
+.haress-intro__name {
+  font: 700 clamp(24px, 5vw, 34px) 'Noto Naskh Arabic', serif;
+  color: #f2d9a4;
+}
+.haress-intro__tag {
+  font: 600 16px 'Noto Naskh Arabic', serif;
+  color: #a9b0a6;
+}
+@keyframes haress-intro-in {
+  from { opacity: 0; transform: translateY(18px) scale(.96); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .haress-intro { display: none; }
+  .haress-intro__content { animation: none; }
+}

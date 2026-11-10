@@ -33,8 +33,34 @@ test('all PWA manifest and offline-cache files exist within the app', function (
   }
 
   const worker = fs.readFileSync(path.join(appDirectory, 'sw.js'), 'utf8');
-  for (const asset of ['./index.html', './manifest.json', './icon.svg']) {
+  assert.match(worker, /ahl-athar-v5/);
+  assert.ok(fs.existsSync(path.join(appDirectory, 'offline.html')), 'offline.html exists');
+  for (const asset of ['./index.html', './offline.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './share-1200x630.jpg', './istiraha.css', './brand-motion.css', './istiraha-content.js', './istiraha.js', './brand-intro.js']) {
     assert.ok(worker.includes("'" + asset + "'"), asset);
     assert.ok(fs.existsSync(path.join(appDirectory, asset.replace(/^\.\//, ''))), asset);
   }
+});
+
+test('SEO and security headers are present', function () {
+  assert.match(html, /property="og:title"/);
+  assert.match(html, /name="twitter:card"/);
+  assert.match(html, /rel="canonical"/);
+  assert.match(html, /application\/ld\+json/);
+  const headersPath = path.join(appDirectory, '_headers');
+  assert.ok(fs.existsSync(headersPath), '_headers exists');
+  const headers = fs.readFileSync(headersPath, 'utf8');
+  assert.match(headers, /Content-Security-Policy/);
+  assert.match(headers, /Strict-Transport-Security/);
+});
+
+test('live wiring uses safe /api/live without exposing keys', function () {
+  const istiraha = fs.readFileSync(path.join(appDirectory, 'istiraha.js'), 'utf8');
+  const content = fs.readFileSync(path.join(appDirectory, 'istiraha-content.js'), 'utf8');
+  assert.ok(istiraha.includes('apiPath'), 'fetch uses apiPath');
+  assert.ok(content.includes("apiPath: '/api/live'"), 'content apiPath retained for future opt-in');
+  assert.ok(content.includes('autoDetect: false'), 'automatic live detection remains disabled');
+  assert.ok(istiraha.includes('function isLiveDetectionEnabled() {') && istiraha.includes('cfg.live.autoDetect === true') && istiraha.includes('cfg.live.apiPath'), 'live detection requires explicit opt-in');
+  assert.ok(istiraha.includes('function startLivePolling() {\n    if (!isLiveDetectionEnabled()) {') && istiraha.includes('      renderLive();\n      return;\n    }\n    checkLiveStatus();'), 'disabled detection exits before creating polling timers');
+  assert.ok(!istiraha.match(/YOUTUBE_API_KEY/), 'no api key in frontend');
+  assert.ok(istiraha.includes('noopener noreferrer'), 'external links gated');
 });
