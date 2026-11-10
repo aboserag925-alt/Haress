@@ -10,6 +10,7 @@ on:
   pull_request:
     branches:
       - main
+      - feature/dr-khalid-ui
   workflow_dispatch:
 
 concurrency:
@@ -37,7 +38,10 @@ jobs:
       - name: Run complete test suite
         run: npm test
       - name: Build web application
-        run: npm run build:app
+        run: npm run build
+
+      - name: Security policy check
+        run: npm run check:secure
       - name: Check whitespace
         run: git diff --check
       - name: Verify generated assets
