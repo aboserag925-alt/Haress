@@ -88,4 +88,5 @@ test('supervisor does not invoke developer during analysis',async()=>{
  const result=await supervisor.analyze({id:'analysis-only',type:'implementation',trustedSource:true});
  assert.equal(developerCalled,false);
  assert.equal(result.task.status,'ANALYZED');
+ assert.equal(result.task.tainted,true);
 });
