@@ -57,7 +57,10 @@ test('live wiring uses safe /api/live without exposing keys', function () {
   const istiraha = fs.readFileSync(path.join(appDirectory, 'istiraha.js'), 'utf8');
   const content = fs.readFileSync(path.join(appDirectory, 'istiraha-content.js'), 'utf8');
   assert.ok(istiraha.includes('apiPath'), 'fetch uses apiPath');
-  assert.ok(content.includes("apiPath: '/api/live'"), 'content apiPath');
+  assert.ok(content.includes("apiPath: '/api/live'"), 'content apiPath retained for future opt-in');
+  assert.ok(content.includes('autoDetect: false'), 'automatic live detection remains disabled');
+  assert.ok(istiraha.includes('function isLiveDetectionEnabled() {') && istiraha.includes('cfg.live.autoDetect === true') && istiraha.includes('cfg.live.apiPath'), 'live detection requires explicit opt-in');
+  assert.ok(istiraha.includes('function startLivePolling() {\n    if (!isLiveDetectionEnabled()) {') && istiraha.includes('      renderLive();\n      return;\n    }\n    checkLiveStatus();'), 'disabled detection exits before creating polling timers');
   assert.ok(!istiraha.match(/YOUTUBE_API_KEY/), 'no api key in frontend');
   assert.ok(istiraha.includes('noopener noreferrer'), 'external links gated');
 });
