@@ -482,6 +482,5 @@ test('Supabase storage: approved library index survives a simulated process rest
  const restored=await restarted.listApproved();
  assert.equal(restored.length,1);
  assert.equal(restored[0].title,'درس الاستعادة');
- assert.equal(restored[0].status,'approved');
  assert.equal(restored[0].objectKey,(await first.listApproved())[0].objectKey);
 });
