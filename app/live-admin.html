@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff"><title>إدارة البث | استراحة أهل الأثر</title>
+<link rel="stylesheet" href="istiraha.css"><style>
+body{margin:0;background:#f7f8f5;color:#25352d;font-family:'Noto Naskh Arabic',serif}.wrap{width:min(680px,calc(100% - 32px));margin:5vh auto;padding:26px;border:1px solid #e3e8e1;border-radius:22px;background:#fff}h1{color:#173f35}form{display:grid;gap:14px}label{display:grid;gap:6px;color:#52635a}input{padding:12px;border:1px solid #dce3dc;border-radius:10px;font:inherit}button{padding:12px;border:0;border-radius:10px;background:#173f35;color:white;font:inherit;font-weight:700}button.secondary{background:#e9eee9;color:#173f35}.status{min-height:24px;color:#68736d}
+</style></head><body><main class="wrap"><a href="./index.html">العودة للمنصة</a><h1>لوحة إدارة البث</h1>
+<section id="loginPanel"><p>سجّل الدخول بحساب المشرف المعتمد.</p><form id="loginForm"><label>البريد الإلكتروني<input id="email" type="email" autocomplete="username" required></label><label>كلمة المرور<input id="password" type="password" autocomplete="current-password" required></label><button>تسجيل الدخول</button></form></section>
+<section id="adminPanel" hidden><p id="currentState" class="status"></p><form id="liveForm"><label>رابط البث (HTTPS من نطاق مسموح)<input id="streamUrl" type="url" placeholder="https://www.tiktok.com/..." autocomplete="url"></label><label>عنوان البث<input id="streamTitle" maxlength="180" value="البث المباشر"></label><label><span><input id="isLive" type="checkbox"> البث يعمل الآن</span></label><button id="saveButton">حفظ حالة البث</button><button class="secondary" id="logoutButton" type="button">تسجيل الخروج</button></form></section>
+<p id="message" class="status" role="status" aria-live="polite"></p></main>
+<script src="supabase-config.js"></script><script src="runtime-config.js"></script><script src="auth-client.js"></script><script src="live-client.js"></script>
+<script>
+(function(){
+ var login=document.getElementById('loginPanel'),panel=document.getElementById('adminPanel'),message=document.getElementById('message'),form=document.getElementById('liveForm');
+ function say(text){message.textContent=text;}
+ async function token(){var value=await window.ahlAuth.getAccessToken();if(!value)throw Error('انتهت الجلسة؛ سجّل الدخول مجددًا.');return value;}
+ async function api(path,options){var access=await token();var response=await fetch(window.AHL_LIVE.api(path),Object.assign({},options||{},{headers:Object.assign({'Content-Type':'application/json','Authorization':'Bearer '+access},(options&&options.headers)||{})}));var data=await response.json().catch(function(){return{};});if(!response.ok)throw Error(data.error||'تعذر تنفيذ الطلب.');return data;}
+ async function showAdmin(){try{await api('/api/admin/session',{method:'GET'});var state=await window.AHL_LIVE.getState();document.getElementById('isLive').checked=state.is_live===true;document.getElementById('streamUrl').value=state.stream_url||'';document.getElementById('streamTitle').value=state.stream_title||'البث المباشر';document.getElementById('currentState').textContent=state.is_live?'حالة البث: يعمل':'حالة البث: متوقف';login.hidden=true;panel.hidden=false;}catch(error){say(error.message);}}
+ document.getElementById('loginForm').addEventListener('submit',async function(event){event.preventDefault();try{var result=await window.ahlAuth.signIn(document.getElementById('email').value.trim(),document.getElementById('password').value);if(result.error)throw result.error;await showAdmin();}catch(error){say(error.message);}});
+ form.addEventListener('submit',async function(event){event.preventDefault();var button=document.getElementById('saveButton');button.disabled=true;try{var result=await api('/api/admin/live',{method:'POST',body:JSON.stringify({is_live:document.getElementById('isLive').checked,stream_url:document.getElementById('streamUrl').value.trim(),stream_title:document.getElementById('streamTitle').value.trim()})});document.getElementById('currentState').textContent=result.state.is_live?'حالة البث: يعمل':'حالة البث: متوقف';say('تم حفظ حالة البث.');}catch(error){say(error.message);}finally{button.disabled=false;}});
+ document.getElementById('logoutButton').addEventListener('click',async function(){await window.ahlAuth.signOut();location.reload();});
+ if(!window.ahlAuth||!window.ahlAuth.configured){say('إعداد تسجيل الدخول غير مكتمل.');return;}
+ window.ahlAuth.init(function(state){if(state.user)showAdmin();});
+})();
+</script></body></html>
