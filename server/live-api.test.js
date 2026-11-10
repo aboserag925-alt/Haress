@@ -63,6 +63,7 @@ test('rejects non-HTTPS, javascript/data and unlisted stream hosts', () => {
   assert.equal(isAllowedLiveUrl('http://tiktok.com/@x/live', env), false);
   assert.equal(isAllowedLiveUrl('https://evil.example/live', env), false);
   assert.equal(isAllowedLiveUrl('https://sub.tiktok.com/@x/live', env), true);
+  assert.equal(isAllowedLiveUrl('https://stream.example.test/live', { LIVE_ALLOWED_HOSTS: 'stream.example.test' }), true);
 });
 
 test('rejects an authenticated but non-admin user', async () => {
