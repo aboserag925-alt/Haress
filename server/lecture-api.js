@@ -81,7 +81,7 @@ function createAdminApi(options) {
     if (liveCache.value && Date.now() - liveCache.at < 30000) return liveCache.value;
     if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) throw new Error('Live state is not configured');
     const result = await fetchImpl(env.SUPABASE_URL.replace(/\/$/, '') +
-      '/rest/v1/live_state?select=is_live,stream_url,stream_title,provider,updated_at&id=eq.1&limit=1', {
+      '/rest/v1/live_state?select=is_live,stream_url,stream_title,provider,updated_at&limit=1', {
       headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + env.SUPABASE_ANON_KEY, Accept: 'application/json' },
       signal: AbortSignal.timeout(10000)
     });
