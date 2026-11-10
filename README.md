@@ -147,7 +147,7 @@ npm.cmd start
 
 تُدار حالة البث من خادم Node.js عبر `GET /api/live/state` و`POST /api/admin/live`. تُقرأ الحالة العامة بمفتاح Supabase العام وبكاش 30 ثانية، بينما يتطلب التحديث جلسة مشرف مؤكدة في `admin_users` وفحص CSRF ويستخدم مفتاح الخدمة داخل الخادم فقط. قائمة النطاقات المسموحة الافتراضية هي `tiktok.com,facebook.com,t.me` ويمكن تعديلها عبر `LIVE_ALLOWED_HOSTS`. لا تُضمّن الصفحة مشغلًا داخل الصفحة؛ تفتح رابط المشاهدة الخارجي فقط. صفحة المشاهدة `/app/live.html` ولوحة الإدارة `/app/live-admin.html`.
 
-**Migration:** `supabase/migrations/20261111_live_state.sql` إضافة idempotent فقط؛ لا تُطبّق تلقائيًا ولا تُنفّذ ضمن CI. جدول `broadcast_schedule` مؤجل.
+**Migration:** `supabase/migrations/20261111_live_state.sql` إضافة idempotent فقط؛ لا تُطبّق تلقائيًا ولا تُنفّذ ضمن CI. جدول `broadcast_schedule` مؤجل. التفاصيل الأمنية والتشغيلية في `docs/MANUAL_LIVE.md`.
 
 ## إعدادات موجودة (أسماء ثابتة لا تغيّر)
 
@@ -157,6 +157,7 @@ npm.cmd start
 | `SUPABASE_ANON_KEY` (عام) | Supabase | GitHub Variable | نعم |
 | `AHL_SUPABASE_URL` | Supabase | GitHub Variable | نعم |
 | `AHL_API_BASE_URL` | Railway API | GitHub Variable (`https://haress-production.up.railway.app`) | نعم (أُضيف في هذه الجولة) |
+| `LIVE_ALLOWED_HOSTS` | Node live API | إعداد خادم اختياري؛ الافتراضي `tiktok.com,facebook.com,t.me` | نطاقات المشاهدة المسموحة فقط |
 | `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` | Cloudflare | `production` Environment Secret | نعم |
 | `SUPABASE_SERVICE_ROLE_KEY`، `GEMINI_API_KEY`، `TELEGRAM_BOT_TOKEN`، `TURNSTILE_SECRET` | سريّة | خادم فقط (Railway) | لا تُرفع للمشروع |
 
