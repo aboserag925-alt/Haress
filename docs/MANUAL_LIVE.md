@@ -11,9 +11,9 @@
 `supabase/migrations/20261111_live_state.sql` ينشئ الجدول idempotently ويزرع السجل الثابت عند غيابه. يمنح anon/authenticated قراءة أعمدة الحالة العامة فقط، ولا يمنح أي كتابة للمتصفح. يمنح service_role صلاحيات الخادم. لا تنفّذ Migration من CI أو من هذا الفرع؛ يلزم مراجعة وموافقة منفصلة قبل أي SQL على الإنتاج.
 
 ## API
-- `GET /api/live/state`: عام، يقرأ الأعمدة العامة بمفتاح anon، مع ذاكرة خادم 30 ثانية وترويسة Cache-Control لمدة 30 ثانية.
+- `GET /api/live/state`: عام، يقرأ الأعمدة العامة بمفتاح anon، مع ذاكرة خادم 30 ثانية وترويسة Cache-Control لمدة 30 ثانية، ويعيد قائمة النطاقات المسموحة العامة ليطابقها العميل.
 - `GET /api/live`: توافق قديم `{ live, videoId: null }` ويعكس الحالة نفسها.
-- `POST /api/admin/live`: Bearer session من Supabase Auth، تحقق خادمي من `admin_users`، وفحص Origin/CSRF، والتحقق من JSON والرابط.
+- `POST /api/admin/live`: Bearer session من Supabase Auth، تحقق خادمي من `admin_users`، وفحص Origin/CSRF. يسمح بالطلب العابر للنطاقات فقط إذا طابق Origin قائمة `ALLOWED_ORIGINS` حرفيًا؛ دونها يُرفض cross-site.
 - `LIVE_ALLOWED_HOSTS`: قائمة نطاقات مفصولة بفواصل. الافتراضي المحافظ: `tiktok.com,facebook.com,t.me`. يُقبل النطاق الأساسي أو أحد نطاقاته الفرعية فقط، وHTTPS فقط، دون بيانات دخول أو منفذ غير قياسي.
 - التحديث يستخدم PostgREST upsert على المفتاح الثابت `id=1` مع `resolution=merge-duplicates`؛ لا يوجد حذف ثم إدخال.
 - يحاول الخادم تسجيل `live_state.updated` في `audit_log` بشكل best-effort؛ لا يفترض schema غير موثق، ولا يفشل حفظ الحالة إذا كان الجدول غير موجود.
