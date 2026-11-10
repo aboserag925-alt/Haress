@@ -33,9 +33,9 @@ test('all PWA manifest and offline-cache files exist within the app', function (
   }
 
   const worker = fs.readFileSync(path.join(appDirectory, 'sw.js'), 'utf8');
-  assert.match(worker, /ahl-athar-v5/);
+  assert.match(worker, /ahl-athar-v6/);
   assert.ok(fs.existsSync(path.join(appDirectory, 'offline.html')), 'offline.html exists');
-  for (const asset of ['./index.html', './offline.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './share-1200x630.jpg', './istiraha.css', './brand-motion.css', './istiraha-content.js', './istiraha.js', './brand-intro.js']) {
+  for (const asset of ['./index.html', './offline.html', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './share-1200x630.jpg', './istiraha.css', './brand-motion.css', './istiraha-content.js', './istiraha.js', './brand-intro.js', './live-client.js', './live.html', './live-admin.html']) {
     assert.ok(worker.includes("'" + asset + "'"), asset);
     assert.ok(fs.existsSync(path.join(appDirectory, asset.replace(/^\.\//, ''))), asset);
   }
@@ -53,14 +53,21 @@ test('SEO and security headers are present', function () {
   assert.match(headers, /Strict-Transport-Security/);
 });
 
-test('live wiring uses safe /api/live without exposing keys', function () {
-  const istiraha = fs.readFileSync(path.join(appDirectory, 'istiraha.js'), 'utf8');
-  const content = fs.readFileSync(path.join(appDirectory, 'istiraha-content.js'), 'utf8');
-  assert.ok(istiraha.includes('apiPath'), 'fetch uses apiPath');
-  assert.ok(content.includes("apiPath: '/api/live'"), 'content apiPath retained for future opt-in');
-  assert.ok(content.includes('autoDetect: false'), 'automatic live detection remains disabled');
-  assert.ok(istiraha.includes('function isLiveDetectionEnabled() {') && istiraha.includes('cfg.live.autoDetect === true') && istiraha.includes('cfg.live.apiPath'), 'live detection requires explicit opt-in');
-  assert.ok(istiraha.includes('function startLivePolling() {\n    if (!isLiveDetectionEnabled()) {') && istiraha.includes('      renderLive();\n      return;\n    }\n    checkLiveStatus();'), 'disabled detection exits before creating polling timers');
-  assert.ok(!istiraha.match(/YOUTUBE_API_KEY/), 'no api key in frontend');
-  assert.ok(istiraha.includes('noopener noreferrer'), 'external links gated');
+test('manual live UI only links to allowlisted HTTPS providers and does not embed streams', function () {
+  const client = fs.readFileSync(path.join(appDirectory, 'live-client.js'), 'utf8');
+  const livePage = fs.readFileSync(path.join(appDirectory, 'live.html'), 'utf8');
+  const adminPage = fs.readFileSync(path.join(appDirectory, 'live-admin.html'), 'utf8');
+  const homeLogic = fs.readFileSync(path.join(appDirectory, 'istiraha.js'), 'utf8');
+  assert.match(client, /tiktok\\.com/);
+  assert.match(client, /facebook\\.com/);
+  assert.match(client, /t\\.me/);
+  assert.match(client, /url\\.protocol === 'https:'/);
+  assert.match(livePage, /rel="noopener noreferrer"/);
+  assert.match(livePage, /60000/);
+  assert.match(livePage, /visibilitychange/);
+  assert.doesNotMatch(livePage, /<iframe/i);
+  assert.doesNotMatch(adminPage, /<iframe/i);
+  assert.match(adminPage, /api\\/admin\\/live/);
+  assert.match(homeLogic, /live\\.html/);
+  assert.doesNotMatch(homeLogic + client + livePage + adminPage, /youtube|YOUTUBE_API_KEY|YOUTUBE_CHANNEL_ID/i);
 });
