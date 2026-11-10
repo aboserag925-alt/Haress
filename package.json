@@ -1,9 +1,13 @@
 {
   "name": "ahl-athar",
   "private": true,
+  "engines": {
+    "node": ">=26.13.0 <27"
+  },
   "scripts": {
     "start": "node server/index.js",
-    "test": "node --test server/index.test.js server/media-library.test.js server/media-storage.test.js server/lecture-api.test.js server/suggestions/suggestion.test.js server/ai/ai.test.js server/ai/approval-api.test.js app/pwa-assets.test.js scripts/smoke-check.test.mjs",
+    "test": "node --test server/index.test.js server/media-library.test.js server/media-storage.test.js server/lecture-api.test.js server/suggestions/suggestion.test.js server/ai/ai.test.js server/ai/approval-api.test.js app/pwa-assets.test.js scripts/smoke-check.test.mjs web/pwa.test.js",
+    "check:secure": "node scripts/check-secure.mjs",
     "build:adhan": "node scripts/copy-adhan.mjs",
     "build:auth": "node scripts/build-auth.mjs",
     "build:app": "npm run build:adhan && npm run build:auth && npm run build:css",
@@ -12,9 +16,9 @@
     "smoke": "node scripts/smoke-check.mjs"
   },
   "devDependencies": {
-    "@tailwindcss/cli": "^4.1.0",
+    "@tailwindcss/cli": "4.3.3",
     "esbuild": "^0.28.2",
-    "tailwindcss": "^4.1.0"
+    "tailwindcss": "4.3.3"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

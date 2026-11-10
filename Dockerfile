@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:26.13.0-alpine AS build
 WORKDIR /build
 ARG SUPABASE_URL
 ARG SUPABASE_ANON_PUBLIC
@@ -7,7 +7,7 @@ RUN npm ci
 COPY . .
 RUN SUPABASE_URL="$SUPABASE_URL" SUPABASE_ANON_KEY="$SUPABASE_ANON_PUBLIC" npm run build:app
 
-FROM node:22-alpine
+FROM node:26.13.0-alpine
 ENV NODE_ENV=production
 ENV PORT=8080
 ENV HOST=0.0.0.0

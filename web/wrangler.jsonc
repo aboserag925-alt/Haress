@@ -1,0 +1,21 @@
+// Cloudflare Workers deployment config for the Next.js site (Stage 1).
+// Prepared but NOT deployed from this repository — deployment remains an
+// owner action. Uses the @opennextjs/cloudflare output layout.
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "ahl-athar-web",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-01-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  // Runtime vars only (owner sets real values on the provider):
+  //   AHL_API_BASE_URL        — backend HTTPS origin
+  //   AHL_SUPABASE_URL        — Supabase project URL (Stage 2)
+  //   AHL_SUPABASE_ANON_KEY   — Supabase public anon key (Stage 2)
+  "observability": {
+    "enabled": true
+  }
+}
