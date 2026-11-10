@@ -10,7 +10,7 @@
     } catch (_) { return false; }
   }
   function api(path) {
-    var base = typeof root.AHL_API_BASE_URL === 'string' ? root.AHL_API_BASE_URL.replace(/\\/+$/, '') : '';
+    var base = typeof root.AHL_API_BASE_URL === 'string' ? root.AHL_API_BASE_URL.replace(/\/+$/, '') : '';
     return base + path;
   }
   async function getState() {
