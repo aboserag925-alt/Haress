@@ -1,48 +1,48 @@
 HARESS — SECURITY BACKPORT REVIEW
 Branch: fix/security-backport
-Base: latest main (branch created from main; compare status=ahead, ahead=13, behind=0)
-Generated from repository file contents; secrets/values are not included.
+Base: main @ 4b8f5e4adfd05c946df09fcdad4006343c6c2d5c
+Head before this report refresh: latest branch head
+Comparison: ahead; ahead=16; behind=0
+Secrets and production values are not included.
 
-SCOPE
-- Selective security backport from PR #46 / integration/unified-main-2026-11-07:
-  * Default untrusted AI tasks to tainted=true in task-store and task-service.
-  * Deny tainted transitions to WAITING_APPROVAL, APPROVED, IMPLEMENTING, HUMAN_APPROVED, MERGED.
-  * Detect English and Arabic prompt-injection phrases and likely secret exposure in security-agent.
-  * Force supervisor analysis input to trustedSource:false and skip developer agent during analysis.
-- Media library remote index is stored at library/_index.json in the configured remote object store and reloaded on initialize.
-- Remote storage supports upsert for the metadata index only.
-- Added regression tests for tainted gates, prompt injection, analysis isolation, and simulated restart recovery.
-- CI keeps existing tests/build/secret scanning and adds optional web typecheck/build when web/package.json exists.
+SCOPE / IMPLEMENTATION
+- Untrusted AI tasks default to tainted=true in task-store and task-service; trusted task creation requires an explicit internal trustedSource flag.
+- Tainted tasks cannot transition to WAITING_APPROVAL, APPROVED, IMPLEMENTING, HUMAN_APPROVED, or MERGED; approval-gate independently rejects tainted tasks.
+- Security agent detects common English and Arabic prompt-injection patterns and likely exposed API-token patterns.
+- supervisor.analyze explicitly overrides trustedSource to false and skips developer during analysis. Developer remains callable only through implement(), which checks approval-gate.
+- Remote media metadata index is persisted at library/_index.json and restored by initialize(). Remote storage supports upsert only when explicitly requested for the metadata index.
+- Added tests for task defaults, tainted approval/execution/merge blocking, prompt-injection detection, developer-analysis isolation, and remote-index restoration across two library instances.
+- CI workflows retain all existing checks and add conditional web typecheck/build commands if web/package.json exists.
 
-SELECTED FROM #46 / INTEGRATION
-- server/ai/policy.js: tainted transition denial.
-- server/ai/task-service.js: tainted defaults unless explicit trusted internal caller.
-- server/ai/task-store.js: tainted defaults unless explicit trusted internal caller.
-- server/ai/supervisor.js: untrusted analysis and developer execution separation.
-- server/ai/agents/security-agent.js: prompt-injection and secret-pattern checks.
+SELECTED FROM PR #46 / integration
+- server/ai/policy.js
+- server/ai/task-service.js
+- server/ai/task-store.js
+- server/ai/supervisor.js
+- server/ai/agents/security-agent.js
 
-EXCLUDED FROM #46 AND WHY
-- UI/branding/radio/community/Telegram and other feature files: outside the requested security backport.
-- Supabase migrations and approval RPC changes: no SQL or production database change was authorized.
-- platform-analysis-api.js and its feature tests: the analysis API file is not present on current main; importing the integration-only API would introduce its suggestion-service dependencies and unrelated feature surface. The supervisor analysis path now explicitly marks input untrusted; task-service also defaults to tainted.
-- Next.js web application files: not copied; current main has no web/package.json. CI checks the web app conditionally if it is later present.
-- Cloudflare/Worker/Node bridge and other deployment changes: outside scope.
-- PR #46 was not merged or cherry-picked wholesale; only reviewed security-specific file changes were backported.
+EXCLUDED
+- platform-analysis-api.js and feature tests: absent from current main and depend on the integration-only suggestions feature; importing them would expand this security-only backport. The current main supervisor analysis path is explicitly untrusted; task-service defaults to tainted.
+- UI, branding, radio, community, Telegram, feature work and unrelated server files: outside scope.
+- All Supabase migrations/RPC changes: explicitly excluded; no SQL was run.
+- Next.js web application source/dependencies: not copied. The branch does not contain web/package.json, so conditional web checks report a safe skip rather than introducing the disputed framework.
+- Cloudflare/Worker/Node deployment bridge and unrelated Docker/deployment changes: excluded.
 
-REMAINING CONFLICTS / LIMITATIONS
-- Older remote media objects created before this metadata index existed do not contain sufficient metadata to safely infer approval status. They are not auto-published or reconstructed. The new durable index preserves metadata created/updated after this change.
-- Existing local-index mode remains unchanged.
-- No Supabase migration, production SQL, secret access, production setting change, merge, or deployment was performed.
-- The task-service trustedSource flag is an internal service contract; callers must never forward a client-controlled trustedSource=true. Supervisor analysis forcibly supplies false.
+MEDIA INDEX COMPATIBILITY
+- New metadata is persisted remotely and survives a fresh library instance.
+- Legacy remote media objects created before the metadata index existed cannot safely reveal their prior title, approval status, offset or other metadata. The code intentionally does not infer that an object is approved and does not auto-publish it. Those legacy objects need a separately approved inventory/reconciliation plan.
+- Existing local index behavior remains intact.
 
-VALIDATION
-- Regression tests added to node:test suite (see full file contents below).
-- Local test execution: NOT RUN in this environment.
-- GitHub Actions: PENDING pull request checks at time this report was created.
-- Commands expected in CI: npm ci; npm test; npm run build:app; optional web npm ci/typecheck/build when web/package.json exists; Docker build; Gitleaks secret scan; git diff --check.
-- Do not interpret pending checks as passing.
+VALIDATION — GITHUB ACTIONS
+- First attempt (run 42902797913 / 42902797559): failed, 79/84 tests passed. Five media-library assertions still expected remote storage to contain only media objects and not the new index; one restart assertion expected an internal status field omitted by listApproved().
+- Corrected test expectations to filter media objects separately and assert only public approved-list data.
+- Follow-up test workflow run 42902942827: SUCCESS. npm test: 84 passed, 0 failed; npm run build:app: SUCCESS; Docker build: SUCCESS. Optional web step completed without error; web/package.json is absent on this branch, so typecheck/build commands were not invoked.
+- Hares CI run 42902942813: Secret Scan SUCCESS; Tests and Build SUCCESS; CI Gate SUCCESS; whitespace and generated-asset checks SUCCESS.
+- Cloudflare workflow run 42902942820: Build and test application SUCCESS; Deploy production Worker SKIPPED. No production Worker deployment occurred.
+- CodeQL run 42902942836: IN PROGRESS at report refresh; do not treat as passed until final workflow status.
+- No local test execution was performed outside GitHub Actions.
 
-GIT DIFF --STAT (excluding this review.txt file)
+GIT DIFF --STAT (code/workflow files; review.txt excluded)
 .github/workflows/ci.yml | modified | +13 -0
 .github/workflows/test.yml | modified | +13 -0
 server/ai/agents/security-agent.js | modified | +16 -3
@@ -52,10 +52,10 @@ server/ai/supervisor.js | modified | +4 -1
 server/ai/task-service.js | modified | +1 -1
 server/ai/task-store.js | modified | +1 -1
 server/media-library.js | modified | +29 -2
-server/media-library.test.js | modified | +33 -0
+server/media-library.test.js | modified | +39 -9
 server/media-storage.js | modified | +4 -4
 
-FULL CONTENTS OF MODIFIED FILES
+FULL CONTENTS OF MODIFIED CODE/WORKFLOW FILES
 
 
 ===== BEGIN .github/workflows/ci.yml =====
@@ -1356,18 +1356,17 @@ test('Supabase storage: upload verifies via injected MemoryStore', async functio
   try {
     const library = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
     await library.processUpdate({ update_id: 1, message: { chat: { id: -100123 }, date: 1793500000, caption: 'درس الخميس #كتب', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', mime_type: 'audio/mpeg', file_size: 11 } } });
-    const keys = await storage.listKeys('');
+    const keys = (await storage.listKeys('')).filter(key => key.startsWith('library/audio/'));
     assert.equal(keys.length, 1);
-    assert.ok(keys[0].startsWith('library/audio/'));
     assert.ok(keys[0].endsWith('lesson.mp3'));
-    // In Supabase mode there is no local media-index.json; extract id from object key path
+    // The remote metadata index is stored separately from media objects.
     const id = keys[0].split('/')[2];
     assert.match(id, /^[0-9a-f-]{36}$/i);
     await library.processUpdate({ update_id: 2, callback_query: { id: 'cb', data: 'media:approve:' + id, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } } });
     assert.equal((await library.listApproved()).length, 1);
     const f = await library.getApprovedFile(id);
     assert.equal(f.data.toString('utf8'), 'audio bytes');
-    assert.deepEqual(await storage.listKeys(''), [keys[0]]);
+    assert.deepEqual((await storage.listKeys('')).filter(key => key.startsWith('library/audio/')), [keys[0]]);
   } finally {
     await fs.rm(storageDirectory, { recursive: true, force: true });
   }
@@ -1392,13 +1391,13 @@ test('Supabase storage: reject deletes remote object', async function () {
     await library.processUpdate({ update_id: 1, message: { chat: { id: -100123 }, caption: 'درس جديد', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', file_size: 11 } } });
     // after fix, Supabase mode does not write media-index.json locally
     await assert.rejects(fs.readFile(path.join(storageDirectory, 'media-index.json'), 'utf8'), { code: 'ENOENT' });
-    const keys = await storage.listKeys('');
+    const keys = (await storage.listKeys('')).filter(key => key.startsWith('library/audio/'));
     assert.equal(keys.length, 1);
     const id = keys[0].split('/')[2];
     assert.match(id, /^[0-9a-f-]{36}$/i);
     // clean: reject path also deletes
     await library.processUpdate({ update_id: 2, callback_query: { id: 'cb', data: 'media:reject:' + id, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } } });
-    assert.deepEqual(await storage.listKeys(''), []);
+    assert.deepEqual((await storage.listKeys('')).filter(key => key.startsWith('library/audio/')), []);
   } finally {
     await fs.rm(storageDirectory, { recursive: true, force: true });
   }
@@ -1414,7 +1413,7 @@ test('Supabase storage: listApproved works without local index file', async func
     const library = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
     assert.deepEqual(await library.listApproved(), []);
     // no files created on disk (root-owned volume simulated by empty dir)
-    assert.deepEqual(await storage.listKeys(''), []);
+    assert.deepEqual(await storage.listKeys(''), ['library/_index.json']);
   } finally {
     await fs.rm(storageDirectory, { recursive: true, force: true });
   }
@@ -1452,9 +1451,8 @@ test('Supabase storage: works when storage directory is unwritable (Railway EACC
     assert.deepEqual(await library.listApproved(), []);
     // processUpdate (upload path via storeFile/save) must not touch the fs either
     await library.processUpdate({ update_id: 1, message: { chat: { id: -100123 }, date: 1793500000, caption: 'درس الخميس #كتب', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', mime_type: 'audio/mpeg', file_size: 11 } } });
-    const keys = await storage.listKeys('');
+    const keys = (await storage.listKeys('')).filter(key => key.startsWith('library/audio/'));
     assert.equal(keys.length, 1);
-    assert.ok(keys[0].startsWith('library/audio/'));
     assert.ok(keys[0].endsWith('lesson.mp3'));
     const id = keys[0].split('/')[2];
     await library.processUpdate({ update_id: 2, callback_query: { id: 'cb', data: 'media:approve:' + id, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } } });
@@ -1498,7 +1496,6 @@ test('Supabase storage: approved library index survives a simulated process rest
  const restored=await restarted.listApproved();
  assert.equal(restored.length,1);
  assert.equal(restored[0].title,'درس الاستعادة');
- assert.equal(restored[0].status,'approved');
  assert.equal(restored[0].objectKey,(await first.listApproved())[0].objectKey);
 });
 
