@@ -16,7 +16,10 @@ var APP_FILES = [
   './istiraha.css',
   './brand-motion.css',
   './istiraha-content.js',
-  './istiraha.js',\n  './live-client.js',\n  './live.html',\n  './live-admin.html',
+  './istiraha.js',
+  './live-client.js',
+  './live.html',
+  './live-admin.html',
   './brand-intro.js'
 ];
 var STATIC_FILE = /\.(?:css|js|mjs|json|svg|png|jpe?g|webp|ico|woff2?|ttf|eot)$/i;
