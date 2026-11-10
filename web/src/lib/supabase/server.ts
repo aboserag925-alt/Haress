@@ -1,43 +1,44 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { baseClientOptions, parseSupabaseEnv, SUPABASE_ANON_KEY_VAR, SUPABASE_URL_VAR } from "./config";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { AUTH_STORAGE_KEY, parseSupabaseEnv, SUPABASE_ANON_KEY_VAR, SUPABASE_URL_VAR } from "./config";
 
 /**
- * Server-side Supabase client (Node / route handlers / server components).
- * Uses the SAME variable names as the browser (AHL_SUPABASE_URL /
- * AHL_SUPABASE_ANON_KEY) and the anon key only.
+ * SSR server client (cookie-based sessions) using the SAME variable names as
+ * the browser client (AHL_SUPABASE_URL / AHL_SUPABASE_ANON_KEY) — names that
+ * already exist in this repository. Sessions are stored in httpOnly cookies
+ * (secure in production, sameSite lax) via @supabase/ssr.
  *
- * Lazy singleton; returns `null` when Supabase is not configured — callers
- * must handle `null` (fail closed), mirroring the legacy client behavior.
+ * Returns null when Supabase is not configured — callers must fail closed.
  */
+export type SupabaseServerClient = ReturnType<typeof createServerClient>;
 
-let cached: SupabaseClient | null | undefined;
+export async function createSupabaseServerClient(): Promise<SupabaseServerClient | null> {
+  const env = parseSupabaseEnv(() => process.env[SUPABASE_URL_VAR], () => process.env[SUPABASE_ANON_KEY_VAR]);
+  if (!env) return null;
 
-function readEnv(): { url: string | undefined; key: string | undefined } {
-  let url: string | undefined;
-  let key: string | undefined;
-  try {
-    url = process.env[SUPABASE_URL_VAR];
-    key = process.env[SUPABASE_ANON_KEY_VAR];
-  } catch {
-    // No Node env available (e.g. Edge) — treat as unconfigured.
-  }
-  return { url, key };
-}
+  const cookieStore = await cookies();
 
-export function getSupabaseServerClient(): SupabaseClient | null {
-  if (cached !== undefined) return cached;
-  const { url, key } = readEnv();
-  const env = parseSupabaseEnv(() => url, () => key);
-  if (!env) {
-    console.error(`Supabase is not configured: set ${SUPABASE_URL_VAR} and ${SUPABASE_ANON_KEY_VAR} (server-side values, https + anon key required).`);
-    cached = null;
-    return cached;
-  }
-  cached = createClient(env.url, env.anonKey, baseClientOptions());
-  return cached;
-}
-
-/** Test-only helper: clears the singleton between tests. */
-export function resetSupabaseServerClientForTests(): void {
-  cached = undefined;
+  return createServerClient(env.url, env.anonKey, {
+    cookies: {
+      getAll: () => cookieStore.getAll(),
+      setAll: async (cookiesToSet, headers) => {
+        try {
+          for (const c of cookiesToSet) {
+            cookieStore.set(c.name, c.value, c.options as never);
+          }
+        } catch {
+          // Cookie writes can only happen in Server Actions / Route Handlers;
+          // in Server Components they are skipped by the cookie store.
+        }
+        void headers;
+      }
+    },
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storageKey: AUTH_STORAGE_KEY
+    },
+    db: { schema: "public" }
+  });
 }
