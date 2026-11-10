@@ -128,3 +128,14 @@ test('public live state is cached and legacy route keeps its exact response cont
   assert.match(stateRes.headers['Cache-Control'], /max-age=30/);
   assert.equal(JSON.parse(stateRes.body).is_live, false);
 });
+
+test('allows a cross-site browser request only when its exact origin is allowlisted', async () => {
+  const fetch = makeFetch();
+  const handler = createAdminApi({ env, fetch });
+  const res = responseRecorder();
+  await handler(request('POST', '/api/admin/live', {
+    is_live: false, stream_title: 'البث المباشر'
+  }, { origin: 'https://app.example.test', 'sec-fetch-site': 'cross-site' }), res, '/api/admin/live');
+  assert.equal(res.status, 200);
+  assert.equal(fetch.calls.some(call => call.init.method === 'POST' && call.url.includes('/live_state')), true);
+});
