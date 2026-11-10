@@ -7,7 +7,8 @@ class HaresAISupervisor {
   constructor(agents={}) { this.agents=agents; }
   async analyze(input) {
     const assessment=assess(input);
-    let task=createTask(input,assessment);
+    // Analysis input is untrusted; trusted tasks must be created through a separate internal path.
+    let task=createTask({...input,trustedSource:false},assessment);
     task=transition(task,'ANALYZED');
     const names=route(input.type||'suggestion');
     const reports=[];
