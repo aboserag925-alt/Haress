@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #050505;
+  --color-panel: #0c0c0c;
+  --color-panel-light: #141414;
+  --color-gold: #c49a54;
+  --color-gold-soft: #e0c48f;
+  --color-gold-dim: #7a6437;
+  --color-ink: #f2ede3;
+  --color-muted: #a7a091;
+  --font-sans: "Tajawal", "Cairo", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  min-height: 100dvh;
+}
+
+::selection {
+  background: rgba(196, 154, 84, 0.35);
+}
+
+/* Arch-framed photo of the doctor (قوسي) */
+.arch-frame {
+  border: 1px solid rgba(196, 154, 84, 0.45);
+  border-radius: 9999px 9999px 14px 14px;
+  padding: 6px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(196, 154, 84, 0.12), rgba(5, 5, 5, 0) 70%);
+  box-shadow: 0 0 40px rgba(196, 154, 84, 0.12);
+}
+
+.arch-frame img {
+  display: block;
+  border-radius: 9999px 9999px 10px 10px;
+}
+
+.gold-rule {
+  height: 1px;
+  background: linear-gradient(to left, rgba(196, 154, 84, 0), rgba(196, 154, 84, 0.7), rgba(196, 154, 84, 0));
+}
+
+.card-surface {
+  background: linear-gradient(180deg, var(--color-panel-light), var(--color-panel));
+  border: 1px solid rgba(196, 154, 84, 0.2);
+  border-radius: 14px;
+}
+
+.card-surface:hover {
+  border-color: rgba(196, 154, 84, 0.5);
+}

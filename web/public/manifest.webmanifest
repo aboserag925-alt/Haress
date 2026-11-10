@@ -1,0 +1,15 @@
+{
+  "name": "إستراحة أهل الأثر",
+  "short_name": "أهل الأثر",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "description": "مجلس لتدارس العلم والأدب: دروس يومية في الحديث والعقيدة والتفسير والفقه.",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

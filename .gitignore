@@ -15,3 +15,8 @@ skills-lock.json
 wrangler-dry-run.log
 wrangler-error.txt
 hares-preview.zip
+.next/
+.open-next/
+.wrangler/
+next-env.d.ts
+tsconfig.tsbuildinfo
