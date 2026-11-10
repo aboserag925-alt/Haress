@@ -46,6 +46,7 @@ function makeFetch({ admin = true, rows } = {}) {
     return { ok: false, status: 404, json: async () => ({}) };
   };
   fetch.calls = calls;
+  fetch.getRows = () => rows;
   return fetch;
 }
 const env = {
@@ -101,6 +102,7 @@ test('upserts the singleton row and never deletes then inserts', async () => {
   assert.equal(JSON.parse(write.init.body).id, 1);
   assert.equal(fetch.calls.some(call => call.init.method === 'DELETE'), false);
   assert.equal(JSON.parse(res.body).state.is_live, true);
+  assert.equal(fetch.getRows().length, 1, 'the singleton row remains present after the upsert');
 });
 
 test('rejects cross-origin CSRF requests', async () => {
@@ -110,4 +112,19 @@ test('rejects cross-origin CSRF requests', async () => {
   await handler(request('POST', '/api/admin/live', { is_live: false }, { origin: 'https://evil.example' }), res, '/api/admin/live');
   assert.equal(res.status, 403);
   assert.equal(fetch.calls.some(call => call.url.endsWith('/auth/v1/user')), false);
+});
+
+test('public live state is cached and legacy route keeps its exact response contract', async () => {
+  const fetch = makeFetch();
+  const handler = createAdminApi({ env, fetch });
+  const res = responseRecorder();
+  await handler(request('GET', '/api/live'), res, '/api/live');
+  assert.equal(res.status, 200);
+  assert.deepEqual(JSON.parse(res.body), { live: false, videoId: null });
+  assert.match(res.headers['Cache-Control'], /max-age=30/);
+  const stateRes = responseRecorder();
+  await handler(request('GET', '/api/live/state'), stateRes, '/api/live/state');
+  assert.equal(stateRes.status, 200);
+  assert.match(stateRes.headers['Cache-Control'], /max-age=30/);
+  assert.equal(JSON.parse(stateRes.body).is_live, false);
 });
