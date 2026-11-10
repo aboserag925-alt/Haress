@@ -16,6 +16,7 @@ import { getAdminUserId, AdminForbiddenError } from "../lib/admin-guard";
 import { sanitizeText, MAX_TEXT_LENGTH, isSameOrigin } from "../lib/security";
 import { getSupabaseAdminClient, type SupabaseAdminClient } from "../lib/supabase/admin-client";
 import { getEntityFields, isAdminEntity, type AdminEntity } from "../lib/admin-entities";
+import { providerFromStreamUrl } from "../lib/live-state";
 
 export type AdminActionResult = { ok: true } | { ok: false; error: string };
 
@@ -128,4 +129,47 @@ export async function adminDeleteResource(formData: FormData): Promise<void> {
   if (error) return;
   await auditWrite(admin, actorId, `admin.${entity}.delete`, entity, id);
   return;
+}
+
+/**
+ * Stage 4 — adminSetLiveState: sets the live state (is_live / stream_url /
+ * stream_title) with admin self-verification and link validation.
+ */
+export async function adminSetLiveState(formData: FormData): Promise<void> {
+  const isLiveRaw = String(formData.get("is_live") ?? "false");
+  const streamUrl = String(formData.get("stream_url") ?? "").trim();
+  const streamTitle = String(formData.get("stream_title") ?? "").trim();
+  const isLive = isLiveRaw === "true";
+  const actorId = await adminActor();
+  const admin = getSupabaseAdminClient();
+  if (!admin) return;
+
+  let finalStreamUrl: string | null = null;
+  if (isLive) {
+    let parsed: URL;
+    try {
+      parsed = new URL(streamUrl);
+    } catch {
+      return;
+    }
+    if (parsed.protocol !== "https:") return;
+    const host = parsed.hostname.replace(/^www\./, "").toLowerCase();
+    const allowed = ["tiktok.com", "facebook.com", "t.me"];
+    if (!allowed.includes(host)) return;
+    finalStreamUrl = streamUrl;
+  }
+
+  const finalProvider = isLive ? providerFromStreamUrl(finalStreamUrl) : null;
+  const values: Record<string, unknown> = {
+    is_live: isLive,
+    stream_url: finalStreamUrl,
+    stream_title: streamTitle.slice(0, 180),
+    provider: finalProvider,
+    updated_at: new Date().toISOString()
+  };
+  const { error } = await admin.from("live_state").delete();
+  if (error) return;
+  const { error: insertError } = await admin.from("live_state").insert(values);
+  if (insertError) return;
+  await auditWrite(admin, actorId, "admin.live_state.set", "live_state", null);
 }

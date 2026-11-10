@@ -1,5 +1,4 @@
 const SOCIALS: Array<{ href: string; label: string }> = [
-  { href: "https://www.youtube.com/@Khaled_Najm", label: "قناة يوتيوب" },
   { href: "https://www.tiktok.com/@d.khaled.4", label: "تيك توك" },
   { href: "https://t.me/khaled_najm1", label: "تيليجرام" }
 ];
