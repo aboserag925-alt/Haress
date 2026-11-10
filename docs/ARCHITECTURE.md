@@ -57,3 +57,15 @@ Repo code never contains secret values. Only **variable names that already exist
   - **No write policies for `anon`/browser `authenticated`**: public roles receive SELECT only. Admin writes flow solely through `service_role` from the Node server (which authorizes admins server-side via `admin_users`) — the repository's existing boundary ("no browser role can grant itself admin") is preserved; existing RLS on `lectures`/`admin_users`/`user_data` is untouched.
   - Idempotency is contract-tested in `web/migrations.test.js` (npm test).
 - **Nothing is executed** — applying the migration to the Supabase project is an explicit owner action (SQL Editor / Supabase CLI). No repo-side code or CI job runs DDL/DML against production.
+
+## 6. Auth & Admin (Stage 3)
+
+- **Unified SSR client** — `web/src/lib/supabase/server.ts` now uses `@supabase/ssr` `createServerClient` with cookie-based sessions (`getAll`/`setAll` via `next/headers` cookies; httpOnly/secure/sameSite via @supabase/ssr defaults + storageKey `ahl-athar-auth`), same variable names (`AHL_SUPABASE_URL` / `AHL_SUPABASE_ANON_KEY`), fail-closed when unconfigured.
+- **Admin authorization** — `web/src/middleware.ts` protects `/admin/:path*`: session via SSR client (`auth.getUser`) + admin membership via service-role lookup in `admin_users`; denies (redirect `/`) when unauthenticated or non-admin; sets `Cache-Control: private, no-cache, no-store...` on auth responses. `web/src/lib/admin-guard.ts` (`getAdminUserId` / `requireAdmin` / `AdminForbiddenError`) is the single self-verifying entry used by admin actions/pages; every admin action re-verifies itself (CSRF same-origin + admin check), never relying on middleware alone.
+- **Admin actions** — `web/src/actions/admin.ts`: create/update/delete via service-role client, input sanitization via entity field descriptors (`web/src/lib/admin-entities.ts`), audit_log writes (`web/src/lib/supabase/admin-client.ts`, `supabase/migrations/0002_stage3_audit_log.sql`).
+- **Auth actions** — `web/src/actions/auth.ts`: email/password sign-in & sign-up via unified SSR client, rate limits (`web/src/lib/rate-limit.ts`), unified generic error (`web/src/lib/security.ts` `GENERIC_AUTH_ERROR`); magic link intentionally deferred (not confirmed enabled in project).
+- **Media upload** — `web/src/lib/storage.ts`: server-side admin upload with MIME allowlist, magic-byte check, 25MB size cap, safe filename, separate public/draft buckets (`ahl-media-public` / `ahl-media-drafts`).
+- **Admin UI** — `web/app/admin/**` (overview, list, create, edit) under /admin; server components read via admin client; forms post to server actions which self-verify.
+
+### Stage 3 OWNER ACTIONS (additions)
+- Set `SUPABASE_SERVICE_ROLE_KEY` on the hosting provider (server-only; consumed by admin/storage/audit server paths).

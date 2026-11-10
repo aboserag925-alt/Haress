@@ -22,12 +22,14 @@ test("unified client uses only variable names that exist in this repository", as
 });
 
 test("server and browser clients share the same option factory", async () => {
+  const config = await readFile(join(HERE, "src/lib/supabase/config.ts"), "utf8");
   const server = await readFile(join(HERE, "src/lib/supabase/server.ts"), "utf8");
   const browser = await readFile(join(HERE, "src/lib/supabase/client.ts"), "utf8");
-  assert.match(server, /baseClientOptions/);
+  assert.match(config, /baseClientOptions/);
+  assert.match(server, /createServerClient/);
   assert.match(browser, /baseClientOptions/);
   assert.match(browser, /getSupabaseBrowserClient/);
-  assert.match(server, /getSupabaseServerClient/);
+  assert.match(server, /createSupabaseServerClient/);
 });
 
 test("migration is idempotent and covers every Stage-2 table", async () => {
