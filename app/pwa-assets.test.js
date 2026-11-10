@@ -61,7 +61,7 @@ test('manual live UI only links to allowlisted HTTPS providers and does not embe
   assert.match(client, /tiktok\.com/);
   assert.match(client, /facebook\.com/);
   assert.match(client, /t\.me/);
-  assert.match(client, /url\\.protocol === 'https:'/);
+  assert.match(client, /url\.protocol === 'https:'/);
   assert.match(livePage, /rel="noopener noreferrer"/);
   assert.match(livePage, /60000/);
   assert.match(livePage, /visibilitychange/);
