@@ -72,6 +72,10 @@
     return typeof value === 'string' && VIDEO_ID_RE.test(value);
   }
 
+  function isLiveDetectionEnabled() {
+    return Boolean(cfg.live && cfg.live.autoDetect === true && cfg.live.apiPath);
+  }
+
   function liveState() {
     if (liveRuntime.state === 'checking') return 'checking';
     if (liveRuntime.state !== 'live') return 'offline';
@@ -107,7 +111,7 @@
   }
 
   function checkLiveStatus() {
-    if (!cfg.live || !cfg.live.apiPath) {
+    if (!isLiveDetectionEnabled()) {
       liveRuntime.state = 'offline';
       renderLive();
       return Promise.resolve();
@@ -163,6 +167,13 @@
   }
 
   function startLivePolling() {
+    if (!isLiveDetectionEnabled()) {
+      liveRuntime.state = 'offline';
+      liveRuntime.videoId = null;
+      liveRuntime.error = false;
+      renderLive();
+      return;
+    }
     checkLiveStatus();
     var ms = Number(cfg.live && cfg.live.refreshMs) || 120000;
     window.setInterval(function () {
