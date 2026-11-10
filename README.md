@@ -195,7 +195,7 @@ node --test server/live-api.test.js
 ### الأسئلة
 - النموذج: تحقق طول (5–1600)، تعقيم وسوم، حد معدل عميل (سؤال/دقيقة) + حد خادم (5/15 دقيقة) + Turnstile. الحالات: تحميل/فشل/فارغ/نجاح واضحة.
 - الخادم (`server/index.js`): `sanitizeQuestion()` + إدخال best-effort إلى `audience_questions` عبر نفس `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`؛ عند غياب الجدول (`PGRST205`) يستمر الطلب دون فشل.
-- Worker: حد معدل `60/دقيقة/IP` لـ`/api/live` (ذاكرة Function).
+- حالة البث اليدوي: قراءة عامة بكاش 30 ثانية، وتحديث المشرف محمي بالجلسة و`admin_users` وCSRF.
 
 ### الحالات غير المتصلة
 - المحاضرات/المكتبة: عند نقص الجداول أو فراغها تعرض الواجهة «قادمة قريبًا» بأناقة بدل الانهيار، وتعمل تلقائيًا عند توفر الجداول.
@@ -213,4 +213,4 @@ npm.cmd test
 ## ما يحتاج تدخلاً يدويًا (بالترتيب)
 1. راجع Migration البث اليدوي؛ لا تُنفّذها على الإنتاج قبل موافقة مستقلة.
 2. Supabase: راجع `supabase/migrations/20261109_ahl_safe_idempotent.sql` ثم نفّذه في SQL Editor ثم تحقق من `audience_questions` و`lectures` و`user_data`.
-3. انشر Worker عبر سير العمل بعد الدمج، ثم اختبر `/api/live` من `hares.aboserag925.workers.dev`.
+3. لا تنشر خادم Node أو الموقع من هذا الفرع؛ بعد موافقة نشر مستقلة، تحقق من `/api/health` و`/api/live/state` و`/api/live` على عنوان الخادم الفعلي.
