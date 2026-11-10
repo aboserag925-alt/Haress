@@ -100,12 +100,14 @@ function createAdminApi(options) {
 
   function csrfAllowed(request) {
     const origin = request.headers.origin;
-    if (!origin || request.headers['sec-fetch-site'] === 'cross-site') return false;
+    if (!origin) return false;
     let parsed;
     try { parsed = new URL(origin); } catch (_) { return false; }
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
     const allowed = String(env.ALLOWED_ORIGINS || '').split(',').map(value => value.trim()).filter(Boolean);
+    // Cross-site is permitted only for an exact, explicitly trusted frontend origin.
     if (allowed.length) return allowed.includes(parsed.origin);
+    if (request.headers['sec-fetch-site'] === 'cross-site') return false;
     return Boolean(request.headers.host && parsed.host.toLowerCase() === String(request.headers.host).toLowerCase());
   }
 
