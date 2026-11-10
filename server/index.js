@@ -415,12 +415,6 @@ function createServer(options) {
       sendJson(response, 200, { ok: true });
       return;
     }
-    if (requestUrl.pathname === '/api/live' && request.method === 'GET') {
-      // محليًا/احتياطيًا: بدون مفاتيح يوتيوب نرجع offline آمنًا بدل 404.
-      // في Cloudflare Worker يُستبدل هذا بمنطق worker/live.mjs الكامل.
-      sendJson(response, 200, { live: false, videoId: null });
-      return;
-    }
     if (requestUrl.pathname === '/api/library' && request.method === 'GET') {
       try {
         sendJson(response, 200, { items: await mediaLibrary.listApproved() });
