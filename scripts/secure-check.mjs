@@ -13,13 +13,16 @@ const secretPatterns = [
   /ghp_[A-Za-z0-9]{36}/,
   /BEGIN (RSA )?PRIVATE KEY/,
   /TELEGRAM_BOT_TOKEN["'\s:]+[0-9]{8}:/,
-  /YOUTUBE_API_KEY["'\s:]+[A-Za-z0-9_-]{20,}/,
 ];
 
 let failed = false;
 for (const file of frontendRoots) {
   const text = fs.readFileSync(file, 'utf8');
-  if (/youtube|YOUTUBE_API_KEY|YOUTUBE_CHANNEL_ID/i.test(text)) {\n    console.error('Secure-check FAILED: legacy video-platform integration remains in ' + path.relative(root, file));\n    failed = true;\n  }\n  for (const re of secretPatterns) {
+  if (/youtube|YOUTUBE_API_KEY|YOUTUBE_CHANNEL_ID/i.test(text)) {
+    console.error('Secure-check FAILED: legacy video-platform integration remains in ' + path.relative(root, file));
+    failed = true;
+  }
+  for (const re of secretPatterns) {
     if (re.test(text)) {
       console.error('Secure-check FAILED: secret-like pattern in ' + path.relative(root, file));
       failed = true;
