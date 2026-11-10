@@ -37,7 +37,6 @@
       note: 'المواعيد كما هي مثبتة في جدول التطبيق الحالي.'
     },
     links: {
-      youtube: { label: 'يوتيوب', url: 'https://www.youtube.com/@khaled_najm' },
       tiktok: { label: 'تيك توك', url: 'https://www.tiktok.com/@d.khaled.4' },
       telegramChannel: { label: 'قناة تيليجرام', url: 'https://t.me/khaled_najm1' },
       telegramGroup: { label: 'مجموعة المجلس', url: 'https://t.me/+H-Rpxhc371VhYzU0' },
@@ -51,14 +50,11 @@
       state: 'offline',
       verified: false,
       url: '',
-      platform: 'يوتيوب',
+      platform: 'مزود خارجي',
       title: 'البث المباشر',
-      autoDetect: false,
-      apiPath: '/api/live',
-      apiFallbackUrl: '',
-      refreshMs: 120000,
-      offlineMessage: 'اكتشاف البث المباشر تلقائيًا غير مفعّل حاليًا؛ تابع قناة الدكتور لمعرفة موعد البث.',
-      note: 'تم ربط قناة الدكتور خالد نجم حارس السنة. رابط القناة متاح للمتابعة؛ اكتشاف البث التلقائي اختياري وسيُفعّل لاحقًا عند توفير إعداداته.',
+      refreshMs: 60000,
+      offlineMessage: 'لا يوجد بث معلن حاليًا.',
+      note: 'يُدار البث يدويًا من لوحة المشرف، وتُحدّث حالته تلقائيًا كل دقيقة.',
       checkingLabel: 'جارٍ التحقق من حالة البث…',
       errorLabel: 'تعذّر التحقق من البث الآن. ستتم إعادة المحاولة تلقائيًا.'
     },
