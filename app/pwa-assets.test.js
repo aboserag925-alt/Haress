@@ -57,6 +57,8 @@ test('manual live UI only links to allowlisted HTTPS providers and does not embe
   const { allowedUrl } = require('./live-client');
   assert.equal(allowedUrl('https://www.tiktok.com/@example/live'), true);
   assert.equal(allowedUrl('https://evil.example/live'), false);
+  assert.equal(allowedUrl('https://media.example.test/live', ['media.example.test']), true);
+  assert.equal(allowedUrl('https://evil.example/live', ['media.example.test']), false);
   assert.equal(allowedUrl('http://www.tiktok.com/live'), false);
   const client = fs.readFileSync(path.join(appDirectory, 'live-client.js'), 'utf8');
   const livePage = fs.readFileSync(path.join(appDirectory, 'live.html'), 'utf8');
