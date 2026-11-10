@@ -93,7 +93,8 @@ function createAdminApi(options) {
       stream_url: row.stream_url || null,
       stream_title: typeof row.stream_title === 'string' ? row.stream_title : 'البث المباشر',
       provider: row.provider || null,
-      updated_at: row.updated_at || null
+      updated_at: row.updated_at || null,
+      allowed_hosts: liveAllowedHosts(env)
     }};
     return liveCache.value;
   }
@@ -126,7 +127,7 @@ function createAdminApi(options) {
         else sendJson(response, 200, state, cacheHeaders);
       } catch (error) {
         console.error('Public live state request failed:', error.message);
-        const offline = { is_live: false, stream_url: null, stream_title: 'البث المباشر', provider: null, updated_at: null };
+        const offline = { is_live: false, stream_url: null, stream_title: 'البث المباشر', provider: null, updated_at: null, allowed_hosts: liveAllowedHosts(env) };
         if (pathname === '/api/live') sendJson(response, 200, { live: false, videoId: null }, { 'Cache-Control': 'public, max-age=30, s-maxage=30' });
         else sendJson(response, 200, offline, { 'Cache-Control': 'public, max-age=30, s-maxage=30' });
       }
@@ -200,7 +201,8 @@ function createAdminApi(options) {
       liveCache = { at: Date.now(), value: {
         is_live: rows[0].is_live === true, stream_url: rows[0].stream_url || null,
         stream_title: rows[0].stream_title || 'البث المباشر', provider: rows[0].provider || null,
-        updated_at: rows[0].updated_at || payload.updated_at
+        updated_at: rows[0].updated_at || payload.updated_at,
+        allowed_hosts: liveAllowedHosts(env)
       }};
       // audit_log is optional and its schema is not assumed; failures never undo a successful state update.
       try {
@@ -376,15 +378,18 @@ async function readBody(request) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 
+function liveAllowedHosts(env = process.env) {
+  return String(env.LIVE_ALLOWED_HOSTS || 'tiktok.com,facebook.com,t.me')
+    .split(',').map(host => host.trim().toLowerCase()).filter(Boolean);
+}
+
 function isAllowedLiveUrl(value, env = process.env) {
   if (typeof value !== 'string' || !value.trim() || value.length > 2048) return false;
   let url;
   try { url = new URL(value); } catch (_) { return false; }
   if (url.protocol !== 'https:' || url.username || url.password || (url.port && url.port !== '443')) return false;
-  const configured = String(env.LIVE_ALLOWED_HOSTS || 'tiktok.com,facebook.com,t.me')
-    .split(',').map(host => host.trim().toLowerCase()).filter(Boolean);
   const hostname = url.hostname.toLowerCase();
-  return configured.some(host => hostname === host || hostname.endsWith('.' + host));
+  return liveAllowedHosts(env).some(host => hostname === host || hostname.endsWith('.' + host));
 }
 
-module.exports = { createAdminApi, validateLecture, isAllowedLiveUrl };
+module.exports = { createAdminApi, validateLecture, isAllowedLiveUrl, liveAllowedHosts };
