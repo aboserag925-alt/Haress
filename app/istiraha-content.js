@@ -46,14 +46,15 @@
       saudiRadio: { label: 'إذاعة القرآن الكريم — السعودية', url: 'https://radioplus.sba.sa/ar/live/4' }
     },
     live: {
-      /* الحالة الحالية تأتي من /api/live (Worker). عند غيابها تبقى الواجهة offline آمنة.
-         الشارة الحمراء تظهر فقط عندما live=true ومعرّف فيديو صالح. */
+      /* اكتشاف البث متوقف حاليًا بقرار المنتج. يُحفظ المسار للتفعيل المستقبلي فقط.
+         لا تُرسل الواجهة أي طلب حتى يصبح autoDetect=true صراحةً. */
       state: 'offline',
       verified: false,
       url: '',
       platform: 'يوتيوب',
       title: 'البث المباشر',
-      apiPath: '',
+      autoDetect: false,
+      apiPath: '/api/live',
       apiFallbackUrl: '',
       refreshMs: 120000,
       offlineMessage: 'اكتشاف البث المباشر تلقائيًا غير مفعّل حاليًا؛ تابع قناة الدكتور لمعرفة موعد البث.',
