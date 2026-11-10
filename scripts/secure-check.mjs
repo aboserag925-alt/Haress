@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = new URL('../', import.meta.url).pathname.replace(/\/$/, '');
-const frontendRoots = [path.join(root, 'index.html'), path.join(root, 'app/index.html'), path.join(root, 'app/istiraha.js'), path.join(root, 'app/istiraha-content.js')];
+const frontendRoots = [path.join(root, 'index.html'), path.join(root, 'app/index.html'), path.join(root, 'app/istiraha.js'), path.join(root, 'app/istiraha-content.js'), path.join(root, 'app/live-client.js'), path.join(root, 'app/live.html'), path.join(root, 'app/live-admin.html')];
 const secretPatterns = [
   /service_role["'\s:]+[A-Za-z0-9._~-]{30,}/i,
   /AIza[A-Za-z0-9_-]{35}/,
@@ -19,7 +19,7 @@ const secretPatterns = [
 let failed = false;
 for (const file of frontendRoots) {
   const text = fs.readFileSync(file, 'utf8');
-  for (const re of secretPatterns) {
+  if (/youtube|YOUTUBE_API_KEY|YOUTUBE_CHANNEL_ID/i.test(text)) {\n    console.error('Secure-check FAILED: legacy video-platform integration remains in ' + path.relative(root, file));\n    failed = true;\n  }\n  for (const re of secretPatterns) {
     if (re.test(text)) {
       console.error('Secure-check FAILED: secret-like pattern in ' + path.relative(root, file));
       failed = true;
