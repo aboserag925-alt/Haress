@@ -44,9 +44,16 @@ Repo code never contains secret values. Only **variable names that already exist
 - GitHub Actions: all Node-based workflows run Node **26 LTS** (`26.13.0`, `.nvmrc`, `engines.node`). `web/` builds in CI (`ci.yml` job `web`), including `tsc --noEmit`.
 - **Termux/Android caveat:** local `next build` is attempted locally; if native tooling fails on Termux, CI is the authoritative build environment (documented in the Stage 1 PR).
 
-## 5. Data layer plan (Stage 2 details land in this file at Stage 2)
+## 5. Data layer (Stage 2)
 
-- Unified Supabase client: `web/src/lib/supabase/` (server + browser, same variable names via `AHL_SUPABASE_URL` / `AHL_SUPABASE_ANON_KEY`).
-- Migrations are **idempotent** (`create table if not exists`, `drop policy if exists`) and live under `supabase/migrations/`. They are **written, not executed** — production SQL is forbidden from repo-side work.
-- Public read is restricted to published content; writes require `admin_users`. Existing RLS on already-live tables is never touched.
-- `audience_questions` is not present in `supabase/schema.sql`; no Stage 2 migration touches it. If it exists in production it must be inspected (by the owner) before any future migration concerning it.
+- **Unified Supabase client** — `web/src/lib/supabase/`:
+  - `config.ts` — single source of configuration parsing/fail-safe validation. The **same variable names** serve server and browser: `AHL_SUPABASE_URL` / `AHL_SUPABASE_ANON_KEY` (both already exist in the repository as GitHub Actions variables; browser copies are public-safe values injected at deploy time, exactly like the legacy `window.AHL_SUPABASE_CONFIG` flow). No value ever ships in code; the module returns `null` when unconfigured and callers fail closed.
+  - `server.ts` — lazy server singleton (Node/route handlers), anon key only, same options as browser.
+  - `client.ts` — lazy browser singleton (`"use client"`), same variable names.
+  - `types.ts` — shared row types mirroring the migration until generated `Database` types land.
+- **Migrations** — `supabase/migrations/0001_stage2_data_layer.sql`:
+  - Covers `series`, `articles`, `books`, `quran_items`, `forum_threads`, `forum_posts`, `site_settings` (all `create table if not exists`, with public SELECT restricted to `status = 'published'` / `'visible'`) plus a guarded additive `lecture.series_id` link to `series`.
+  - `audience_questions` was inspected first: it is absent from `supabase/schema.sql`, and the migration deliberately does not reference it (only in comments). If it exists in production, inspecting it is an owner action.
+  - **No write policies for `anon`/browser `authenticated`**: public roles receive SELECT only. Admin writes flow solely through `service_role` from the Node server (which authorizes admins server-side via `admin_users`) — the repository's existing boundary ("no browser role can grant itself admin") is preserved; existing RLS on `lectures`/`admin_users`/`user_data` is untouched.
+  - Idempotency is contract-tested in `web/migrations.test.js` (npm test).
+- **Nothing is executed** — applying the migration to the Supabase project is an explicit owner action (SQL Editor / Supabase CLI). No repo-side code or CI job runs DDL/DML against production.
