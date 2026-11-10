@@ -3,12 +3,12 @@
 const MAX_TITLE = 180;
 const MAX_DESCRIPTION = 4000;
 
-function sendJson(response, status, body) {
-  response.writeHead(status, {
+function sendJson(response, status, body, extraHeaders) {
+  response.writeHead(status, Object.assign({
     'Cache-Control': 'no-store',
     'Content-Type': 'application/json; charset=utf-8',
     'X-Content-Type-Options': 'nosniff'
-  });
+  }, extraHeaders || {}));
   response.end(JSON.stringify(body));
 }
 
@@ -75,7 +75,155 @@ function createAdminApi(options) {
     return admins.length ? user : null;
   }
 
+  let liveCache = { at: 0, value: null };
+
+  async function readPublicLiveState() {
+    if (liveCache.value && Date.now() - liveCache.at < 30000) return liveCache.value;
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) throw new Error('Live state is not configured');
+    const result = await fetchImpl(env.SUPABASE_URL.replace(/\\/$/, '') +
+      '/rest/v1/live_state?select=is_live,stream_url,stream_title,provider,updated_at&id=eq.1&limit=1', {
+      headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + env.SUPABASE_ANON_KEY, Accept: 'application/json' },
+      signal: AbortSignal.timeout(10000)
+    });
+    if (!result.ok) throw new Error('Live state read failed: ' + result.status);
+    const rows = await result.json();
+    const row = Array.isArray(rows) && rows[0] ? rows[0] : {};
+    liveCache = { at: Date.now(), value: {
+      is_live: row.is_live === true,
+      stream_url: row.stream_url || null,
+      stream_title: typeof row.stream_title === 'string' ? row.stream_title : 'البث المباشر',
+      provider: row.provider || null,
+      updated_at: row.updated_at || null
+    }};
+    return liveCache.value;
+  }
+
+  function csrfAllowed(request) {
+    const origin = request.headers.origin;
+    if (!origin || request.headers['sec-fetch-site'] === 'cross-site') return false;
+    let parsed;
+    try { parsed = new URL(origin); } catch (_) { return false; }
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
+    const allowed = String(env.ALLOWED_ORIGINS || '').split(',').map(value => value.trim()).filter(Boolean);
+    if (allowed.length) return allowed.includes(parsed.origin);
+    return Boolean(request.headers.host && parsed.host.toLowerCase() === String(request.headers.host).toLowerCase());
+  }
+
+  async function handleLive(request, response, pathname) {
+    const publicPath = pathname === '/api/live/state' || pathname === '/api/live';
+    if (publicPath) {
+      if (request.method !== 'GET') {
+        response.setHeader('Allow', 'GET');
+        sendJson(response, 405, { error: 'طريقة الطلب غير مدعومة.' });
+        return true;
+      }
+      try {
+        const state = await readPublicLiveState();
+        const cacheHeaders = { 'Cache-Control': 'public, max-age=30, s-maxage=30, stale-while-revalidate=15' };
+        if (pathname === '/api/live') sendJson(response, 200, { live: state.is_live, videoId: null }, cacheHeaders);
+        else sendJson(response, 200, state, cacheHeaders);
+      } catch (error) {
+        console.error('Public live state request failed:', error.message);
+        const offline = { is_live: false, stream_url: null, stream_title: 'البث المباشر', provider: null, updated_at: null };
+        if (pathname === '/api/live') sendJson(response, 200, { live: false, videoId: null }, { 'Cache-Control': 'public, max-age=30, s-maxage=30' });
+        else sendJson(response, 200, offline, { 'Cache-Control': 'public, max-age=30, s-maxage=30' });
+      }
+      return true;
+    }
+
+    if (pathname !== '/api/admin/live') return false;
+    if (request.method !== 'POST') {
+      response.setHeader('Allow', 'POST');
+      sendJson(response, 405, { error: 'طريقة الطلب غير مدعومة.' });
+      return true;
+    }
+    if (!csrfAllowed(request)) {
+      sendJson(response, 403, { error: 'تم رفض مصدر الطلب (CSRF).' });
+      return true;
+    }
+    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !env.SUPABASE_SERVICE_ROLE_KEY) {
+      sendJson(response, 503, { error: 'خدمة إدارة البث غير مهيأة.' });
+      return true;
+    }
+    try {
+      const user = await authenticate(request);
+      if (!user) {
+        sendJson(response, 403, { error: 'هذه العملية متاحة للمشرفين المصرح لهم فقط.' });
+        return true;
+      }
+      if (!String(request.headers['content-type'] || '').toLowerCase().startsWith('application/json')) {
+        sendJson(response, 415, { error: 'يجب إرسال البيانات بصيغة JSON.' });
+        return true;
+      }
+      let body;
+      try { body = await readBody(request); } catch (_) {
+        sendJson(response, 400, { error: 'بيانات الطلب غير صالحة.' });
+        return true;
+      }
+      const allowedFields = ['is_live', 'stream_url', 'stream_title'];
+      if (!body || typeof body !== 'object' || Array.isArray(body) ||
+          Object.keys(body).some(key => !allowedFields.includes(key)) ||
+          typeof body.is_live !== 'boolean' ||
+          typeof body.stream_title !== 'string' || body.stream_title.trim().length > 180) {
+        sendJson(response, 400, { error: 'بيانات حالة البث غير صالحة.' });
+        return true;
+      }
+      const streamUrl = body.stream_url == null ? '' : String(body.stream_url).trim();
+      if (body.is_live && !isAllowedLiveUrl(streamUrl, env)) {
+        sendJson(response, 400, { error: 'رابط البث يجب أن يكون HTTPS ومن نطاق مسموح.' });
+        return true;
+      }
+      if (!body.is_live && streamUrl && !isAllowedLiveUrl(streamUrl, env)) {
+        sendJson(response, 400, { error: 'رابط البث يجب أن يكون HTTPS ومن نطاق مسموح.' });
+        return true;
+      }
+      const host = streamUrl ? new URL(streamUrl).hostname.toLowerCase() : '';
+      const provider = host.includes('tiktok.com') ? 'tiktok' :
+        (host === 't.me' || host.endsWith('.t.me')) ? 'telegram' :
+        host.includes('facebook.com') ? 'facebook' : null;
+      const payload = {
+        id: 1,
+        is_live: body.is_live,
+        stream_url: streamUrl || null,
+        stream_title: body.stream_title.trim() || 'البث المباشر',
+        provider: provider,
+        updated_at: new Date().toISOString()
+      };
+      const rows = await supabase('/rest/v1/live_state?on_conflict=id&select=id,is_live,stream_url,stream_title,provider,updated_at', {
+        method: 'POST',
+        headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
+        body: JSON.stringify(payload)
+      });
+      if (!Array.isArray(rows) || !rows.length) throw new Error('Live state upsert returned no row');
+      liveCache = { at: Date.now(), value: {
+        is_live: rows[0].is_live === true, stream_url: rows[0].stream_url || null,
+        stream_title: rows[0].stream_title || 'البث المباشر', provider: rows[0].provider || null,
+        updated_at: rows[0].updated_at || payload.updated_at
+      }};
+      // audit_log is optional and its schema is not assumed; failures never undo a successful state update.
+      try {
+        await fetchImpl(env.SUPABASE_URL.replace(/\\/$/, '') + '/rest/v1/audit_log', {
+          method: 'POST',
+          headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY,
+            'Content-Type': 'application/json', Prefer: 'return=minimal' },
+          body: JSON.stringify({ actor_user_id: user.id, action: 'live_state.updated', entity_type: 'live_state',
+            entity_id: '1', metadata: { is_live: payload.is_live, provider: payload.provider } }),
+          signal: AbortSignal.timeout(8000)
+        });
+      } catch (_) { /* optional audit table */ }
+      sendJson(response, 200, { state: liveCache.value });
+      return true;
+    } catch (error) {
+      console.error('Admin live update failed:', error.message);
+      sendJson(response, 502, { error: 'تعذر حفظ حالة البث الآن.' });
+      return true;
+    }
+  }
+
   return async function handle(request, response, pathname) {
+    if (pathname === '/api/live/state' || pathname === '/api/live' || pathname === '/api/admin/live') {
+      return handleLive(request, response, pathname);
+    }
     const isLecturePath = pathname === '/api/lectures' ||
       (pathname.startsWith('/api/lectures/') &&
        /^[0-9a-f-]{36}$/i.test(pathname.slice('/api/lectures/'.length)));
@@ -226,4 +374,15 @@ async function readBody(request) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 
-module.exports = { createAdminApi, validateLecture };
+function isAllowedLiveUrl(value, env = process.env) {
+  if (typeof value !== 'string' || !value.trim() || value.length > 2048) return false;
+  let url;
+  try { url = new URL(value); } catch (_) { return false; }
+  if (url.protocol !== 'https:' || url.username || url.password || (url.port && url.port !== '443')) return false;
+  const configured = String(env.LIVE_ALLOWED_HOSTS || 'tiktok.com,facebook.com,t.me')
+    .split(',').map(host => host.trim().toLowerCase()).filter(Boolean);
+  const hostname = url.hostname.toLowerCase();
+  return configured.some(host => hostname === host || hostname.endsWith('.' + host));
+}
+
+module.exports = { createAdminApi, validateLecture, isAllowedLiveUrl };
