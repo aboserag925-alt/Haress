@@ -1,6 +1,6 @@
 # Architecture — أهل الأثر
 
-Status: drafting (Stage 1 = Next.js foundation, Stage 2 = data layer). This document grows with each stage.
+Status: drafting (Stage 1 = Next.js foundation, Stage 2 = data layer, Stage 3 = auth/admin, Stage 4 = live). This document grows with each stage.
 
 ## 1. Systems overview
 
@@ -34,9 +34,7 @@ Repo code never contains secret values. Only **variable names that already exist
 
 ### OWNER ACTIONS (reserved — do **not** wire before their stage)
 
-- **Stage 4 only — YouTube variables:** `YOUTUBE_API_KEY` and `YOUTUBE_CHANNEL_ID` are **recorded here now, to be consumed in Stage 4 only**. The owner must create them as GitHub Actions variables/secrets on the hosting provider at the start of Stage 4. No code in Stages 1–3 reads them, and no values are set in this repository.
-  - `YOUTUBE_API_KEY` — YouTube Data API key for live/lectures listing (secret; server-side or provider-injected only).
-  - `YOUTUBE_CHANNEL_ID` — channel ID `UC…` of the public channel (non-secret, but treated like the rest: nothing is written into the repo).
+- **Stage 4:** live streaming via the manual operator panel (`live_state`) with a non-restricted provider flow (embed allowlist empty by design; external "watch now" button until a provider is approved). No third-party video platform API or variables are used.
 
 ## 4. Deployment posture
 
@@ -69,3 +67,18 @@ Repo code never contains secret values. Only **variable names that already exist
 
 ### Stage 3 OWNER ACTIONS (additions)
 - Set `SUPABASE_SERVICE_ROLE_KEY` on the hosting provider (server-only; consumed by admin/storage/audit server paths).
+
+## 7. Live & Broadcast (Stage 4)
+
+- **Live state** — `supabase/migrations/0003_stage4_live_state.sql` (idempotent): `public.live_state` operational row (`is_live`, `stream_url`, `stream_title`, `provider`, `updated_at). RLS: public SELECT allowed; admin writes only via service_role (admin server path, authorized via `admin_users`).
+- **Live reads** — `web/src/lib/live-state.ts`: `getLiveState`, `getNextBroadcast`, `providerFromStreamUrl`. Public reads go through the unified server (anon) client behind the public RLS policy.
+- **Public live API** — `web/app/api/live/route.ts` keeps the legacy compatibility shape `{ live, videoId }` (`live` from `live_state`, `videoId: null`); `web/app/api/live/state/route.ts` returns `{ live, next }` with `revalidate = 30`; `web/app/api/broadcast/next/route.ts` returns `{ next }` with `revalidate = 30`.
+- **Public /live page** — `web/app/live/page.tsx` + `web/src/components/LiveScreen.tsx`: status bar (`is_live`), when live → iframe 16:9 in the golden container only for an embeddable provider from the allowlist, otherwise a big external button "شاهد البث الآن" (`target="_blank"`, `rel="noopener noreferrer"`); when off → offline state with next broadcast. 60s refresh, stops on tab hide (`visibilitychange`).
+- **Admin live panel** — `web/app/admin/live/page.tsx` + `web/src/actions/admin.ts` `adminSetLiveState`: admin self-verification (via `admin_users`), CSRF same-origin check, stream URL validation (https only + allowlisted domains: tiktok.com / facebook.com / t.me), writes `live_state`, writes audit_log (`admin.live_state.set`).
+- **Broadcast schedule** — `supabase/migrations/0004_stage4_broadcast_schedule.sql` (idempotent): `public.broadcast_schedule` (`title`, `starts_at_utc`, `status` draft|published, optional `stream_url`). RLS: public SELECT published only; admin writes via service_role.
+- **Homepage** — `web/src/components/NextBroadcast.tsx`: upcoming broadcast countdown from `/api/broadcast/next`.
+- **Navbar** — `web/components/LiveButton.tsx`: always-visible red live button with pulsing dot, reads `/api/live`, links to `#live`.
+
+### Stage 4 OWNER ACTIONS (additions)
+- Apply `0003_stage4_live_state.sql` and `0004_stage4_broadcast_schedule.sql` manually (SQL Editor / Supabase CLI) — never from this repository.
+- No third-party video platform variables are required or used (Stage 4 live flow uses manual operator state only).

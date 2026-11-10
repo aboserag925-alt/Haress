@@ -1,34 +1,23 @@
-// Stage-1 /api/live contract:
-// Forwards to the legacy Node backend `${AHL_API_BASE_URL}/api/live` and
-// ALWAYS returns a well-formed JSON status (fail-closed: live=false) so the
-// always-visible LiveButton can never break. No secret values enter this code.
+// Stage 4 — legacy /api/live compatibility endpoint.
+// Shape preserved for clients/Worker consumers: { live, videoId }.
+// `live` is read from the Stage-4 `live_state` table; `videoId` is returned
+// as null for compatibility (embed video id wiring comes with the live
+// provider integration in a later stage).
+// Fail-closed: never reports live without a resolvable live state.
+
 import { NextResponse } from "next/server";
+import { getLiveState } from "../../../src/lib/live-state";
 
 export const dynamic = "force-dynamic";
 
-const FALLBACK = { ok: true, live: false, source: "fallback" as const };
+const OFFLINE = { live: false, videoId: null };
 
 export async function GET() {
   const base = process.env.AHL_API_BASE_URL;
-  if (!base) return NextResponse.json(FALLBACK);
-
-  try {
-    const url = `${base.replace(/\/+$/, "")}/api/live`;
-    const res = await fetch(url, {
-      headers: { accept: "application/json" },
-      cache: "no-store",
-      signal: AbortSignal.timeout(5_000)
-    });
-    if (!res.ok) return NextResponse.json(FALLBACK);
-    const data = (await res.json()) as Record<string, unknown>;
-    // Only pass through the fields the button needs; never echo unknown data.
-    return NextResponse.json({
-      ok: true,
-      live: Boolean(data?.live === true || data?.streaming === true),
-      source: "backend"
-    });
-  } catch (error) {
-    console.error("api/live: backend unreachable:", error instanceof Error ? error.message : error);
-    return NextResponse.json(FALLBACK);
-  }
+  const live = await getLiveState();
+  const isLive = live?.is_live === true;
+  const payload = isLive ? { live: true, videoId: null } : OFFLINE;
+  void base;
+  const INIT: RequestInit = { cache: "no-store" };
+  return NextResponse.json(payload, INIT);
 }

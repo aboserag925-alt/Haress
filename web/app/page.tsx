@@ -3,6 +3,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import LiveButton from "../components/LiveButton";
 import SectionCard from "../components/SectionCard";
+import NextBroadcast from "../src/components/NextBroadcast";
 
 const SECTIONS: Array<{
   id: string;
@@ -64,6 +65,7 @@ export default function HomePage() {
       <main className="mx-auto max-w-5xl px-4">
         <Hero />
         <div className="gold-rule my-4" aria-hidden="true" />
+        <NextBroadcast />
         <h2 className="mb-4 text-sm font-bold text-gold-dim">أقسام الموقع</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           {SECTIONS.map((s) => (
