@@ -1,13 +1,18 @@
 {
   "name": "ahl-athar",
   "private": true,
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
     "start": "node server/index.js",
     "test": "node --test server/index.test.js server/media-library.test.js server/media-storage.test.js server/lecture-api.test.js server/suggestions/suggestion.test.js server/ai/ai.test.js server/ai/approval-api.test.js app/pwa-assets.test.js scripts/smoke-check.test.mjs",
+    "build": "npm run build:app",
     "build:adhan": "node scripts/copy-adhan.mjs",
     "build:auth": "node scripts/build-auth.mjs",
     "build:app": "npm run build:adhan && npm run build:auth && npm run build:css",
     "build:css": "tailwindcss -i ./src/tailwind.css -o ./app/tailwind.css",
+    "check:secure": "npm audit --omit=dev --audit-level=high",
     "dev:css": "tailwindcss -i ./src/tailwind.css -o ./app/tailwind.css --watch",
     "smoke": "node scripts/smoke-check.mjs"
   },
