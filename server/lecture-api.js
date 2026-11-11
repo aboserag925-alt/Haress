@@ -181,9 +181,9 @@ function createAdminApi(options) {
         return true;
       }
       const host = streamUrl ? new URL(streamUrl).hostname.toLowerCase() : '';
-      const provider = host.includes('tiktok.com') ? 'tiktok' :
+      const provider = host === 'tiktok.com' || host.endsWith('.tiktok.com') ? 'tiktok' :
         (host === 't.me' || host.endsWith('.t.me')) ? 'telegram' :
-        host.includes('facebook.com') ? 'facebook' : null;
+        host === 'facebook.com' || host.endsWith('.facebook.com') ? 'facebook' : null;
       const payload = {
         id: 1,
         is_live: body.is_live,
