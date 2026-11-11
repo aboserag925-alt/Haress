@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff"><title>البث المباشر | استراحة أهل الأثر</title>
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="istiraha.css">
+<style>
+body{margin:0;background:#f7f8f5;color:#25352d;font-family:'Noto Naskh Arabic',serif}.live-wrap{width:min(760px,calc(100% - 32px));margin:8vh auto;padding:28px;border:1px solid #e3e8e1;border-radius:24px;background:#fff;box-shadow:0 18px 55px #173f3512}.live-state{display:flex;gap:10px;align-items:center;color:#68736d}.dot{width:10px;height:10px;border-radius:50%;background:#9aa49d}.dot.on{background:#c43c32;box-shadow:0 0 0 5px #c43c3218}h1{color:#173f35}.watch{display:inline-flex;margin-top:18px;padding:12px 22px;border-radius:12px;background:#173f35;color:#fff;text-decoration:none;font-weight:700}.muted{color:#68736d}.back{color:#173f35}
+</style></head>
+<body><main class="live-wrap">
+<a class="back" href="./index.html">العودة إلى المنصة</a>
+<h1>البث المباشر</h1>
+<p id="liveStatus" class="live-state" role="status" aria-live="polite"><span class="dot"></span><span>جارٍ تحميل حالة البث…</span></p>
+<h2 id="liveTitle">البث المباشر</h2>
+<p id="liveProvider" class="muted">لا يوجد بث معلن حاليًا.</p>
+<a id="watchLive" class="watch" hidden target="_blank" rel="noopener noreferrer">شاهد البث الآن</a>
+<p class="muted">تُحدّث الحالة كل 60 ثانية، وعند العودة إلى علامة التبويب.</p>
+</main>
+<script src="runtime-config.js"></script><script src="live-client.js"></script>
+<script>
+(function(){
+  var status=document.getElementById('liveStatus'),title=document.getElementById('liveTitle'),provider=document.getElementById('liveProvider'),watch=document.getElementById('watchLive');
+  async function refresh(){
+    try{
+      var state=await window.AHL_LIVE.getState();
+      title.textContent=state.stream_title||'البث المباشر';
+      var live=state.is_live===true&&window.AHL_LIVE.allowedUrl(state.stream_url);
+      status.replaceChildren();
+      var dot=document.createElement('span');dot.className='dot'+(live?' on':'');status.appendChild(dot);
+      var label=document.createElement('span');label.textContent=live?'البث مباشر الآن':'لا يوجد بث مباشر الآن';status.appendChild(label);
+      provider.textContent=live?('المزوّد: '+(state.provider||'خارجي')):'سيظهر رابط المشاهدة هنا عند تشغيل البث من لوحة المشرف.';
+      watch.hidden=!live;
+      if(live){watch.href=state.stream_url;watch.textContent='شاهد البث الآن';}
+      else watch.removeAttribute('href');
+    }catch(error){status.textContent='تعذر تحديث حالة البث. ستتم إعادة المحاولة.';}
+  }
+  refresh();setInterval(function(){if(!document.hidden)refresh();},60000);
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)refresh();});
+})();
+</script></body></html>

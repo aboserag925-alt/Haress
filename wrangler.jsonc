@@ -1,10 +1,8 @@
 {
   "name": "hares",
   "compatibility_date": "2026-11-05",
-  "main": "worker/index.mjs",
   "assets": {
-    "directory": "./app",
-    "binding": "ASSETS"
+    "directory": "./app"
   },
   "previews": {}
 }

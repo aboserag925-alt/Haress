@@ -141,16 +141,13 @@ npm.cmd start
 ```
 
 - خادم التطوير يخدم الواجهة + `/api/*` محليًا.
-- نقطة `/api/live` المحلية ترجع `{"live":false,"videoId":null}` آمنًا عند غياب مفاتيح يوتيوب.
+- `GET /api/live` يحافظ على التوافق ويرجع `{ "live": boolean, "videoId": null }`، ويقرأ الحالة اليدوية نفسها من `live_state`.
 
-## البث المباشر (Cloudflare Worker)
+## البث المباشر اليدوي
 
-الواجهة لا تحتوي مفتاح يوتيوب أبدًا. الحالة تأتي من `/api/live`:
+تُدار حالة البث من خادم Node.js عبر `GET /api/live/state` و`POST /api/admin/live`. تُقرأ الحالة العامة بمفتاح Supabase العام وبكاش 30 ثانية، بينما يتطلب التحديث جلسة مشرف مؤكدة في `admin_users` وفحص CSRF ويستخدم مفتاح الخدمة داخل الخادم فقط. قائمة النطاقات المسموحة الافتراضية هي `tiktok.com,facebook.com,t.me` ويمكن تعديلها عبر `LIVE_ALLOWED_HOSTS`. لا تُضمّن الصفحة مشغلًا داخل الصفحة؛ تفتح رابط المشاهدة الخارجي فقط. صفحة المشاهدة `/app/live.html` ولوحة الإدارة `/app/live-admin.html`.
 
-- **Worker كامل:** `worker/index.mjs` + `worker/live.mjs` — يقرأ `YOUTUBE_API_KEY` و`YOUTUBE_CHANNEL_ID` من بيئة Worker فقط، ويعيد `{ live, videoId }`، ويلتحقق من معرّف الفيديو، ويخزّن النتيجة 5 دقائق (`Cache-Control: public, max-age=300`).
-- **إعداد:** في Cloudflare Dashboard → Workers & Pages → `hares` → Settings → Variables أضف `YOUTUBE_API_KEY` و`YOUTUBE_CHANNEL_ID` (سرّي). لا يتوفر هذان المتغيران في GitHub؛ أضفهما من لوحة Cloudflare فقط.
-- **مناطق التحقق:** الأيقونة الحمراء تظهر فقط عند `live=true` ومعرّف صالح؛ عند الفشل تعرض الواجهة «غير مباشر» وتعيد المحاولة كل دقيقتين.
-- **نشر:** `wrangler.jsonc` مهيأ بـ `main: worker/index.mjs` و`ASSETS` للأصول؛ `.github/workflows/cloudflare-worker.yml` ينشر تلقائيًا بعد الاختبارات. معاينة PR عبر `wrangler deploy --dry-run` أو Workers Builds.
+**Migration:** `supabase/migrations/20261111_live_state.sql` إضافة idempotent فقط؛ لا تُطبّق تلقائيًا ولا تُنفّذ ضمن CI. جدول `broadcast_schedule` مؤجل. التفاصيل الأمنية والتشغيلية في `docs/MANUAL_LIVE.md`.
 
 ## إعدادات موجودة (أسماء ثابتة لا تغيّر)
 
@@ -160,9 +157,9 @@ npm.cmd start
 | `SUPABASE_ANON_KEY` (عام) | Supabase | GitHub Variable | نعم |
 | `AHL_SUPABASE_URL` | Supabase | GitHub Variable | نعم |
 | `AHL_API_BASE_URL` | Railway API | GitHub Variable (`https://haress-production.up.railway.app`) | نعم (أُضيف في هذه الجولة) |
+| `LIVE_ALLOWED_HOSTS` | Node live API | إعداد خادم اختياري؛ الافتراضي `tiktok.com,facebook.com,t.me` | نطاقات المشاهدة المسموحة فقط |
 | `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` | Cloudflare | `production` Environment Secret | نعم |
 | `SUPABASE_SERVICE_ROLE_KEY`، `GEMINI_API_KEY`، `TELEGRAM_BOT_TOKEN`، `TURNSTILE_SECRET` | سريّة | خادم فقط (Railway) | لا تُرفع للمشروع |
-| `YOUTUBE_API_KEY` / `YOUTUBE_CHANNEL_ID` | Cloudflare Worker | لوحة Cloudflare فقط | **يجب إضافتها يدويًا** — بدونه يبقى البث offline |
 
 لا تُنشئ ملفات `.env` جديدة ولا تُنسخ قيمًا هنا؛ استخدم الأسماء أعلاه فقط.
 
@@ -180,13 +177,13 @@ npm.cmd start
 - كل روابط خارجية تحمل `rel="noopener noreferrer"`؛ إدخال المستخدم يُعرض عبر `textContent` فقط (لا XSS).
 - `app/_headers` يوفر CSP وHSTS و`X-Content-Type-Options` و`Referrer-Policy` و`Permissions-Policy` و`X-Frame-Options` للأصول الثابتة.
 - الصور: WebP/AVIF بأحجام + `loading="lazy"`/`decoding="async"` + أبعاد صريحة و`<picture>`؛ الخطوط `display=swap` + `preconnect`.
-- التخزين المؤقت: `app/sw.js` هو `ahl-athar-v5` ويشمل الأصول الجديدة؛ وردود `/api/*` لا تُخزّن أبدًا.
+- التخزين المؤقت: `app/sw.js` هو `ahl-athar-v6` ويشمل الأصول الجديدة؛ وردود `/api/*` لا تُخزّن أبدًا.
 
 ## اختبارات
 
 ```powershell
 npm.cmd test
-node --test worker/live.test.mjs
+node --test server/live-api.test.js
 ```
 
 ## الجولة الثانية (فحص وطابور أسئلة وPWA)
@@ -198,7 +195,7 @@ node --test worker/live.test.mjs
 ### الأسئلة
 - النموذج: تحقق طول (5–1600)، تعقيم وسوم، حد معدل عميل (سؤال/دقيقة) + حد خادم (5/15 دقيقة) + Turnstile. الحالات: تحميل/فشل/فارغ/نجاح واضحة.
 - الخادم (`server/index.js`): `sanitizeQuestion()` + إدخال best-effort إلى `audience_questions` عبر نفس `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`؛ عند غياب الجدول (`PGRST205`) يستمر الطلب دون فشل.
-- Worker: حد معدل `60/دقيقة/IP` لـ`/api/live` (ذاكرة Function).
+- حالة البث اليدوي: قراءة عامة بكاش 30 ثانية، وتحديث المشرف محمي بالجلسة و`admin_users` وCSRF.
 
 ### الحالات غير المتصلة
 - المحاضرات/المكتبة: عند نقص الجداول أو فراغها تعرض الواجهة «قادمة قريبًا» بأناقة بدل الانهيار، وتعمل تلقائيًا عند توفر الجداول.
@@ -214,6 +211,6 @@ npm.cmd test
 ```
 
 ## ما يحتاج تدخلاً يدويًا (بالترتيب)
-1. Cloudflare: أضف `YOUTUBE_API_KEY` و`YOUTUBE_CHANNEL_ID` في Workers → `hares` → Variables (من اللوحة فقط؛ لا قيم هنا).
+1. راجع Migration البث اليدوي؛ لا تُنفّذها على الإنتاج قبل موافقة مستقلة.
 2. Supabase: راجع `supabase/migrations/20261109_ahl_safe_idempotent.sql` ثم نفّذه في SQL Editor ثم تحقق من `audience_questions` و`lectures` و`user_data`.
-3. انشر Worker عبر سير العمل بعد الدمج، ثم اختبر `/api/live` من `hares.aboserag925.workers.dev`.
+3. لا تنشر خادم Node أو الموقع من هذا الفرع؛ بعد موافقة نشر مستقلة، تحقق من `/api/health` و`/api/live/state` و`/api/live` على عنوان الخادم الفعلي.

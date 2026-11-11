@@ -30,14 +30,31 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: "24.18.0"
           cache: npm
       - name: Install dependencies
-        run: npm ci
+        run: npm clean-install
       - name: Run complete test suite
         run: npm test
       - name: Build web application
         run: npm run build:app
+      - name: Dependency security audit
+        run: npm run check:secure
+      - name: Repository security policy scan
+        run: node scripts/secure-check.mjs
+      - name: Set up Node.js for optional web application
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.18.0"
+      - name: Typecheck and build optional web application
+        run: |
+          if [ -f web/package.json ]; then
+            npm --prefix web ci
+            npm --prefix web run typecheck
+            npm --prefix web run build
+          else
+            echo "web/package.json not present; optional web checks skipped."
+          fi
       - name: Check whitespace
         run: git diff --check
       - name: Verify generated assets

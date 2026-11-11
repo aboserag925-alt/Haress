@@ -13,12 +13,28 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: "24.18.0"
           cache: npm
-      - run: npm ci
+      - run: npm clean-install
       - run: npm test
       - run: npm run build:app
+      - run: npm run check:secure
+      - name: Repository security policy scan
+        run: node scripts/secure-check.mjs
+      - name: Set up Node.js for optional web application
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24.18.0"
+      - name: Typecheck and build optional web application
+        run: |
+          if [ -f web/package.json ]; then
+            npm --prefix web ci
+            npm --prefix web run typecheck
+            npm --prefix web run build
+          else
+            echo "web/package.json not present; optional web checks skipped."
+          fi
       - run: docker build --tag ahl-athar:verify .
