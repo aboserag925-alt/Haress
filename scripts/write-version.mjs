@@ -30,7 +30,7 @@ function setCacheRule(route, value) {
 }
 
 const noCache = 'no-cache, no-store, must-revalidate';
-for (const route of ['/index.html', '/sw.js', '/runtime-config.js', '/version.json']) {
+for (const route of ['/', '/index.html', '/app/index.html', '/sw.js', '/app/sw.js', '/runtime-config.js', '/app/runtime-config.js', '/version.json', '/app/version.json']) {
   setCacheRule(route, noCache);
 }
 
