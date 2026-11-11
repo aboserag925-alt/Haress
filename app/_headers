@@ -1,10 +1,4 @@
 /*
-  إستراحة أهل الأثر — ترويسات أمان Cloudflare Workers (الأصول الثابتة فقط).
-  ملحوظة: واجهات API الديناميكية تُخدم من خادم Node؛ هذه الترويسات للأصول الثابتة فقط.
-  تُطبق هذه الترويسات على ملفات app/ فقط ولا تُفعّل على GitHub Pages.
-  CSP متوافقة مع: النصوص والأنماط المضمّنة، الخطوط، Turnstile، Supabase، الإذاعات، Railway.
-*/
-/
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://uzepglfimareggswjzlf.supabase.co https://haress-production.up.railway.app https://challenges.cloudflare.com; frame-ancestors 'self'; form-action 'self' https://haress-production.up.railway.app; base-uri 'self'; object-src 'none'; upgrade-insecure-requests
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
