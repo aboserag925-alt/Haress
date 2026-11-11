@@ -45,6 +45,8 @@ jobs:
         run: npm run check:secure
       - name: Check whitespace
         run: git diff --check
+      - name: Verify build leaves no generated app diffs
+        run: git diff --exit-code -- app
       - name: Verify generated assets
         run: |
           test -s app/auth-client.js
