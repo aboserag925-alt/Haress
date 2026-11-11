@@ -22,4 +22,17 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run check:secure
+      - name: Set up Node.js for optional web application
+        uses: actions/setup-node@v4
+        with:
+          node-version: "26.13.0"
+      - name: Typecheck and build optional web application
+        run: |
+          if [ -f web/package.json ]; then
+            npm --prefix web ci
+            npm --prefix web run typecheck
+            npm --prefix web run build
+          else
+            echo "web/package.json not present; optional web checks skipped."
+          fi
       - run: docker build --tag ahl-athar:verify .
