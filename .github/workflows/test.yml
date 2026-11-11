@@ -23,4 +23,5 @@ jobs:
       - run: npm run build
       - run: npm run build:app
       - run: npm run check:secure
+      - run: git diff --exit-code -- app
       - run: docker build --tag ahl-athar:verify .
