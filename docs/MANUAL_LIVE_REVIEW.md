@@ -6,9 +6,9 @@ Pull request: #81 — https://github.com/aboserag925-alt/Haress/pull/81
 Head branch: feat/manual-live
 Base branch: feature/dr-khalid-ui (PR #75)
 Base SHA: 563d2c114e0b8fad22c124d4181a80e4b5569374
-Code snapshot reviewed: 43f72ec94a3e002ca390311eb474b033b220a42b
+Code snapshot reviewed: a62d051ffff76519c2f7b37945981f62cd4af21c (documentation-only refresh follows)
 PR state at review: OPEN, NOT MERGED, mergeable=true
-Changed files: 24
+Changed files: 27
 
 1. MIGRATION — REVIEW ONLY
 --------------------------
@@ -19,7 +19,7 @@ File: supabase/migrations/20261111_live_state.sql
 - RLS enabled.
 - anon/authenticated: SELECT on the five public state columns only; no write grants.
 - service_role: server-side table privileges only.
-- Public SELECT policy limits visibility to the singleton row.
+- Public SELECT policy uses USING (true); the CHECK(id=1) constraint and primary key enforce the single public row, avoiding any need to grant SELECT on private id.
 - Seed row inserted with ON CONFLICT(id) DO NOTHING.
 - broadcast_schedule is not created.
 - Migration was NOT executed. No SQL was sent to Supabase.
@@ -82,20 +82,12 @@ Frontend tests in app/pwa-assets.test.js:
 - No iframe; watch link rel; 60-second refresh and visibilitychange.
 - New live files are part of the PWA asset list.
 
-Latest PR workflow runs for code snapshot 43f72ec94a3e002ca390311eb474b033b220a42b:
-- Hares CI: run 42916473828 — SUCCESS
-  - complete npm test suite — SUCCESS
-  - npm run build — SUCCESS
-  - npm run check:secure — SUCCESS
-  - Secret Scan — SUCCESS
-  - CI Gate — SUCCESS
-- test workflow: run 42916473772 — SUCCESS
-  - npm test — SUCCESS
-  - npm run build — SUCCESS
-  - npm run check:secure — SUCCESS
-  - Docker build — SUCCESS
-- Vercel status: SUCCESS (preview).
-- Netlify deploy-preview-81 status: SUCCESS (preview).
+Latest CI for reviewed source snapshot a62d051ffff76519c2f7b37945981f62cd4af21c:
+- Hares CI push run 42943744237 — SUCCESS (Tests and Build, Secret Scan, CI Gate).
+- test PR run 42943751235 — SUCCESS.
+- test push run 42943744360 — SUCCESS.
+- Cloudflare build workflow was not triggered for PR #81 because its base is still feature/dr-khalid-ui; it must run after the PR base is retargeted to main.
+- No deploy job ran. No SQL was executed.
 These are PR/preview checks only, not a production deployment.
 
 6. GREP EVIDENCE
