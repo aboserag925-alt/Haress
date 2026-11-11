@@ -146,6 +146,20 @@ jobs:
           fi
           echo "Cloudflare version verified: $actual"
 
+          curl --fail --silent --show-error "$SITE_URL/supabase-config.js" -o /tmp/deployed-supabase-config.js
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import vm from 'node:vm';
+          const sandbox = { window: {} };
+          vm.runInNewContext(fs.readFileSync('/tmp/deployed-supabase-config.js', 'utf8'), sandbox, { timeout: 1000 });
+          const config = sandbox.window.AHL_SUPABASE_CONFIG;
+          if (!config?.url || !config?.anonKey || config.url !== 'https://uzepglfimareggswjzlf.supabase.co') {
+            console.error('Deployed Supabase browser configuration is missing or mismatched.');
+            process.exit(1);
+          }
+          console.log('Deployed Supabase browser configuration verified; key withheld.');
+          NODE
+
           curl --fail --silent --show-error "$RAILWAY_HEALTH_URL" |
             jq -e '.ok == true' >/dev/null
           echo "Railway /api/health verified."
