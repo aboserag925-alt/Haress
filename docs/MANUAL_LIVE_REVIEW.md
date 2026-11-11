@@ -176,3 +176,41 @@ Equivalent GitHub open-PR listing (gh pr list --state open), captured during thi
 - PR #80 (Next.js-based Stage 4) remains separate and unmerged; this PR is based directly on #75 as requested.
 
 End of review.
+
+
+8. RELEASE CLOSEOUT ADDENDUM — 2026-11-11
+------------------------------------------
+Current PR #81 head: 9326a662096daefc04ba7a454c6ddd12da364968
+Base: feature/dr-khalid-ui@563d2c114e0b8fad22c124d4181a80e4b5569374 (PR #75 head)
+PR state: OPEN, NOT MERGED; GitHub reports mergeable=true.
+
+Node baseline alignment:
+- Both PR #81 workflow files now explicitly use actions/setup-node@v6 with Node 24.18.0.
+- npm clean-install is used for the root project.
+- The repository policy scanner is invoked explicitly as node scripts/secure-check.mjs, independently of npm run check:secure. This preserves the static frontend/security policy checks even if the Node 24 baseline PR changes check:secure to the production dependency audit.
+- No dependency was added or upgraded by these workflow-only alignment commits.
+
+Current-head GitHub Actions evidence:
+- Hares CI push run 43048569449 — SUCCESS (Tests and Build, Dependency security audit, Repository security policy scan, generated asset checks, Secret Scan, CI Gate).
+- test push run 43048569219 — SUCCESS.
+- test PR run 43048579799 — SUCCESS, Docker build included.
+- Test log on Node 24.18.0: 91 tests, 91 passed, 0 failed.
+- npm audit reported 0 vulnerabilities; repository policy scanner passed.
+- No Cloudflare build/deploy run was triggered for PR #81 because its base remains feature/dr-khalid-ui rather than main. No hosted Cloudflare build is claimed here.
+
+Dependency and main-compatibility analysis:
+- PR #75 head is exactly PR #81 base (563d2c114e0b8fad22c124d4181a80e4b5569374). PR #81 is therefore a child of #75, not an independent PR directly targeting main.
+- PR #75 remains OPEN and NOT MERGED. PR #81 must first be integrated into its parent branch or have its dependency/base resolved after the owner decides the #75 sequence; it must not be merged directly into main in its current base configuration.
+- Combined static comparison from main@4b8f5e4adfd05c946df09fcdad4006343c6c2d5c to the current PR #81 head is 80 commits ahead, 0 behind. The net tree contains the existing app/ site, manual-live pages, Node server API, tests, docs, and the two migrations; the temporary YouTube Worker files added by #75 are removed again by #81, so they are absent from the combined net diff.
+- The combined branch retains wrangler.jsonc as static assets (./app), without a Worker entry point or new nodejs_compat flag. The compatibility_date remains 2026-11-05.
+- The Node 24 PR #83 is a separate open PR against main. Its package.json check:secure script is the dependency audit; PR #81 keeps the static policy scanner as an explicit workflow step so the two checks are not conflated.
+
+Migration review boundary:
+- The checked-in main:supabase/schema.sql does not define public.live_state. PR #81 adds it only in 20261111_live_state.sql with a singleton id=1, a CHECK constraint, RLS, column-limited public SELECT, service_role writes, and an idempotent seed.
+- This repository-file finding does NOT prove whether a live_state table already exists in the actual Supabase project. Production database state remains unverified. Do not execute the migration until the owner independently confirms the target database state and approves the SQL.
+- 20261109_ahl_safe_idempotent.sql was reviewed against main:supabase/schema.sql: it repeats the user_data/admin_users/lectures definitions and policies already represented in schema.sql and adds audience_questions. It is additive and contains no DROP TABLE, TRUNCATE, DELETE, DROP COLUMN, or ALTER TYPE. Actual database drift and policy state remain unverified.
+
+Safety:
+- No merge, deploy, production SQL, secret change, or hosting setting change was performed.
+- No production live endpoint or Railway/Supabase integration test was performed.
+- Owner decisions remain required for PR #75 integration order and for approval of any production migration/deployment.
