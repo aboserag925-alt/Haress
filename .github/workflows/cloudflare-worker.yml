@@ -33,7 +33,12 @@ jobs:
         run: npm ci
 
       - name: Run test suite
-        run: npm test
+        run: |
+          if node -e "process.exit(require('./package.json').scripts?.test ? 0 : 1)"; then
+            npm test
+          else
+            node --test
+          fi
 
       - name: Build application assets
         env:
@@ -61,6 +66,20 @@ jobs:
           console.log('Supabase URL and anon/publishable key are present; values withheld.');
           NODE
 
+      - name: Generate version metadata and cache rules
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: node scripts/write-version.mjs
+
+      - name: Upload the exact build output for deployment
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloudflare-app-build
+          path: app/
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7
+
   deploy:
     name: Deploy production Worker
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -71,23 +90,14 @@ jobs:
       name: production
       url: https://hares.aboserag925.workers.dev
     steps:
-      - name: Check out repository
+      - name: Check out deployment configuration
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Download the exact build output
+        uses: actions/download-artifact@v4
         with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build application assets
-        env:
-          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
-        run: npm run build:app
+          name: cloudflare-app-build
+          path: app/
 
       - name: Validate required Cloudflare deployment credentials
         env:
@@ -108,9 +118,34 @@ jobs:
             exit 1
           fi
 
-      - name: Deploy Worker with Wrangler
+      - name: Deploy the verified build with Wrangler
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
+
+      - name: Verify deployed version and Railway API health
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          SITE_URL: https://hares.aboserag925.workers.dev
+          RAILWAY_HEALTH_URL: https://haress-production.up.railway.app/api/health
+        run: |
+          expected="${EXPECTED_SHA:0:7}"
+          actual=""
+          for attempt in $(seq 1 12); do
+            actual="$(curl --fail --silent --show-error "$SITE_URL/version.json" | jq -r '.sha // empty' 2>/dev/null || true)"
+            if [ "$actual" = "$expected" ]; then
+              break
+            fi
+            sleep 5
+          done
+          if [ "$actual" != "$expected" ]; then
+            echo "Deployed version SHA mismatch: expected $expected, received ${actual:-empty}"
+            exit 1
+          fi
+          echo "Cloudflare version verified: $actual"
+
+          curl --fail --silent --show-error "$RAILWAY_HEALTH_URL" |
+            jq -e '.ok == true' >/dev/null
+          echo "Railway /api/health verified."
