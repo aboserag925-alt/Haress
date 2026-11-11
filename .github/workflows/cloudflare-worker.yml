@@ -69,6 +69,7 @@ jobs:
       - name: Generate version metadata and cache rules
         env:
           GITHUB_SHA: ${{ github.sha }}
+          APP_VERSION: ${{ vars.APP_VERSION }}
         run: node scripts/write-version.mjs
 
       - name: Upload the exact build output for deployment
