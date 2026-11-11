@@ -33,4 +33,5 @@ jobs:
         run: |
           git ls-files --error-unmatch app/tailwind.css
           git diff --stat
+          git diff -- app/tailwind.css
           git diff --check
