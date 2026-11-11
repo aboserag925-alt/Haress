@@ -1,0 +1,36 @@
+name: UI Batch 1 Validation
+
+on:
+  push:
+    branches:
+      - feat/ui-batch-1
+  pull_request:
+    branches:
+      - feature/dr-khalid-ui
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: npm ci
+        run: npm ci
+      - name: npm test
+        run: npm test
+      - name: npm run build:app
+        run: npm run build:app
+      - name: npm run check:secure
+        run: npm run check:secure
+      - name: tracked generated assets and diff stat
+        run: |
+          git ls-files --error-unmatch app/tailwind.css
+          git diff --stat
+          git diff --check
