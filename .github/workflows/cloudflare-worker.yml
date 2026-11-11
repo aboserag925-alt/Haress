@@ -21,19 +21,25 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: "24.18.0"
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm clean-install
 
       - name: Run test suite
         run: npm test
+
+      - name: Run aggregate build
+        run: npm run build
+
+      - name: Audit production dependencies
+        run: npm run check:secure
 
       - name: Build application assets
         env:
@@ -72,12 +78,12 @@ jobs:
       url: https://hares.aboserag925.workers.dev
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: "24.18.0"
           cache: npm
 
       - name: Install dependencies
