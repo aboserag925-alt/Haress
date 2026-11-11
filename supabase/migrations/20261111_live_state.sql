@@ -21,7 +21,9 @@ grant select, insert, update, delete on table public.live_state to service_role;
 drop policy if exists "Public can read live state" on public.live_state;
 create policy "Public can read live state"
   on public.live_state for select to anon, authenticated
-  -- The CHECK constraint restricts the table to the singleton id=1 row.\n  -- TRUE avoids requiring public SELECT permission on the private id column.\n  using (true);
+  -- The CHECK constraint restricts the table to the singleton id=1 row.
+  -- TRUE avoids requiring public SELECT permission on the private id column.
+  using (true);
 
 insert into public.live_state (id, is_live, stream_url, stream_title, provider)
 values (1, false, null, 'البث المباشر', null)
