@@ -4,12 +4,19 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 /**
- * M9 Durability Verification
+ * FILE_ROUNDTRIP_ONLY
+ * NOT_M9_EVIDENCE
  *
- * Tests file-backed or persistent checkpointer state restoration across process restarts.
+ * This is a plain JSON file read/write regression test.
+ * It does NOT exercise LangGraph, a persistent checkpointer, interrupt(),
+ * cross-process restart, or same-thread resume, and must never be counted
+ * as M9 durability evidence. M9 remains NOT_VERIFIED.
  */
 
-test('M9 Durability: File-backed checkpoint and process restart verification', async () => {
+test('File roundtrip only (NOT_M9_EVIDENCE): JSON state read/write regression', async () => {
+  console.log('FILE_ROUNDTRIP_ONLY');
+  console.log('NOT_M9_EVIDENCE');
+
   const tmpDir = path.join(__dirname, '../../storage/tmp-checkpoint');
   if (!fs.existsSync(tmpDir)) {
     fs.mkdirSync(tmpDir, { recursive: true });

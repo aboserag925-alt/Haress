@@ -31,7 +31,7 @@ const maestroTests = [
   'server/ai/maestro-governance.test.js',
   'server/ai/roles/roles.test.js',
   'server/ai/governance/governance.test.js',
-  'server/ai/maestro-durability.test.js',
+  'server/ai/m9-json-roundtrip-NOT-EVIDENCE.test.js',
   'server/ai/maestro-m9-audit.test.js'
 ];
 
