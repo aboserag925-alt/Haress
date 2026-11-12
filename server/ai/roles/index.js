@@ -1,4 +1,3 @@
-const { supervisor } = require('../supervisor.js');
 const productAgent = require('../agents/product-agent.js');
 const contentAgent = require('../agents/content-agent.js');
 const developerAgent = require('../agents/developer-agent.js');
@@ -15,6 +14,11 @@ const verifierAgent = require('../agents/verifier-agent.js');
  * Maps the six Maestro architectural roles to the existing nine specialist agents
  * and the Hares AI supervisor, fulfilling M6.
  */
+
+// All specialist agents expose a single `run(context)` entry point.
+function agentContext(state) {
+  return { task: state, input: state.input || state };
+}
 
 class RoleWrappers {
   /**
@@ -34,8 +38,7 @@ class RoleWrappers {
    */
   static async executeCOORole(state) {
     console.log('[Maestro COO] Routing task through operational flow.');
-    // Utilize product agent or supervisor router concept
-    const productReview = await productAgent.review ? productAgent.review(state) : { status: 'routed' };
+    const productReview = await productAgent.run(agentContext(state));
     return {
       role: 'COO',
       action: 'OPERATIONAL_ROUTING',
@@ -48,7 +51,7 @@ class RoleWrappers {
    */
   static async executeResearchRole(state) {
     console.log('[Maestro Research] Conducting codebase & content analysis.');
-    const analysis = await contentAgent.analyze ? contentAgent.analyze(state) : { insights: 'Analysed' };
+    const analysis = await contentAgent.run(agentContext(state));
     return {
       role: 'RESEARCH',
       action: 'RESEARCH_COMPLETED',
@@ -61,7 +64,7 @@ class RoleWrappers {
    */
   static async executeDeveloperRole(state) {
     console.log('[Maestro Developer] Executing implementation tasks.');
-    const devResult = await developerAgent.implement ? developerAgent.implement(state) : { implemented: true };
+    const devResult = await developerAgent.run(agentContext(state));
     return {
       role: 'DEVELOPER',
       action: 'IMPLEMENTATION_COMPLETED',
@@ -75,12 +78,13 @@ class RoleWrappers {
   static async executeQASecurityRole(state) {
     console.log('[Maestro QA/Security] Running test and security verification suites.');
 
-    // Invoke existing security agent check
-    const securityCheck = await securityAgent.verify ? securityAgent.verify(state) : { pass: true };
-    const testCheck = await testAgent.run ? testAgent.run(state) : { pass: true };
-    const verifierCheck = await verifierAgent.verify ? verifierAgent.verify(state) : { pass: true };
+    // Invoke the real specialist agents; missing or non-PASS results fail closed.
+    const securityCheck = await securityAgent.run(agentContext(state));
+    const testCheck = await testAgent.run(agentContext(state));
+    const verifierCheck = await verifierAgent.run(agentContext(state));
 
-    const pass = securityCheck.pass !== false && testCheck.pass !== false && verifierCheck.pass !== false;
+    const checks = [securityCheck, testCheck, verifierCheck];
+    const pass = checks.every(check => check && check.status === 'PASS');
 
     return {
       role: 'QA_SECURITY',

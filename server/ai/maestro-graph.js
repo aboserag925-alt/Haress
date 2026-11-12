@@ -109,6 +109,20 @@ async function auditorNode(state) {
     };
   }
 
+  // Evidence Rule: no PASS without actual evidence.
+  if (!Array.isArray(state.evidence) || state.evidence.length === 0) {
+    return {
+      currentRole: 'AUDITOR',
+      verdict: 'FAIL',
+      history: [{
+        timestamp: new Date().toISOString(),
+        role: 'AUDITOR',
+        action: 'AUDIT_FAILURE',
+        message: 'No evidence supplied; PASS requires at least one verified evidence item.'
+      }]
+    };
+  }
+
   // Verify all evidence
   const unverifiedEvidence = state.evidence.filter(e => !e.verified);
   for (const e of unverifiedEvidence) {

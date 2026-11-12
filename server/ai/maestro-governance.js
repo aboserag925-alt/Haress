@@ -44,9 +44,10 @@ class MaestroGovernance {
    * Checks if a required approval has been granted.
    */
   static async checkApproval(state, gateName) {
-    const gate = state.gates[gateName];
-    if (!gate || !gate.required) return true;
-    if (gate.approved) return true;
+    const gate = state.gates ? state.gates[gateName] : undefined;
+    if (!gate) return false;
+    if (!gate.required) return true;
+    if (gate.approved === true) return true;
 
     // Here we would typically check the database/approval service
     // For now, we rely on the state being updated by an external approval event

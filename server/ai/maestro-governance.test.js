@@ -27,6 +27,23 @@ test('MaestroGovernance identifies safe tasks', async () => {
   assert.strictEqual(evaluation.risk.level, 'LOW');
 });
 
+test('MaestroGovernance checkApproval fails closed for missing or unapproved gates', async () => {
+  assert.strictEqual(await MaestroGovernance.checkApproval({ gates: {} }, 'owner'), false);
+  assert.strictEqual(await MaestroGovernance.checkApproval({}, 'owner'), false);
+  assert.strictEqual(
+    await MaestroGovernance.checkApproval({ gates: { owner: { required: true, approved: false } } }, 'owner'),
+    false
+  );
+  assert.strictEqual(
+    await MaestroGovernance.checkApproval({ gates: { owner: { required: false, approved: false } } }, 'owner'),
+    true
+  );
+  assert.strictEqual(
+    await MaestroGovernance.checkApproval({ gates: { owner: { required: true, approved: true } } }, 'owner'),
+    true
+  );
+});
+
 test('MaestroGovernance identifies high risk security tasks', async () => {
   const state = {
     category: 'SECURITY',

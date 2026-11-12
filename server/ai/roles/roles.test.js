@@ -34,6 +34,26 @@ test('RoleWrappers execute QA/Security role successfully', async () => {
   assert.strictEqual(res.pass, true);
 });
 
+test('RoleWrappers QA/Security fails closed when the security agent blocks', async () => {
+  const state = {
+    taskId: '123',
+    category: 'SECURITY',
+    description: 'Test blocked QA',
+    input: { affectedAreas: ['secrets_exposure'] }
+  };
+  const res = await RoleWrappers.executeQASecurityRole(state);
+  assert.strictEqual(res.role, 'QA_SECURITY');
+  assert.strictEqual(res.securityCheck.status, 'BLOCKED');
+  assert.strictEqual(res.pass, false);
+});
+
+test('RoleWrappers Developer does not claim implementation without approval', async () => {
+  const state = { taskId: '123', category: 'DEVELOPMENT', description: 'Unapproved dev' };
+  const res = await RoleWrappers.executeDeveloperRole(state);
+  assert.strictEqual(res.role, 'DEVELOPER');
+  assert.strictEqual(res.devResult.status, 'NEEDS_REVIEW');
+});
+
 test('RoleWrappers execute Auditor role successfully', async () => {
   const state = { taskId: '123', category: 'AUDIT', description: 'Test Auditor', verdict: 'PASS' };
   const res = await RoleWrappers.executeAuditorRole(state);

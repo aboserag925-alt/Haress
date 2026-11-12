@@ -26,6 +26,30 @@ test('MaestroGraph Auditor fails if required gates are missing', async () => {
   assert.ok(result.history.some(h => h.action === 'AUDIT_FAILURE'));
 });
 
+test('MaestroGraph Auditor fails closed when no evidence exists even if gates are approved', async () => {
+  const initialState = {
+    taskId: '550e8400-e29b-41d4-a716-446655440006',
+    category: 'DEVELOPMENT',
+    description: 'Test Audit Without Evidence',
+    status: 'PENDING',
+    evidence: [],
+    history: [],
+    verdict: 'NOT_VERIFIED',
+    gates: {
+      security: { required: true, approved: true },
+      qa: { required: true, approved: true },
+      auditor: { required: true, approved: true },
+      owner: { required: false, approved: false }
+    },
+    governance: { state: 'CANDIDATE', version: '1.0.0' }
+  };
+
+  const result = await maestroApp.invoke(initialState);
+
+  assert.strictEqual(result.verdict, 'FAIL');
+  assert.ok(result.history.some(h => h.action === 'AUDIT_FAILURE'));
+});
+
 test('MaestroGraph Auditor passes if gates and evidence are valid', async () => {
   const initialState = {
     taskId: '550e8400-e29b-41d4-a716-446655440004',
