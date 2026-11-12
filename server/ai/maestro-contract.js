@@ -106,7 +106,17 @@ const MaestroStateSchema = z.object({
     role: z.string(),
     action: z.string(),
     message: z.string()
-  })).default([])
+  })).default([]),
+
+  // Durable HITL / idempotency state (M9)
+  risk: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
+  ownerHitlRequired: z.boolean().optional(),
+  policy: z.any().optional(),
+  approval: z.any().optional(),
+  audit: z.any().optional(),
+  hitl: z.any().optional(),
+  executionCount: z.number().int().min(0).default(0),
+  sensitiveExecuted: z.boolean().optional()
 });
 
 module.exports = {

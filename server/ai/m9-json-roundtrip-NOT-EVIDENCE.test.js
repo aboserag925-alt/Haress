@@ -10,7 +10,8 @@ const path = require('node:path');
  * This is a plain JSON file read/write regression test.
  * It does NOT exercise LangGraph, a persistent checkpointer, interrupt(),
  * cross-process restart, or same-thread resume, and must never be counted
- * as M9 durability evidence. M9 remains NOT_VERIFIED.
+ * as M9 durability evidence. Real M9 evidence lives in
+ * m9-real-durability.test.js against the actual Maestro graph.
  */
 
 test('File roundtrip only (NOT_M9_EVIDENCE): JSON state read/write regression', async () => {

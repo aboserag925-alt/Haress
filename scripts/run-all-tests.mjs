@@ -71,7 +71,7 @@ function main() {
     'server/ai/roles/roles.test.js',
     'server/ai/governance/governance.test.js',
     'server/ai/m9-json-roundtrip-NOT-EVIDENCE.test.js',
-    'server/ai/maestro-m9-audit.test.js'
+    'server/ai/m9-real-durability.test.js'
   ];
 
   const studioTests = [
