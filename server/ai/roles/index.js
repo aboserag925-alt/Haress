@@ -20,6 +20,27 @@ function agentContext(state) {
   return { task: state, input: state.input || state };
 }
 
+// Fail closed: unavailable, throwing, or malformed agents yield BLOCKED, never PASS.
+async function runAgent(agent, name, state) {
+  try {
+    if (!agent || typeof agent.run !== 'function') {
+      return { agent: name, status: 'BLOCKED', data: {}, issues: ['Agent unavailable'] };
+    }
+    const result = await agent.run(agentContext(state));
+    if (!result || typeof result.status !== 'string') {
+      return { agent: name, status: 'BLOCKED', data: {}, issues: ['Agent returned no status'] };
+    }
+    return result;
+  } catch (error) {
+    return {
+      agent: name,
+      status: 'BLOCKED',
+      data: {},
+      issues: [String(error.message || 'Agent failed').slice(0, 240)]
+    };
+  }
+}
+
 class RoleWrappers {
   /**
    * 1. CEO Role: Strategic oversight, final verdict review, and high-level strategy.
@@ -38,7 +59,7 @@ class RoleWrappers {
    */
   static async executeCOORole(state) {
     console.log('[Maestro COO] Routing task through operational flow.');
-    const productReview = await productAgent.run(agentContext(state));
+    const productReview = await runAgent(productAgent, 'product', state);
     return {
       role: 'COO',
       action: 'OPERATIONAL_ROUTING',
@@ -51,7 +72,7 @@ class RoleWrappers {
    */
   static async executeResearchRole(state) {
     console.log('[Maestro Research] Conducting codebase & content analysis.');
-    const analysis = await contentAgent.run(agentContext(state));
+    const analysis = await runAgent(contentAgent, 'content', state);
     return {
       role: 'RESEARCH',
       action: 'RESEARCH_COMPLETED',
@@ -64,7 +85,7 @@ class RoleWrappers {
    */
   static async executeDeveloperRole(state) {
     console.log('[Maestro Developer] Executing implementation tasks.');
-    const devResult = await developerAgent.run(agentContext(state));
+    const devResult = await runAgent(developerAgent, 'developer', state);
     return {
       role: 'DEVELOPER',
       action: 'IMPLEMENTATION_COMPLETED',
@@ -79,9 +100,9 @@ class RoleWrappers {
     console.log('[Maestro QA/Security] Running test and security verification suites.');
 
     // Invoke the real specialist agents; missing or non-PASS results fail closed.
-    const securityCheck = await securityAgent.run(agentContext(state));
-    const testCheck = await testAgent.run(agentContext(state));
-    const verifierCheck = await verifierAgent.run(agentContext(state));
+    const securityCheck = await runAgent(securityAgent, 'security', state);
+    const testCheck = await runAgent(testAgent, 'test', state);
+    const verifierCheck = await runAgent(verifierAgent, 'verifier', state);
 
     const checks = [securityCheck, testCheck, verifierCheck];
     const pass = checks.every(check => check && check.status === 'PASS');

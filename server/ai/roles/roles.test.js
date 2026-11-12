@@ -47,6 +47,23 @@ test('RoleWrappers QA/Security fails closed when the security agent blocks', asy
   assert.strictEqual(res.pass, false);
 });
 
+test('RoleWrappers QA/Security fails closed when an agent throws', async () => {
+  const state = {
+    taskId: '123',
+    category: 'SECURITY',
+    description: 'Test throwing agent input',
+    get input() {
+      throw new Error('boom');
+    }
+  };
+  const res = await RoleWrappers.executeQASecurityRole(state);
+  assert.strictEqual(res.role, 'QA_SECURITY');
+  assert.strictEqual(res.securityCheck.status, 'BLOCKED');
+  assert.strictEqual(res.testCheck.status, 'BLOCKED');
+  assert.strictEqual(res.verifierCheck.status, 'BLOCKED');
+  assert.strictEqual(res.pass, false);
+});
+
 test('RoleWrappers Developer does not claim implementation without approval', async () => {
   const state = { taskId: '123', category: 'DEVELOPMENT', description: 'Unapproved dev' };
   const res = await RoleWrappers.executeDeveloperRole(state);
