@@ -23,7 +23,7 @@ body::before{background:radial-gradient(ellipse at 12% 2%,color-mix(in srgb,var(
 .theme-toggle:focus-visible{outline:3px solid color-mix(in srgb,var(--id-green) 45%,transparent);outline-offset:3px}
 .theme-toggle svg{width:17px;height:17px;flex:none}
 .nav .theme-toggle{flex:none}
-body .wrap>header .theme-toggle{position:absolute;inset-inline-start:0;top:8px;z-index:8}
+body .wrap>header{position:relative}\nbody .wrap>header .theme-toggle{position:absolute;inset-inline-start:0;top:8px;z-index:8}
 html[data-theme="dark"] .site,
 html[data-theme="dark"] .site .nav{background-color:var(--id-bg)!important;color:var(--id-text)!important}
 html[data-theme="dark"] .site .nav{background:rgba(13,23,19,.88)!important;border-color:var(--id-line)!important}
@@ -41,7 +41,7 @@ html[data-theme="dark"] .site .wallet-detail{background:var(--id-surface-2)!impo
 html[data-theme="dark"] .site .development-notice{background:var(--id-surface)!important;color:var(--id-text)!important;border-color:var(--id-line)!important}
 html[data-theme="dark"] .site .gold{color:var(--id-gold)!important}
 html[data-theme="dark"] .site .btn.fill{color:#102219!important}
-html[data-theme="dark"] body{background:var(--id-bg)!important;color:var(--id-text)!important}
+html[data-theme="dark"],html[data-theme="dark"] body{background:var(--id-bg)!important;color:var(--id-text)!important}
 html[data-theme="dark"] body .wrap .card,
 html[data-theme="dark"] body .wrap .next,
 html[data-theme="dark"] body .wrap .tabs{background:var(--id-surface)!important;border-color:var(--id-line)!important;color:var(--id-text)!important;box-shadow:var(--id-shadow)}
