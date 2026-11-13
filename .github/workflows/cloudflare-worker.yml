@@ -35,10 +35,25 @@ jobs:
       - name: Run test suite
         run: npm test
 
+      - name: Validate Supabase build inputs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Missing SUPABASE_URL or SUPABASE_ANON_KEY in GitHub Actions secrets."
+            echo "Configure both secrets for the repository before building the production frontend."
+            exit 1
+          fi
+          if [ "$SUPABASE_URL" != "https://uzepglfimareggswjzlf.supabase.co" ]; then
+            echo "SUPABASE_URL does not match the approved doc project."
+            exit 1
+          fi
+
       - name: Build application assets
         env:
-          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: npm run build:app
 
       - name: Verify generated Supabase configuration without exposing key
@@ -85,8 +100,8 @@ jobs:
 
       - name: Build application assets
         env:
-          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: npm run build:app
 
       - name: Validate required Cloudflare deployment credentials
