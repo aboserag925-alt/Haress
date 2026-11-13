@@ -14,8 +14,8 @@ function createApprovalApi({env,fetch:fetchImpl=global.fetch,taskService,rateLim
   const auth=await fetchImpl(base+'/auth/v1/user',{headers:{apikey:env.SUPABASE_ANON_KEY,Authorization:'Bearer '+match[1]},signal:AbortSignal.timeout(10000)});
   if(!auth.ok)return null;const user=await auth.json();if(!user?.id)return null;
   const key=env.SUPABASE_SERVICE_ROLE_KEY;
-  const admin=await fetchImpl(base+'/rest/v1/admin_users?select=user_id&user_id=eq.'+encodeURIComponent(user.id)+'&limit=1',{headers:{apikey:key,Authorization:'Bearer '+key},signal:AbortSignal.timeout(10000)});
-  if(!admin.ok)return null;const rows=await admin.json();return rows.length?user:null;
+  const admin=await fetchImpl(base+'/rest/v1/admin_users?select=user_id,role&user_id=eq.'+encodeURIComponent(user.id)+'&limit=1',{headers:{apikey:key,Authorization:'Bearer '+key},signal:AbortSignal.timeout(10000)});
+  if(!admin.ok)return null;const rows=await admin.json();return rows[0]?.role==='owner'?user:null;
  }
  return async function handle(req,res,path){
   const match=path.match(/^\/api\/admin\/ai\/tasks\/([0-9a-f-]{36})\/approval$/i);
