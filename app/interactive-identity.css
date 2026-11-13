@@ -16,7 +16,7 @@ body::before{background:radial-gradient(ellipse at 12% 2%,color-mix(in srgb,var(
 .theme-toggle{
  display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:42px;padding:0 15px;
  border:1px solid var(--id-line);border-radius:999px;background:var(--id-surface);color:var(--id-text);
- font:700 13px/1 inherit;cursor:pointer;box-shadow:0 5px 18px rgba(20,60,42,.07);
+ font-family:inherit;font-size:13px;font-weight:700;line-height:1;cursor:pointer;box-shadow:0 5px 18px rgba(20,60,42,.07);
  transition:transform .25s,border-color .25s,background .3s,color .3s,box-shadow .25s;white-space:nowrap;
 }
 .theme-toggle:hover{transform:translateY(-2px);border-color:var(--id-green-2);box-shadow:var(--id-shadow)}
@@ -54,7 +54,24 @@ html[data-theme="dark"] body .wrap h3{color:var(--id-text)}
 html[data-theme="dark"] body .wrap p,html[data-theme="dark"] body .wrap label,
 html[data-theme="dark"] body .wrap small{color:var(--id-muted)}
 html[data-theme="dark"] body .wrap .btn{filter:saturate(.9)}
-/* Soft motion language: reveal, lift, and ambient movement without blocking interaction. */
+
+/* Light theme surfaces for the web-app shell. */
+body .wrap>header h1{color:#176b50}
+body .wrap>header p,body .wrap .section-subtitle,body .wrap .status{color:var(--id-muted)}
+body .wrap .card,body .wrap .next{background:linear-gradient(145deg,#fff,#f0f5f0);border-color:var(--id-line);color:var(--id-text);box-shadow:var(--id-shadow)}
+body .wrap .card h2,body .wrap .section-title{color:#176b50}
+body .wrap .next b,body .wrap .count{color:#176b50}
+body .wrap .tabs{background:rgba(255,255,255,.88);border-color:var(--id-line);box-shadow:0 8px 28px rgba(25,65,48,.08)}
+body .wrap .tab{color:#63756d}
+body .wrap .tab.on{background:linear-gradient(135deg,#e4f0e7,#f5f8f3);border-color:rgba(23,107,80,.2);color:#176b50}
+body .wrap .slot{border-color:var(--id-line)}
+body .wrap .slot>span:last-child{color:#29483c}
+body .wrap .time{background:#eef5ee;border-color:var(--id-line);color:#176b50}
+body .wrap textarea,body .wrap .field input,body .wrap .field select{background:#fff;color:#18352d;border-color:var(--id-line)}
+body .wrap textarea::placeholder{color:#83948a}
+body .wrap .note,body .wrap .notice{background:#f1f6f0;border-color:var(--id-line);color:#52685c}
+body .wrap .btn{border-color:rgba(23,107,80,.18)}
+\n/* Soft motion language: reveal, lift, and ambient movement without blocking interaction. */
 .motion-ready .motion-reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
 .motion-ready .motion-reveal.is-visible{opacity:1;transform:translateY(0)}
 .motion-card{transform-style:preserve-3d;will-change:transform;transition:transform .28s ease,border-color .28s,box-shadow .28s}
