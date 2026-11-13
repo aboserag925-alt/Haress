@@ -67,7 +67,7 @@ self.addEventListener('fetch', function (event) {
         }
         return response;
       } catch (error) {
-        return (await cache.match(shellUrl)) || new Response(
+        return (await cache.match(request, { ignoreSearch: true })) || (await cache.match(shellUrl)) || new Response(
           'لا يوجد اتصال بالإنترنت. اتصل بالشبكة ثم أعد المحاولة.',
           { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
         );
