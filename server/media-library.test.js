@@ -378,7 +378,7 @@ test('Supabase storage: reject deletes remote object', async function () {
     await library.processUpdate({ update_id: 1, message: { chat: { id: -100123 }, caption: 'درس جديد', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', file_size: 11 } } });
     // after fix, Supabase mode does not write media-index.json locally
     await assert.rejects(fs.readFile(path.join(storageDirectory, 'media-index.json'), 'utf8'), { code: 'ENOENT' });
-    const keys = await storage.listKeys('');
+    const keys = (await storage.listKeys('')).filter((key) => key.startsWith('library/audio/'));
     assert.equal(keys.length, 1);
     const id = keys[0].split('/')[2];
     assert.match(id, /^[0-9a-f-]{36}$/i);
