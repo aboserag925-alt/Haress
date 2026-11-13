@@ -454,3 +454,52 @@ test('Supabase storage: works when storage directory is unwritable (Railway EACC
     await fs.rm(tmpDir, { recursive: true, force: true });
   }
 });
+
+
+test('Supabase storage: approved media metadata and files survive a library restart', async function () {
+  const { MemoryStore: MS } = require('./media-storage');
+  const storage = new MS();
+  const env = { TELEGRAM_BOT_TOKEN: 't', TELEGRAM_MEDIA_ENABLED: 'false', TELEGRAM_MEDIA_GROUP_ID: '-100123' };
+  const fetch = async function (url) {
+    if (url.includes('/getFile')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: { file_path: 'documents/lesson.mp3' } })) };
+    if (url.includes('/getChatMember')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: { status: 'administrator' } })) };
+    if (url.includes('/sendMessage')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: { message_id: 101 } })) };
+    if (url.includes('/answerCallbackQuery')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: true })) };
+    if (url.includes('/editMessageText')) return { ok: true, arrayBuffer: async () => Buffer.from(JSON.stringify({ ok: true, result: { message_id: 101 } })) };
+    if (url.includes('/file/bot')) return { ok: true, arrayBuffer: async () => Buffer.from('persistent audio bytes') };
+    throw new Error('Unexpected mocked request: ' + url);
+  };
+  const first = createMediaLibrary({ env: env, fetch: fetch, storage: storage });
+  await first.processUpdate({
+    update_id: 1,
+    message: {
+      chat: { id: -100123 },
+      date: 1793500000,
+      caption: 'درس محفوظ #صوتيات',
+      document: { file_id: 'a', file_unique_id: 'persistent-u', file_name: 'lesson.mp3', mime_type: 'audio/mpeg', file_size: 22 }
+    }
+  });
+  const review = storage.ops.find((op) => op.startsWith('put:library/audio/'));
+  assert.ok(review);
+  const mediaKey = review.slice(4);
+  const id = mediaKey.split('/')[2];
+  await first.processUpdate({
+    update_id: 2,
+    callback_query: {
+      id: 'cb',
+      data: 'media:approve:' + id,
+      from: { id: 7 },
+      message: { message_id: 101, chat: { id: -100123 } }
+    }
+  });
+
+  const restarted = createMediaLibrary({ env: env, fetch: fetch, storage: storage });
+  const approved = await restarted.listApproved();
+  assert.equal(approved.length, 1);
+  assert.equal(approved[0].id, id);
+  assert.equal(approved[0].title, 'درس محفوظ');
+  const file = await restarted.getApprovedFile(id);
+  assert.equal(file.data.toString('utf8'), 'persistent audio bytes');
+  assert.ok(storage.ops.includes('put:library/.media-index.json'));
+  assert.ok(storage.ops.includes('get:library/.media-index.json'));
+});
