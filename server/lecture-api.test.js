@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { validateLecture } = require('./lecture-api');
+const { canManageLecture, validateLecture } = require('./lecture-api');
 
 const valid = {
   title: 'شرح صحيح الإمام مسلم',
@@ -35,4 +35,28 @@ test('rejects invalid publication states and unknown fields', () => {
 
 test('supports partial updates without requiring a title', () => {
   assert.equal(validateLecture({ status: 'archived' }, true), null);
+});
+
+
+test('Owner can create, publish, archive, edit, and delete lectures', () => {
+  assert.equal(canManageLecture('owner', 'POST', { status: 'published' }), true);
+  assert.equal(canManageLecture('owner', 'PATCH', { status: 'archived' }), true);
+  assert.equal(canManageLecture('owner', 'DELETE'), true);
+});
+
+test('Editor can create draft lectures and edit content without changing publication state', () => {
+  assert.equal(canManageLecture('editor', 'POST', { status: 'draft' }), true);
+  assert.equal(canManageLecture('editor', 'POST', {}), true);
+  assert.equal(canManageLecture('editor', 'PATCH', { title: 'تعديل المحتوى' }), true);
+  assert.equal(canManageLecture('editor', 'PATCH', { status: 'published' }), false);
+  assert.equal(canManageLecture('editor', 'PATCH', { status: 'archived' }), false);
+  assert.equal(canManageLecture('editor', 'DELETE'), false);
+});
+
+test('Unknown and missing roles receive no write permissions', () => {
+  for (const role of [undefined, null, 'admin', 'superadmin', '']) {
+    assert.equal(canManageLecture(role, 'POST', { status: 'draft' }), false);
+    assert.equal(canManageLecture(role, 'PATCH', { title: 'x' }), false);
+    assert.equal(canManageLecture(role, 'DELETE'), false);
+  }
 });

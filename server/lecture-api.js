@@ -71,8 +71,10 @@ function createAdminApi(options) {
     if (!response.ok) return null;
     const user = await response.json();
     if (!user || !user.id) return null;
-    const admins = await supabase('/rest/v1/admin_users?select=user_id&user_id=eq.' + encodeURIComponent(user.id) + '&limit=1');
-    return admins.length ? user : null;
+    const admins = await supabase('/rest/v1/admin_users?select=user_id,role&user_id=eq.' + encodeURIComponent(user.id) + '&limit=1');
+    const role = admins[0] && admins[0].role;
+    if (!['owner', 'editor'].includes(role)) return null;
+    return { ...user, role };
   }
 
   return async function handle(request, response, pathname) {
@@ -132,7 +134,7 @@ function createAdminApi(options) {
           return true;
         }
         if (pathname === '/api/admin/session') {
-          sendJson(response, 200, { user: { id: admin.id, email: admin.email || null } });
+          sendJson(response, 200, { user: { id: admin.id, email: admin.email || null, role: admin.role } });
           return true;
         }
         const allRows = await supabase('/rest/v1/lectures?select=id,title,description,starts_at,category,stream_url,recording_url,status,created_at,updated_at&order=starts_at.asc.nullslast');
@@ -145,6 +147,10 @@ function createAdminApi(options) {
         return true;
       }
       const id = pathname.match(/^\/api\/lectures\/([0-9a-f-]{36})$/i);
+      if (!canManageLecture(user.role, request.method, null)) {
+        sendJson(response, 403, { error: 'صلاحيات هذا الدور لا تسمح بهذه العملية.' });
+        return true;
+      }
       if (request.method === 'POST') {
         if (!String(request.headers['content-type'] || '').toLowerCase().startsWith('application/json')) {
           sendJson(response, 415, { error: 'يجب إرسال البيانات بصيغة JSON.' });
@@ -159,6 +165,10 @@ function createAdminApi(options) {
         }
         const error = validateLecture(body, false);
         if (error) { sendJson(response, 400, { error }); return true; }
+        if (!canManageLecture(user.role, 'POST', body)) {
+          sendJson(response, 403, { error: 'المحرر يستطيع إنشاء مسودات فقط.' });
+          return true;
+        }
         const rows = await supabase('/rest/v1/lectures?select=*', {
           method: 'POST',
           headers: { Prefer: 'return=representation' },
@@ -182,6 +192,10 @@ function createAdminApi(options) {
         }
         const error = validateLecture(body, true);
         if (error) { sendJson(response, 400, { error }); return true; }
+        if (!canManageLecture(user.role, 'PATCH', body)) {
+          sendJson(response, 403, { error: 'المحرر لا يستطيع تغيير حالة النشر.' });
+          return true;
+        }
         const rows = await supabase('/rest/v1/lectures?id=eq.' + id[1] + '&select=*', {
           method: 'PATCH',
           headers: { Prefer: 'return=representation' },
@@ -226,4 +240,13 @@ async function readBody(request) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 
-module.exports = { createAdminApi, validateLecture };
+function canManageLecture(role, method, body) {
+  if (!['owner', 'editor'].includes(role)) return false;
+  if (role === 'owner') return ['POST', 'PATCH', 'DELETE'].includes(method);
+  if (method === 'DELETE') return false;
+  if (method === 'POST') return !body || body.status === undefined || body.status === 'draft';
+  if (method === 'PATCH') return !body || !Object.hasOwn(body, 'status');
+  return false;
+}
+
+module.exports = { canManageLecture, createAdminApi, validateLecture };

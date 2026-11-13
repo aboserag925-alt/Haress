@@ -98,7 +98,7 @@ test('HTTP suggestions API accepts public suggestions and exposes admin listing 
       return {
         ok: true,
         status: 200,
-        json: async function () { return [{ user_id: 'verified-admin' }]; }
+        json: async function () { return [{ user_id: 'verified-admin', role: 'owner' }]; }
       };
     }
     throw new Error('Unexpected upstream request');
@@ -172,7 +172,7 @@ test('HTTP AI approval API verifies admin identity and records decisions through
       return {
         ok: true,
         status: 200,
-        json: async function () { return [{ user_id: 'verified-admin' }]; }
+        json: async function () { return [{ user_id: 'verified-admin', role: 'owner' }]; }
       };
     }
     throw new Error('Unexpected upstream request');

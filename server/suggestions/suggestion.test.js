@@ -35,11 +35,23 @@ test('admin suggestions API checks Supabase identity and admin_users before list
  const calls=[];
  const api=createSuggestionsApi({
   env:{SUPABASE_URL:'https://project.example',SUPABASE_ANON_KEY:'anon',SUPABASE_SERVICE_ROLE_KEY:'service'},
-  fetch:async(url,options)=>{calls.push({url,options});return url.endsWith('/auth/v1/user')?{ok:true,json:async()=>({id:'admin-user-id'})}:{ok:true,json:async()=>[{user_id:'admin-user-id'}]};},
+  fetch:async(url,options)=>{calls.push({url,options});return url.endsWith('/auth/v1/user')?{ok:true,json:async()=>({id:'admin-user-id'})}:{ok:true,json:async()=>[{user_id:'admin-user-id',role:'owner'}]};},
   service:{list:async()=>[{id:'suggestion-1'}]}
  });
  const res=fakeResponse();
  await api(fakeRequest('GET',{authorization:'Bearer valid.token.value'}),res,'/api/admin/suggestions');
  assert.equal(res.status,200);assert.equal(JSON.parse(res.body).items[0].id,'suggestion-1');
  assert.equal(calls.length,2);assert.match(calls[1].url,/admin_users/);
+});
+
+test('Editor role cannot access Owner-only suggestion administration',async()=>{
+ let listed=false;
+ const api=createSuggestionsApi({
+  env:{SUPABASE_URL:'https://project.example',SUPABASE_ANON_KEY:'anon',SUPABASE_SERVICE_ROLE_KEY:'service'},
+  fetch:async url=>url.endsWith('/auth/v1/user')?{ok:true,json:async()=>({id:'editor-user-id'})}:{ok:true,json:async()=>[{user_id:'editor-user-id',role:'editor'}]},
+  service:{list:async()=>{listed=true;return[];}}
+ });
+ const res=fakeResponse();
+ await api(fakeRequest('GET',{authorization:'Bearer editor.token.value'}),res,'/api/admin/suggestions');
+ assert.equal(res.status,403);assert.equal(listed,false);
 });

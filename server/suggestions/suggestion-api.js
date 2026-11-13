@@ -14,8 +14,8 @@ function createSuggestionsApi({env,fetch:fetchImpl=global.fetch,service,rateLimi
     const base=env.SUPABASE_URL.replace(/\/$/,'');
     const auth=await fetchImpl(base+'/auth/v1/user',{headers:{apikey:env.SUPABASE_ANON_KEY,Authorization:'Bearer '+token[1]},signal:AbortSignal.timeout(10000)});
     if(!auth.ok)return null;const user=await auth.json();if(!user?.id)return null;
-    const check=await fetchImpl(base+'/rest/v1/admin_users?select=user_id&user_id=eq.'+encodeURIComponent(user.id)+'&limit=1',{headers:{apikey:env.SUPABASE_SERVICE_ROLE_KEY,Authorization:'Bearer '+env.SUPABASE_SERVICE_ROLE_KEY},signal:AbortSignal.timeout(10000)});
-    if(!check.ok)return null;const rows=await check.json();return rows.length?user:null;
+    const check=await fetchImpl(base+'/rest/v1/admin_users?select=user_id,role&user_id=eq.'+encodeURIComponent(user.id)+'&limit=1',{headers:{apikey:env.SUPABASE_SERVICE_ROLE_KEY,Authorization:'Bearer '+env.SUPABASE_SERVICE_ROLE_KEY},signal:AbortSignal.timeout(10000)});
+    if(!check.ok)return null;const rows=await check.json();return rows[0]?.role==='owner'?user:null;
   }
   return async function handle(req,res,url) {
     const path=url.split('?')[0];
