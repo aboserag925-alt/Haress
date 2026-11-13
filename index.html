@@ -7,7 +7,7 @@
 <title>استراحة أهل الأثر</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link href="app/tailwind.css" rel="stylesheet">
+<link href="app/tailwind.css" rel="stylesheet">\n<link href="app/interactive-identity.css" rel="stylesheet">
 <style>
 body{margin:0;background:#0b0e0d}
 html{scroll-behavior:smooth}
@@ -254,7 +254,7 @@ body,.app-shell,button,input,textarea,select{
 @keyframes development-pulse{70%{box-shadow:0 0 0 8px rgba(181,139,66,0)}100%{box-shadow:0 0 0 0 rgba(181,139,66,0)}}
 @media(max-width:600px){.development-notice{width:calc(100% - 28px);margin-top:10px;padding:10px 12px;gap:9px;border-radius:13px}.development-notice-icon{width:32px;height:32px;flex-basis:32px}.development-notice-copy strong{font-size:12px}.development-notice-copy span{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.development-notice-dot{animation:none}}
-</style>
+</style>\n<link href="app/interactive-identity.css" rel="stylesheet">
 
 </head>
 <body>
@@ -393,5 +393,5 @@ function closeSiteMenu(){
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeSiteMenu();});
 </script>
 
-</body>
+<script src="app/interactive-identity.js" defer></script>\n</body>
 </html>
