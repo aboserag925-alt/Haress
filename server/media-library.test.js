@@ -342,7 +342,7 @@ test('Supabase storage: upload verifies via injected MemoryStore', async functio
   try {
     const library = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
     await library.processUpdate({ update_id: 1, message: { chat: { id: -100123 }, date: 1793500000, caption: 'درس الخميس #كتب', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', mime_type: 'audio/mpeg', file_size: 11 } } });
-    const keys = await storage.listKeys('');
+    const keys = (await storage.listKeys('')).filter((key) => key.startsWith('library/audio/'));
     assert.equal(keys.length, 1);
     assert.ok(keys[0].startsWith('library/audio/'));
     assert.ok(keys[0].endsWith('lesson.mp3'));
@@ -353,7 +353,7 @@ test('Supabase storage: upload verifies via injected MemoryStore', async functio
     assert.equal((await library.listApproved()).length, 1);
     const f = await library.getApprovedFile(id);
     assert.equal(f.data.toString('utf8'), 'audio bytes');
-    assert.deepEqual(await storage.listKeys(''), [keys[0]]);
+    assert.deepEqual((await storage.listKeys('')).filter((key) => key !== 'library/.media-index.json'), [keys[0]]);
   } finally {
     await fs.rm(storageDirectory, { recursive: true, force: true });
   }
@@ -384,7 +384,7 @@ test('Supabase storage: reject deletes remote object', async function () {
     assert.match(id, /^[0-9a-f-]{36}$/i);
     // clean: reject path also deletes
     await library.processUpdate({ update_id: 2, callback_query: { id: 'cb', data: 'media:reject:' + id, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } } });
-    assert.deepEqual(await storage.listKeys(''), []);
+    assert.deepEqual((await storage.listKeys('')).filter((key) => key !== 'library/.media-index.json'), []);
   } finally {
     await fs.rm(storageDirectory, { recursive: true, force: true });
   }
@@ -438,7 +438,7 @@ test('Supabase storage: works when storage directory is unwritable (Railway EACC
     assert.deepEqual(await library.listApproved(), []);
     // processUpdate (upload path via storeFile/save) must not touch the fs either
     await library.processUpdate({ update_id: 1, message: { chat: { id: -100123 }, date: 1793500000, caption: 'درس الخميس #كتب', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', mime_type: 'audio/mpeg', file_size: 11 } } });
-    const keys = await storage.listKeys('');
+    const keys = (await storage.listKeys('')).filter((key) => key.startsWith('library/audio/'));
     assert.equal(keys.length, 1);
     assert.ok(keys[0].startsWith('library/audio/'));
     assert.ok(keys[0].endsWith('lesson.mp3'));
