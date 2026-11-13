@@ -38,3 +38,18 @@ test('all PWA manifest and offline-cache files exist within the app', function (
     assert.ok(fs.existsSync(path.join(appDirectory, asset.replace(/^\.\//, ''))), asset);
   }
 });
+
+test('publishes the Athar page in navigation and pre-caches it for PWA use', function () {
+  const atharPage = path.join(appDirectory, 'athar.html');
+  assert.ok(fs.existsSync(atharPage), 'app/athar.html must exist');
+  assert.match(html, /href="athar\.html"[^>]*>موقع أهل الأثر</);
+  const worker = fs.readFileSync(path.join(appDirectory, 'sw.js'), 'utf8');
+  assert.match(worker, /var CACHE_NAME = 'ahl-athar-v3'/);
+  assert.ok(worker.includes("'./athar.html'"));
+  assert.match(worker, /cache\.match\(request, \{ ignoreSearch: true \}\)/);
+  const page = fs.readFileSync(atharPage, 'utf8');
+  assert.match(page, /fetch\(base\+'\/api\/library'/);
+  assert.match(page, /safeFileUrl/);
+  assert.match(page, /createElement\(item\.kind\)/);
+  assert.doesNotMatch(page, /innerHTML\s*=/);
+});
