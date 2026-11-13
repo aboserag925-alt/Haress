@@ -46,6 +46,7 @@ test('publishes the Athar page in navigation and pre-caches it for PWA use', fun
   const worker = fs.readFileSync(path.join(appDirectory, 'sw.js'), 'utf8');
   assert.match(worker, /var CACHE_NAME = 'ahl-athar-v3'/);
   assert.ok(worker.includes("'./athar.html'"));
+  assert.match(worker, /cache\.match\(request, \{ ignoreSearch: true \}\)/);
   const page = fs.readFileSync(atharPage, 'utf8');
   assert.match(page, /fetch\(base\+'\/api\/library'/);
   assert.match(page, /safeFileUrl/);
