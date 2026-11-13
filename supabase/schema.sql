@@ -35,8 +35,33 @@ create policy "Users can update their own data"
 -- Lecture publishing and administrator authorization.
 create table if not exists public.admin_users (
   user_id uuid primary key references auth.users(id) on delete cascade,
+  role text not null default 'editor' check (role in ('owner', 'editor')),
   created_at timestamptz not null default now()
 );
+
+-- Idempotent role migration. The configured account is the sole Owner.
+-- Existing non-owner administrator entries are removed; the future Editor
+-- account is added only after its exact Auth user ID is confirmed.
+alter table public.admin_users add column if not exists role text not null default 'editor';
+alter table public.admin_users drop constraint if exists admin_users_role_check;
+alter table public.admin_users add constraint admin_users_role_check check (role in ('owner', 'editor'));
+delete from public.admin_users au
+using auth.users u
+where au.user_id = u.id
+  and lower(coalesce(u.email, '')) <> lower('aboserag925@gmail.com');
+update public.admin_users au
+set role = 'owner'
+from auth.users u
+where au.user_id = u.id
+  and lower(coalesce(u.email, '')) = lower('aboserag925@gmail.com');
+insert into public.admin_users (user_id, role)
+select id, 'owner'
+from auth.users
+where lower(coalesce(email, '')) = lower('aboserag925@gmail.com')
+on conflict (user_id) do update set role = 'owner';
+create unique index if not exists admin_users_single_owner
+  on public.admin_users ((role))
+  where role = 'owner';
 
 create table if not exists public.lectures (
   id uuid primary key default gen_random_uuid(),
