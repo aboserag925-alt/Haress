@@ -43,6 +43,16 @@ create table if not exists public.admin_users (
 -- Existing non-owner administrator entries are removed; the future Editor
 -- account is added only after its exact Auth user ID is confirmed.
 alter table public.admin_users add column if not exists role text not null default 'editor';
+do $
+begin
+  if not exists (
+    select 1 from auth.users
+    where lower(coalesce(email, '')) = lower('aboserag925@gmail.com')
+  ) then
+    raise exception 'Owner Auth account aboserag925@gmail.com must exist before applying the role migration.';
+  end if;
+end
+$;
 alter table public.admin_users drop constraint if exists admin_users_role_check;
 alter table public.admin_users add constraint admin_users_role_check check (role in ('owner', 'editor'));
 delete from public.admin_users au
