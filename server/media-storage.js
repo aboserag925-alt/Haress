@@ -2,9 +2,9 @@
 
 class MemoryStore {
   constructor() { this.objects = new Map(); this.ops = []; }
-  async put(key, buffer, contentType) {
+  async put(key, buffer, contentType, options) {
     if (!Buffer.isBuffer(buffer)) buffer = Buffer.from(buffer);
-    if (this.objects.has(key)) throw new Error('OBJECT_EXISTS');
+    if (this.objects.has(key) && !(options && options.upsert === true)) throw new Error('OBJECT_EXISTS');
     this.objects.set(key, { body: Buffer.from(buffer), contentType: contentType || 'application/octet-stream' });
     this.ops.push('put:' + key);
   }
@@ -64,10 +64,10 @@ async function sbRequest(path, method, opts, supabaseUrl, serviceKey) {
   return data;
 }
 
-SupabaseMediaStorage.prototype.put = async function (key, buffer, contentType) {
+SupabaseMediaStorage.prototype.put = async function (key, buffer, contentType, options) {
   const u = this.supabaseUrl; const k = this.serviceRoleKey;
   await sbRequest('/object/' + this.bucket + '/' + encodeURIComponent(key).replace(/%2F/g, '/'), 'POST', {
-    headers: { 'Content-Type': contentType || 'application/octet-stream', 'x-upsert': 'false' },
+    headers: { 'Content-Type': contentType || 'application/octet-stream', 'x-upsert': options && options.upsert === true ? 'true' : 'false' },
     body: buffer
   }, u, k);
 };
