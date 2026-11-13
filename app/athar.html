@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#173f35">
+<link rel="manifest" href="manifest.json">
+<title>موقع أهل الأثر | مكتبة العلم</title>
+<style>
+:root{color-scheme:light;--bg:#f6f8f5;--paper:#fff;--ink:#24352d;--muted:#68766e;--green:#173f35;--gold:#b58b4d;--line:#e3e9e2}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,"Noto Naskh Arabic",sans-serif;line-height:1.7}
+header{background:linear-gradient(125deg,#173f35,#245b49);color:#fff;padding:22px max(18px,calc((100% - 1080px)/2))}
+header a{color:#f2d9a4;text-decoration:none}header h1{margin:12px 0 4px;font-size:clamp(25px,5vw,38px)}header p{margin:0;color:#e0e9e2}
+main{width:min(1080px,calc(100% - 28px));margin:28px auto 60px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}
+button{font:inherit;cursor:pointer}.filter{border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);padding:8px 15px}.filter[aria-pressed=true]{background:var(--green);color:#fff;border-color:var(--green)}
+.status{color:var(--muted);padding:12px 0}.status.error{color:#a83232}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:14px}
+.card{min-width:0;padding:16px;border:1px solid var(--line);border-radius:18px;background:var(--paper);box-shadow:0 8px 24px #173f3509}
+.card h2{font-size:18px;margin:8px 0;color:var(--green);overflow-wrap:anywhere}.tag{display:inline-block;padding:3px 9px;border-radius:999px;background:#edf4ee;color:var(--green);font-size:12px}
+.card audio,.card video,.card img{display:block;width:100%;max-height:380px;margin-top:12px;border-radius:12px}.card img{object-fit:contain;background:#f0f2ef}
+.card a{color:var(--green);font-weight:700}.date{display:block;margin-top:10px;color:var(--muted);font-size:12px}
+.empty{grid-column:1/-1;padding:30px;text-align:center;border:1px dashed #cbd6cc;border-radius:16px;color:var(--muted)}
+footer{text-align:center;color:var(--muted);padding:24px}
+</style>
+</head>
+<body>
+<header>
+<a href="index.html">← العودة إلى استراحة أهل الأثر</a>
+<h1>موقع أهل الأثر</h1>
+<p>مكتبة نافعة من الصوتيات والمرئيات والمواد المصورة، تُنشر بعد مراجعة واعتماد المشرفين.</p>
+</header>
+<main>
+<h2>المكتبة العلمية</h2>
+<p>تُحمّل المواد المنشورة من مكتبة المنصة، وتُعرض هنا دون إتاحة الملفات المعلّقة أو غير المعتمدة.</p>
+<div class="toolbar" id="filters" role="group" aria-label="تصفية المواد">
+<button class="filter" type="button" data-category="all" aria-pressed="true">الكل</button>
+<button class="filter" type="button" data-category="audio" aria-pressed="false">صوتيات</button>
+<button class="filter" type="button" data-category="video" aria-pressed="false">فيديو</button>
+<button class="filter" type="button" data-category="images" aria-pressed="false">صور</button>
+<button class="filter" type="button" data-category="books" aria-pressed="false">كتب</button>
+</div>
+<p class="status" id="status" role="status" aria-live="polite">جارٍ تحميل المواد المنشورة…</p>
+<section class="grid" id="items" aria-label="المواد المنشورة"></section>
+</main>
+<footer>أهل الأثر — العلم النافع والأثر الطيب</footer>
+<script src="runtime-config.js"></script>
+<script>
+(function(){
+  'use strict';
+  var base=String(window.AHL_API_BASE_URL||'').replace(/\/+$/,'');
+  var status=document.getElementById('status');
+  var container=document.getElementById('items');
+  var filters=document.getElementById('filters');
+  var allItems=[];
+  var active='all';
+  function safeFileUrl(value){
+    if(typeof value!=='string'||!/^\/api\/library\/files\/[0-9a-f-]{36}$/i.test(value))return null;
+    return base+value;
+  }
+  function render(){
+    container.replaceChildren();
+    var rows=allItems.filter(function(item){return active==='all'||item.category===active;});
+    if(!rows.length){
+      var empty=document.createElement('p');empty.className='empty';
+      empty.textContent=allItems.length?'لا توجد مواد في هذا التصنيف.':'لا توجد مواد منشورة حاليًا.';
+      container.appendChild(empty);return;
+    }
+    rows.forEach(function(item){
+      var url=safeFileUrl(item.url);if(!url)return;
+      var card=document.createElement('article');card.className='card';
+      var tag=document.createElement('span');tag.className='tag';tag.textContent=item.categoryName||'مادة علمية';
+      var title=document.createElement('h2');title.textContent=String(item.title||'مادة من مكتبة أهل الأثر').slice(0,160);
+      card.append(tag,title);
+      if(item.kind==='audio'||item.kind==='video'){
+        var player=document.createElement(item.kind);player.controls=true;player.preload='none';player.src=url;player.setAttribute('aria-label',title.textContent);
+        card.appendChild(player);
+      }else if(item.kind==='image'){
+        var image=document.createElement('img');image.src=url;image.alt=title.textContent;image.loading='lazy';card.appendChild(image);
+      }else{
+        var link=document.createElement('a');link.href=url;link.textContent='فتح / تحميل المادة';link.rel='noopener';link.target='_blank';card.appendChild(link);
+      }
+      if(item.uploadedAt){
+        var date=document.createElement('time');date.className='date';date.dateTime=item.uploadedAt;
+        var parsed=new Date(item.uploadedAt);date.textContent=Number.isNaN(parsed.getTime())?'':new Intl.DateTimeFormat('ar-EG',{dateStyle:'medium'}).format(parsed);
+        card.appendChild(date);
+      }
+      container.appendChild(card);
+    });
+  }
+  async function load(){
+    status.className='status';status.textContent='جارٍ تحميل المواد المنشورة…';
+    try{
+      var response=await fetch(base+'/api/library',{headers:{Accept:'application/json'},cache:'no-store'});
+      var result=await response.json();
+      if(!response.ok||!result||!Array.isArray(result.items))throw new Error('library-unavailable');
+      allItems=result.items;status.textContent='عدد المواد المنشورة: '+allItems.length;render();
+    }catch(error){
+      status.classList.add('error');status.textContent='تعذر تحميل المكتبة الآن. تحقق من اتصال الخادم ثم أعد المحاولة.';
+      container.replaceChildren();
+      var retry=document.createElement('button');retry.className='filter';retry.type='button';retry.textContent='إعادة المحاولة';retry.addEventListener('click',load);container.appendChild(retry);
+    }
+  }
+  filters.addEventListener('click',function(event){
+    var button=event.target.closest('button[data-category]');if(!button)return;
+    active=button.dataset.category;
+    filters.querySelectorAll('button').forEach(function(item){item.setAttribute('aria-pressed',item===button?'true':'false');});
+    render();
+  });
+  load();
+})();
+</script>
+</body>
+</html>
