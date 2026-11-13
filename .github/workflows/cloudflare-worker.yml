@@ -17,6 +17,7 @@ concurrency:
 jobs:
   build-and-test:
     name: Build and test application
+    environment: Main
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -76,6 +77,14 @@ jobs:
           console.log('Supabase URL and anon/publishable key are present; values withheld.');
           NODE
 
+      - name: Upload built application assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: hares-app-assets
+          path: app/
+          if-no-files-found: error
+          retention-days: 1
+
   deploy:
     name: Deploy production Worker
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -89,20 +98,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Download tested application assets
+        uses: actions/download-artifact@v4
         with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build application assets
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: npm run build:app
+          name: hares-app-assets
+          path: app/
 
       - name: Validate required Cloudflare deployment credentials
         env:
