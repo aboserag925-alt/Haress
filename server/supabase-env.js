@@ -10,7 +10,7 @@ function normalizeSupabaseEnv(env) {
   const normalized = { ...(env || {}) };
   for (const key of SUPABASE_ENV_KEYS) {
     if (typeof normalized[key] === 'string') {
-      normalized[key] = normalized[key].replace(/^\\uFEFF+/u, '').trim();
+      normalized[key] = normalized[key].replace(/^\uFEFF+/u, '').trim();
     }
   }
   return normalized;
