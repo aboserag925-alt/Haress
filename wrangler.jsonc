@@ -9,5 +9,8 @@
     "run_worker_first": [
       "/api/*"
     ]
+  },
+  "vars": {
+    "AHL_API_BASE_URL": "https://haress-production.up.railway.app"
   }
 }
