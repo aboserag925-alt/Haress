@@ -62,10 +62,14 @@ test("routes /api/health through the Worker proxy instead of static assets", asy
       AHL_API_BASE_URL: "https://api.example.com",
       ASSETS: { fetch: async () => { throw new Error("API request must not reach ASSETS"); } }
     },
-    async () => new Response("ok")
+    async request => {
+      requestedUrl = request.url;
+      return new Response(JSON.stringify({ status: "ok" }), { status: 200 });
+    }
   );
-  // The default export uses the platform fetch; route behavior is verified by
-  // the exported proxyApi tests above and this assertion guards the 503 fail-closed path.
-  assert.equal(response.status, 503);
-  assert.match(await response.text(), /خدمة API غير مهيأة/);
+  assert.equal(response.status, 200);
+  assert.equal(requestedUrl, "https://api.example.com/api/health?probe=1");
+  assert.deepEqual(await response.json(), { status: "ok" });
 });
+
+
