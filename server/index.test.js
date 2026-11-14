@@ -756,6 +756,6 @@ test('normalizes BOM-prefixed Supabase URL and keys before public lecture reques
   assert.equal(calls[0].url, 'https://project.example.supabase.co/rest/v1/lectures?select=id,title,description,starts_at,category,stream_url,recording_url,status,created_at,updated_at&status=eq.published&order=starts_at.asc.nullslast');
   assert.equal(calls[0].headers.apikey, 'anon-test-key');
   assert.equal(calls[0].headers.Authorization, 'Bearer anon-test-key');
-  assert.equal(calls[0].headers.apikey.includes('\\uFEFF'), false);
+  assert.equal(calls[0].headers.apikey.charCodeAt(0), 97);
 });
 
