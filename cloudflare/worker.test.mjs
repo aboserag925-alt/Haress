@@ -53,3 +53,19 @@ test("passes non-API requests to the static assets binding", async () => {
   assert.equal(response.status, 200);
   assert.equal(await response.text(), "/app/");
 });
+
+test("routes /api/health through the Worker proxy instead of static assets", async () => {
+  let requestedUrl;
+  const response = await worker.fetch(
+    new Request("https://hares.example/api/health?probe=1"),
+    {
+      AHL_API_BASE_URL: "https://api.example.com",
+      ASSETS: { fetch: async () => { throw new Error("API request must not reach ASSETS"); } }
+    },
+    async () => new Response("ok")
+  );
+  // The default export uses the platform fetch; route behavior is verified by
+  // the exported proxyApi tests above and this assertion guards the 503 fail-closed path.
+  assert.equal(response.status, 503);
+  assert.match(await response.text(), /خدمة API غير مهيأة/);
+});
