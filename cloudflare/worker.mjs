@@ -45,10 +45,10 @@ export async function proxyApi(request, env, fetchImpl = fetch) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, fetchImpl = fetch) {
     const incoming = new URL(request.url);
     if (incoming.pathname.startsWith("/api/")) {
-      return proxyApi(request, env);
+      return proxyApi(request, env, fetchImpl);
     }
 
     if (env && env.ASSETS && typeof env.ASSETS.fetch === "function") {
