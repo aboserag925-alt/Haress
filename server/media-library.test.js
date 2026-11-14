@@ -446,10 +446,12 @@ test('Supabase storage: works when storage directory is unwritable (Railway EACC
     // processUpdate (upload path via storeFile/save) must not touch the fs either
     await library.processUpdate({ update_id: 1, message: { chat: { id: -100123 }, date: 1793500000, caption: 'درس الخميس #كتب', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', mime_type: 'audio/mpeg', file_size: 11 } } });
     const keys = await storage.listKeys('');
-    assert.equal(keys.length, 1);
-    assert.ok(keys[0].startsWith('library/audio/'));
-    assert.ok(keys[0].endsWith('lesson.mp3'));
-    const id = keys[0].split('/')[2];
+    assert.equal(keys.length, 2);
+    assert.ok(keys.includes(MANIFEST_KEY));
+    const fileKey = keys.find(function (key) { return key !== MANIFEST_KEY; });
+    assert.ok(fileKey.startsWith('library/audio/'));
+    assert.ok(fileKey.endsWith('lesson.mp3'));
+    const id = fileKey.split('/')[2];
     await library.processUpdate({ update_id: 2, callback_query: { id: 'cb', data: 'media:approve:' + id, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } } });
     assert.equal((await library.listApproved()).length, 1);
     const f = await library.getApprovedFile(id);
