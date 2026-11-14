@@ -51,11 +51,11 @@ jobs:
             exit 1
           fi
 
-      - name: Build application assets
+      - name: Build Cloudflare package
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-        run: npm run build:app
+        run: npm run build:cloudflare
 
       - name: Verify generated Supabase configuration without exposing key
         run: |
@@ -81,7 +81,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: hares-app-assets
-          path: app/
+          path: dist/
           if-no-files-found: error
           retention-days: 1
 
@@ -102,7 +102,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: hares-app-assets
-          path: app/
+          path: dist/
 
       - name: Validate required Cloudflare deployment credentials
         env:
