@@ -6,6 +6,7 @@ const { randomUUID } = require('node:crypto');
 const { resolveStorage, buildKey } = require('./media-storage');
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
+const MANIFEST_KEY = 'library/media-index.json';
 const MAX_LIBRARY_ITEMS = 500;
 const CATEGORY_NAMES = {
   audio: 'صوتيات',
@@ -115,6 +116,26 @@ function createMediaLibrary(options) {
   async function initialize() {
     if (initialized) return;
     if (useRemote) {
+      const stored = await storage.get(MANIFEST_KEY);
+      if (stored) {
+        let manifest;
+        try {
+          const contents = typeof stored.body === 'string'
+            ? stored.body
+            : Buffer.from(stored.body).toString('utf8');
+          manifest = JSON.parse(contents);
+        } catch {
+          throw new Error('Invalid remote media library index.');
+        }
+        if (!manifest || !Array.isArray(manifest.items) ||
+            (manifest.offset !== null && !Number.isSafeInteger(manifest.offset))) {
+          throw new Error('Invalid remote media library index.');
+        }
+        items = manifest.items;
+        offset = manifest.offset;
+      } else {
+        await save();
+      }
       initialized = true;
       return;
     }
@@ -136,10 +157,14 @@ function createMediaLibrary(options) {
   }
 
   async function save() {
-    if (useRemote) return;
+    const contents = JSON.stringify({ offset: offset, items: items });
+    if (useRemote) {
+      await storage.put(MANIFEST_KEY, Buffer.from(contents, 'utf8'), 'application/json', { upsert: true });
+      return;
+    }
     await fs.mkdir(storageDirectory, { recursive: true });
     const temporaryPath = indexPath + '.' + randomUUID() + '.tmp';
-    await fs.writeFile(temporaryPath, JSON.stringify({ offset: offset, items: items }), 'utf8');
+    await fs.writeFile(temporaryPath, contents, 'utf8');
     await fs.rename(temporaryPath, indexPath);
   }
 
