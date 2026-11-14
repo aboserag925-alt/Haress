@@ -33,7 +33,7 @@ test('approval RPC validates administrator, task state, action and rejection rea
 });
 
 test('migration is transactional and does not destructively drop existing data',()=>{
-  assert.match(migration,/^begin;/i);
+  assert.match(migration,/^\\s*(?:--[^\\n]*\\n\\s*)*begin;/i);
   assert.match(migration,/commit;\s*$/i);
   assert.doesNotMatch(migration,/\b(drop table|truncate|delete from)\b/i);
 });
