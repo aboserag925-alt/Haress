@@ -11,7 +11,7 @@
   var dark=theme==='dark';
   root.setAttribute('data-theme',dark?'dark':'light');
   var meta=document.querySelector('meta[name="theme-color"]');
-  if(meta)meta.setAttribute('content',dark?'#0d1713':'#f7f8f4');
+  if(meta)meta.setAttribute('content',dark?'#0d1713':'#f6faf6');
   var btn=document.querySelector('.theme-toggle');
   if(btn){btn.innerHTML=(dark?sun:moon)+'<span>'+(dark?'الوضع النهاري':'الوضع الليلي')+'</span>';btn.setAttribute('aria-pressed',String(dark));btn.setAttribute('aria-label',dark?'التبديل إلى الوضع النهاري':'التبديل إلى الوضع الليلي');}
   try{localStorage.setItem(key,dark?'dark':'light')}catch(_){}
