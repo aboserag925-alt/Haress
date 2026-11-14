@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const http = require('node:http');
 const test = require('node:test');
 const { createServer } = require('./index');
+const fetchHttp = global.fetch;
 
 const configuredEnv = {
   GEMINI_API_KEY: 'test-gemini-key',
@@ -736,3 +737,25 @@ test('adds allowlisted CORS headers to library and media responses', async funct
     assert.match(file.headers.get('access-control-expose-headers'), /Content-Range/i);
   });
 });
+test('normalizes BOM-prefixed Supabase URL and keys before public lecture requests', async function () {
+  const calls = [];
+  const fetch = async function (url, options) {
+    calls.push({ url: String(url), headers: options && options.headers || {} });
+    return { ok: true, status: 200, json: async function () { return []; } };
+  };
+  const env = {
+    SUPABASE_URL: '\uFEFFhttps://project.example.supabase.co ',
+    SUPABASE_ANON_KEY: '\uFEFFanon-test-key ',
+    SUPABASE_SERVICE_ROLE_KEY: '\uFEFFservice-test-key '
+  };
+  await withServer({ env: env, fetch: fetch }, async function (baseUrl) {
+    const response = await fetchHttp(baseUrl + '/api/lectures');
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { items: [] });
+  });
+  assert.equal(calls[0].url, 'https://project.example.supabase.co/rest/v1/lectures?select=id,title,description,starts_at,category,stream_url,recording_url,status,created_at,updated_at&status=eq.published&order=starts_at.asc.nullslast');
+  assert.equal(calls[0].headers.apikey, 'anon-test-key');
+  assert.equal(calls[0].headers.Authorization, 'Bearer anon-test-key');
+  assert.equal(calls[0].headers.apikey.includes('\\uFEFF'), false);
+});
+
