@@ -104,6 +104,27 @@ jobs:
           name: hares-app-assets
           path: app/
 
+      - name: Verify generated Supabase configuration without exposing key
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import vm from 'node:vm';
+          const source = fs.readFileSync('app/supabase-config.js', 'utf8');
+          const sandbox = { window: {} };
+          vm.runInNewContext(source, sandbox, { timeout: 1000 });
+          const config = sandbox.window.AHL_SUPABASE_CONFIG;
+          if (!config?.url || !config?.anonKey) {
+            console.error('Supabase build configuration is missing.');
+            process.exit(1);
+          }
+          if (config.url !== 'https://uzepglfimareggswjzlf.supabase.co') {
+            console.error('Supabase URL does not match the approved doc project.');
+            process.exit(1);
+          }
+          console.log('Supabase URL and anon/publishable key are present; values withheld.');
+          NODE
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
       - name: Validate required Cloudflare deployment credentials
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -129,3 +150,28 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
+
+      - name: Post-deploy Supabase config smoke check (no key printed)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          node --input-type=module <<'NODE'
+          const url = 'https://hares.aboserag925.workers.dev/supabase-config.js';
+          for (let attempt = 1; attempt <= 6; attempt++) {
+            const response = await fetch(url + '?smoke=' + Date.now());
+            if (!response.ok) {
+              console.error('Production supabase-config.js returned HTTP ' + response.status);
+              process.exit(1);
+            }
+            const source = await response.text();
+            const sandbox = { window: {} };
+            (new Function('window', source))(sandbox);
+            const config = sandbox.window.AHL_SUPABASE_CONFIG;
+            if (config?.url && config?.anonKey && config.url === 'https://uzepglfimareggswjzlf.supabase.co') {
+              console.log('Post-deploy smoke: production supabase-config.js is non-empty; values withheld.');
+              process.exit(0);
+            }
+            if (attempt < 6) await new Promise(function (r) { setTimeout(r, 15000); });
+          }
+          console.error('Production supabase-config.js is empty after deploy — failing workflow.');
+          process.exit(1);
+          NODE
