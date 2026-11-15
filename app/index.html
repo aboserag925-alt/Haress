@@ -1,315 +1,194 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ar" dir="rtl" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0c0c0e">
+<meta name="theme-color" content="#11100f">
+<meta name="description" content="استراحة أهل الأثر — مجالس العلم والذكر والسؤال وصحبة القرآن والسنة.">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <title>استراحة أهل الأثر</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-<!-- CSS ownership: Tailwind provides generated utility/state classes; visual-identity-v2.css owns the brand and component presentation and must remain last. Legacy brand-motion.css and interactive-identity.css are intentionally not loaded here. -->
 <link href="tailwind.css" rel="stylesheet">
 <link href="visual-identity-v2.css" rel="stylesheet">
 </head>
 <body class="haress-experience">
-<div class="experience-shell">
-  
+<a class="skip-link" href="#home">تجاوز إلى المحتوى</a>
+<header class="site-header">
+  <a class="brand-lockup" href="#home" aria-label="استراحة أهل الأثر — الرئيسية">
+    <span class="brand-emblem" aria-hidden="true"><img src="icon.svg" alt=""></span>
+    <span class="brand-copy"><small>علم شرعي بمنهج أهل السنة</small><strong>استراحة أهل الأثر</strong></span>
+  </a>
+  <nav class="primary-nav" aria-label="التنقل الرئيسي">
+    <button type="button" class="nav-link is-current" data-section="sched" onclick="show('sched')">المجالس</button>
+    <button type="button" class="nav-link" data-section="prayers" onclick="show('prayers')">الصلاة</button>
+    <button type="button" class="nav-link" data-section="media" onclick="show('media')">المكتبة</button>
+    <button type="button" class="nav-link" data-section="q" onclick="show('q')">الاستشارة</button>
+    <button type="button" class="nav-link" data-section="adhkar" onclick="show('adhkar')">الأذكار</button>
+    <button type="button" class="nav-link" data-section="about" onclick="show('about')">عن المجلس</button>
+  </nav>
+  <div class="header-tools">
+    <button id="themeToggle" class="theme-toggle" type="button" aria-pressed="true" aria-label="التبديل إلى الوضع النهاري">الوضع النهاري</button>
+    <button class="radio-trigger" type="button" id="quranRadioButton" aria-expanded="false" aria-controls="quranRadioPanel">استمع للقرآن</button>
+  </div>
+</header>
+
+<main id="home">
   <section class="opening-stage" aria-labelledby="welcomeTitle">
-    <div class="cinematic-grain" aria-hidden="true"></div>
-    <div class="geometry-field" aria-hidden="true">
-      <svg viewBox="0 0 900 900" preserveAspectRatio="xMidYMid slice">
-        <g fill="none" stroke="currentColor" stroke-width="1">
-          <path d="M450 0 900 450 450 900 0 450Z M450 90 810 450 450 810 90 450Z M450 180 720 450 450 720 180 450Z"/>
-          <path d="M450 0V900 M0 450H900 M132 132 768 768 M768 132 132 768"/>
-          <path d="M450 90 540 270 720 360 540 450 450 630 360 450 180 360 360 270Z"/>
-          <circle cx="450" cy="450" r="330"/><circle cx="450" cy="450" r="250"/>
-          <path d="M450 90 630 270 810 450 630 630 450 810 270 630 90 450 270 270Z"/>
-        </g>
+    <div class="opening-grid" aria-hidden="true"></div>
+    <div class="opening-orbit" aria-hidden="true">
+      <svg viewBox="0 0 620 620" role="presentation">
+        <defs><pattern id="archGrid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M24 0 48 24 24 48 0 24Z" fill="none" stroke="currentColor" stroke-width=".7"/></pattern></defs>
+        <circle cx="310" cy="310" r="286"/><circle cx="310" cy="310" r="238"/>
+        <path d="M310 24 596 310 310 596 24 310Z M310 72 548 310 310 548 72 310Z"/>
+        <path d="M310 110 390 230 510 310 390 390 310 510 230 390 110 310 230 230Z"/>
+        <path d="M310 24V596 M24 310H596 M108 108 512 512 M512 108 108 512"/>
+        <rect x="96" y="96" width="428" height="428" fill="url(#archGrid)" opacity=".35"/>
       </svg>
+      <span class="orbit-caption">مَجَالِسُ العِلْمِ وَالأَثَر</span>
     </div>
-    <header class="masthead" aria-label="رأس استراحة أهل الأثر">
-      <a class="masthead-brand" href="#home" aria-label="استراحة أهل الأثر — الرئيسية">
-        <span class="masthead-seal"><img class="logo" src="icon.svg" alt=""></span>
-        <span class="masthead-wordmark"><small>علم شرعي بمنهج أهل السنة</small><strong>استراحة أهل الأثر</strong></span>
-      </a>
-      <nav class="desktop-links" aria-label="التنقل الرئيسي">
-        <button class="desktop-link is-active" type="button" data-section="sched" onclick="show('sched')">المجالس</button>
-        <button class="desktop-link" type="button" data-section="prayers" onclick="show('prayers')">الصلاة</button>
-        <button class="desktop-link" type="button" data-section="media" onclick="show('media')">المكتبة</button>
-        <button class="desktop-link" type="button" data-section="q" onclick="show('q')">اسأل واستشر</button>
-        <button class="desktop-link" type="button" data-section="adhkar" onclick="show('adhkar')">الأذكار</button>
-        <button class="desktop-link" type="button" data-section="about" onclick="show('about')">عن المجلس</button>
-      </nav>
-      <div class="masthead-actions">
-        <button class="header-radio" type="button" id="quranRadioButton" aria-expanded="false" aria-controls="quranRadioPanel">استمع للقرآن</button>
-      </div>
-    </header>
-    <div class="opening-content">
-      <div class="opening-copy">
-        <div class="opening-overline"><span class="overline-rule"></span><span>مجالس العلم والأدب · ٢٠٢٦</span></div>
-        <h1 id="welcomeTitle"><span class="hero-title-line">استراحة</span><span class="hero-title-line hero-title-accent">أهل الأثر</span></h1>
-        <p class="opening-description">على مائدة العلم تلتقي القلوب على الأثر؛ مجالس نتذاكر فيها الوحي، ونتواصى بالحق، ونطلب العلم بأدب وسكينة.</p>
-        <p class="opening-principle">القرآن والسنة بفهم وأخلاق سلف الأمة</p>
-        <div class="opening-ctas">
-          <button class="opening-enter" type="button" onclick="show('sched')"><span>ادخل إلى المجالس</span><b aria-hidden="true">↙</b></button>
-          <button class="opening-library" type="button" onclick="show('media')">اكتشف مكتبة الأثر <span aria-hidden="true">←</span></button>
-        </div>
-      </div>
-      <div class="opening-art" aria-hidden="true">
-        <div class="arch-halo"></div>
-        <svg class="arch-drawing" viewBox="0 0 520 650" role="presentation">
-          <defs><pattern id="archGrid" width="42" height="42" patternUnits="userSpaceOnUse"><path d="M21 0 42 21 21 42 0 21Z" fill="none" stroke="currentColor" stroke-width=".65" opacity=".55"/></pattern></defs>
-          <path class="arch-outer" d="M42 626V258C42 123 139 24 260 24s218 99 218 234v368Z"/>
-          <path class="arch-inner" d="M78 626V260C78 147 157 62 260 62s182 85 182 198v366Z"/>
-          <path class="arch-pattern" d="M78 626V260C78 147 157 62 260 62s182 85 182 198v366Z" fill="url(#archGrid)"/>
-          <path d="M260 100 318 158 376 216 318 274 260 332 202 274 144 216 202 158Z" fill="none" stroke="currentColor" stroke-width="1.1"/>
-          <path d="M260 156 302 198 344 240 302 282 260 324 218 282 176 240 218 198Z" fill="none" stroke="currentColor" stroke-width=".8"/>
-          <path d="M260 24V626 M42 440H478" stroke="currentColor" stroke-width=".6" opacity=".6"/>
-        </svg>
-        <div class="seal-plinth">
-          <img src="icon.svg" alt="">
-          <span>أهل الأثر</span>
-          <i></i>
-          <small>القرآن · السنة · الأدب</small>
-        </div>
-        <span class="art-coordinate art-coordinate-top">٢٩° ٥٨′ · ٣١° ١٤′</span>
-        <span class="art-coordinate art-coordinate-bottom">مَجَالِسُ العِلْمِ وَالأَثَر</span>
+    <div class="opening-copy">
+      <p class="eyebrow"><span></span> مجلسٌ للعلم والذكر والأدب <b>١٤٤٨ هـ</b></p>
+      <h1 id="welcomeTitle">على هَدْيِ<br><em>الأثرِ نسير.</em></h1>
+      <p class="opening-lede">مساحةٌ تتلاقى فيها القلوب على الوحي؛ نتذاكر العلم، ونتواصى بالحق، ونطلب الفهم بأدبٍ وسكينة.</p>
+      <p class="opening-verse">القرآن والسنة بفهم وأخلاق سلف الأمة</p>
+      <div class="opening-actions">
+        <button type="button" class="action-primary" onclick="show('sched')">اكتشف المجالس <span aria-hidden="true">↙</span></button>
+        <button type="button" class="action-quiet" onclick="show('media')">تصفّح خزانة الأثر <span aria-hidden="true">←</span></button>
       </div>
     </div>
-    <div class="opening-bottom">
-      <span>بإشراف الدكتور خالد الحارس</span>
-      <span class="opening-scroll"><i></i> مرّر لاكتشاف المجلس</span>
-      <span>السبت — الخميس · ٧:٠٠ و١٠:٠٠ مساءً</span>
-    </div>
-    <div class="development-mark"><i></i> نسخة تجريبية قيد التطوير</div>
+    <div class="opening-index" aria-hidden="true"><span>01</span><i></i><span>07</span></div>
+    <div class="opening-footer"><span>بإشراف الدكتور خالد الحارس</span><span>السبت — الخميس · ٧:٠٠ و١٠:٠٠ مساءً</span></div>
+    <span class="development-mark">نسخة تجريبية قيد التطوير</span>
   </section>
 
-  <main id="home" class="editorial-main">
-  
-    <div class="main-intro">
-      <div class="intro-index"><span>فهرس المجلس</span><b>٠١ / ٠٧</b></div>
-      <h2>هنا يهدأ صخب اليوم،<br><em>ويبدأ طلب العلم.</em></h2>
-      <p>مساحة عربية للعلم النافع، والذكر، والسؤال، وصحبة القرآن والسنة.</p>
-    </div>
+  <section class="radio-console" id="quranRadioPanel" hidden aria-label="مشغل إذاعة القرآن الكريم">
+    <div class="section-kicker"><span>صوت الوحي</span><b>00 / إذاعة</b></div>
+    <div class="radio-console-heading"><h2>القرآن <em>الكريم</em></h2><p>إذاعة القاهرة — مصر افتراضيًا</p></div>
+    <label class="field" for="quranRadioStation">اختر الإذاعة
+      <select id="quranRadioStation"><option value="cairo" selected>إذاعة القرآن الكريم — القاهرة</option><option value="saudi">إذاعة القرآن الكريم — السعودية (الموقع الرسمي)</option></select>
+    </label>
+    <audio id="quranRadioAudio" controls preload="none" playsinline aria-label="بث إذاعة القرآن الكريم من القاهرة"></audio>
+    <div class="inline-actions"><button class="button-outline" id="quranRadioMute" type="button" aria-pressed="false">كتم الإذاعة</button><a class="button-outline" id="quranRadioOpen" href="https://misrquran.gov.eg/" target="_blank" rel="noopener noreferrer">الموقع الرسمي للإذاعة</a></div>
+    <p id="quranRadioStatus" class="status" role="status" aria-live="polite">محاولة تشغيل إذاعة القاهرة. إذا منع المتصفح التشغيل التلقائي، اضغط تشغيل من المشغل.</p>
+  </section>
 
-    <section class="radio-panel" id="quranRadioPanel" hidden aria-label="مشغل إذاعة القرآن الكريم"><div class="chapter-heading radio-chapter-heading"><span class="chapter-number">04</span><div><small>صوت الوحي</small><h2>القرآن <em>الكريم</em></h2><p>إذاعة القاهرة — مصر افتراضيًا</p></div></div>
-  <div class="radio-panel-head"><strong>إذاعة القرآن الكريم</strong><span>القاهرة — مصر افتراضيًا</span></div>
-  <label class="field" for="quranRadioStation">اختر الإذاعة
-    <select id="quranRadioStation">
-      <option value="cairo" selected>إذاعة القرآن الكريم — القاهرة</option>
-      <option value="saudi">إذاعة القرآن الكريم — السعودية (الموقع الرسمي)</option>
-    </select>
-  </label>
-  <audio id="quranRadioAudio" controls preload="none" playsinline aria-label="بث إذاعة القرآن الكريم من القاهرة"></audio>
-  <div class="radio-controls">
-    <button class="btn" id="quranRadioMute" type="button" aria-pressed="false">كتم الإذاعة</button>
-    <a class="btn radio-official" id="quranRadioOpen" href="https://misrquran.gov.eg/" target="_blank" rel="noopener noreferrer">الموقع الرسمي للإذاعة</a>
-  </div>
-  <p id="quranRadioStatus" class="status" role="status" aria-live="polite">محاولة تشغيل إذاعة القاهرة. إذا منع المتصفح التشغيل التلقائي، اضغط تشغيل من المشغل.</p>
-</section>
+  <section class="content-frame schedule-scene" aria-label="برنامج الأسبوع">
+    <div class="section-kicker"><span>الفصل الأول · مواعيد اللقاء</span><b>01 — 07</b></div>
+    <div class="section-heading scene-heading"><div><p class="eyebrow">وقتٌ للعلم، وأثرٌ يبقى</p><h2>مواعيد <em>المجالس</em></h2></div><p>لقاءاتٌ تتجدد على مدار الأسبوع، في صحبة العلم وأهله.</p></div>
+    <div class="next schedule-countdown"><div><small>المجلس القادم</small><strong id="nx"></strong></div><div id="cd" class="countdown" dir="ltr"></div></div>
+    <div id="sched" class="schedule-timeline" aria-label="جدول الدروس الأسبوعي"></div>
+    <div id="managedLectures" class="managed-lectures"></div>
+  </section>
 
-    
-    <section class="weekly-stage" aria-label="برنامج الأسبوع">
-      <div class="chapter-heading weekly-chapter">
-        <span class="chapter-number">01</span>
-        <div><small>الفصل الأول · مجالس الأسبوع</small><h2>مواعيد <em>المجالس</em></h2><p>موعدٌ يتجدد، وعلمٌ يبقى أثره.</p></div>
-        <span class="chapter-aside">السبت — الخميس</span>
-      </div>
-      <div class="countdown-rail next"><div><small>المجلس القادم</small><strong id="nx"></strong></div><div class="countdown-value" id="cd" dir="ltr"></div></div>
-      <div id="sched" class="schedule-timeline" aria-label="جدول الدروس الأسبوعي"></div>
+  <section class="content-frame utility-scene" aria-label="أبواب الاستراحة">
+    <div class="section-kicker"><span>أبواب الاستراحة</span><b>02 — 05</b></div>
+    <section id="prayers" class="feature-section" hidden>
+      <div class="section-heading"><div><p class="eyebrow">الفصل الثاني · مواقيت العبادة</p><h2>الصلاة <em>والسكينة</em></h2></div><p>أدوات محلية لحساب المواقيت وإدارة إعداداتك.</p></div>
+      <article class="feature-panel">
+        <h3>مواقيت الصلاة</h3><p class="section-subtitle" id="prayerDate">تُحسب المواقيت حسب موقعك والمنطقة الزمنية لجهازك.</p>
+        <div id="locationStatus" class="status" role="status" aria-live="polite">لم يُحدَّد الموقع بعد. احفظ موقعًا يدويًا أو اسمح بتحديده تلقائيًا.</div>
+        <div class="inline-actions"><button class="button-gold" type="button" id="locateBtn">تحديد موقعي بإذنك</button></div>
+        <div class="settings-grid">
+          <label class="field" for="calcMethod">طريقة حساب المواقيت<select id="calcMethod"><option value="auto">تلقائي حسب المنطقة الزمنية</option><option value="egypt">الهيئة المصرية العامة للمساحة</option><option value="umm">أم القرى</option><option value="mwl">رابطة العالم الإسلامي</option></select></label>
+          <label class="field" for="asrMadhab">طريقة حساب العصر<select id="asrMadhab"><option value="shafi">الشافعي والمالكي والحنبلي</option><option value="hanafi">الحنفي</option></select></label>
+          <label class="field" for="latitude">خط العرض<input id="latitude" type="number" min="-90" max="90" step="any" inputmode="decimal" placeholder="مثال: 30.0444"></label>
+          <label class="field" for="longitude">خط الطول<input id="longitude" type="number" min="-180" max="180" step="any" inputmode="decimal" placeholder="مثال: 31.2357"></label>
+          <div class="field"><span>المنطقة الزمنية</span><span id="timezoneLabel" class="status">حسب إعدادات جهازك</span></div>
+        </div>
+        <button class="button-gold" type="button" id="saveLocation">حفظ الموقع والإعدادات</button>
+        <div id="prayerList" class="prayer-list" aria-live="polite"></div>
+        <p id="nextPrayerLabel" class="notice" hidden></p><div id="prayerNotice" class="notice">تُحسب المواقيت محليًا على جهازك. قد تختلف بضع دقائق حسب تقويم بلدك والجهة الرسمية المعتمدة.</div>
+      </article>
+      <article class="feature-panel">
+        <h3>الأذان</h3><p class="section-subtitle">أضف رابطًا مباشرًا لتسجيل أذان تملك حق استخدامه. لا يُشغّل المتصفح الصوت تلقائيًا دون تفاعل منك.</p>
+        <label class="field" for="adhanUrl">رابط التسجيل الصوتي (HTTPS)<input id="adhanUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://example.com/adhan.mp3"></label>
+        <button class="button-outline" type="button" id="saveAdhan">حفظ رابط الأذان</button><audio id="adhanAudio" class="audio-player" controls preload="none" hidden></audio>
+        <div id="audioStatus" class="status" role="status" aria-live="polite"></div><p class="notice">يمكن تشغيل التسجيل يدويًا من المشغّل. لا يستطيع المتصفح تشغيل الأذان تلقائيًا في وقت الصلاة أو بعد إغلاق التطبيق دون خدمة تنبيهات مدعومة.</p>
+      </article>
     </section>
 
-    
-
-    <section class="section-stage" aria-label="محتوى المجلس">
-      <div class="section-stage-heading"><span>فصول الاستراحة</span><p>اختر بابًا من أبواب العلم والذكر والأدوات النافعة.</p></div>
-      <section id="prayers" hidden>
-<div class="chapter-heading"><span class="chapter-number">02</span><div><small>الفصل الثاني · أدوات الصلاة</small><h2>أوقات الصلاة</h2><p>العبادة في وقتها، والطمأنينة في يومك.</p></div><span class="chapter-ornament" aria-hidden="true">۞</span></div>
-<div class="card">
-<h2 class="section-title">مواقيت الصلاة</h2>
-<p class="section-subtitle" id="prayerDate">تُحسب المواقيت حسب موقعك والمنطقة الزمنية لجهازك.</p>
-<div id="locationStatus" class="status" role="status" aria-live="polite">لم يُحدَّد الموقع بعد. احفظ موقعًا يدويًا أو اسمح بتحديده تلقائيًا.</div>
-<div class="qibla-actions">
-<button class="btn" type="button" id="locateBtn">تحديد موقعي بإذنك</button>
-</div>
-<div class="settings-grid">
-<label class="field" for="calcMethod">طريقة حساب المواقيت
-<select id="calcMethod">
-<option value="auto">تلقائي حسب المنطقة الزمنية</option>
-<option value="egypt">الهيئة المصرية العامة للمساحة</option>
-<option value="umm">أم القرى</option>
-<option value="mwl">رابطة العالم الإسلامي</option>
-</select>
-</label>
-<label class="field" for="asrMadhab">طريقة حساب العصر
-<select id="asrMadhab">
-<option value="shafi">الشافعي والمالكي والحنبلي</option>
-<option value="hanafi">الحنفي</option>
-</select>
-</label>
-<label class="field" for="latitude">خط العرض
-<input id="latitude" type="number" min="-90" max="90" step="any" inputmode="decimal" placeholder="مثال: 30.0444">
-</label>
-<label class="field" for="longitude">خط الطول
-<input id="longitude" type="number" min="-180" max="180" step="any" inputmode="decimal" placeholder="مثال: 31.2357">
-</label>
-<div class="field"><span>المنطقة الزمنية</span><span id="timezoneLabel" class="status">حسب إعدادات جهازك</span></div>
-</div>
-<button class="btn" type="button" id="saveLocation">حفظ الموقع والإعدادات</button>
-<div id="prayerList" class="prayer-list" aria-live="polite"></div>
-<p id="nextPrayerLabel" class="notice" hidden></p>
-<div id="prayerNotice" class="notice">تُحسب المواقيت محليًا على جهازك. قد تختلف بضع دقائق حسب تقويم بلدك والجهة الرسمية المعتمدة.</div>
-</div>
-<div class="card">
-<h2 class="section-title">الأذان</h2>
-<p class="section-subtitle">أضف رابطًا مباشرًا لتسجيل أذان الشيخ محمد صديق المنشاوي تملك حق استخدامه. لا يُشغّل المتصفح الصوت تلقائيًا دون تفاعل منك.</p>
-<label class="field" for="adhanUrl" style="margin-top:14px">رابط التسجيل الصوتي (HTTPS)
-<input id="adhanUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://example.com/adhan.mp3">
-</label>
-<button class="btn" type="button" id="saveAdhan">حفظ رابط الأذان</button>
-<audio id="adhanAudio" class="audio-player" controls preload="none" hidden></audio>
-<div id="audioStatus" class="status" role="status" aria-live="polite"></div>
-<p class="notice">يمكن تشغيل التسجيل يدويًا من المشغّل. لا يستطيع المتصفح تشغيل الأذان تلقائيًا في وقت الصلاة أو بعد إغلاق التطبيق دون خدمة تنبيهات مدعومة.</p>
-</div>
-</section>
-      <section id="qibla" hidden>
-<div class="chapter-heading"><span class="chapter-number">02·1</span><div><small>أدوات الصلاة · القبلة</small><h2>اتجاه القبلة</h2><p>وجهة الصلاة من موضعك إلى البيت الحرام.</p></div><span class="chapter-ornament" aria-hidden="true">۞</span></div>
-<div class="card">
-<h2 class="section-title">اتجاه القبلة</h2>
-<p class="section-subtitle">الاتجاه محسوب من موقعك إلى الكعبة المشرفة.</p>
-<div class="compass-wrap">
-<div id="compass" class="compass" role="img" aria-label="بوصلة اتجاه القبلة">
-<span class="compass-north">شمال</span>
-<div id="compassArrow" class="compass-arrow">
-<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 4 68 55 50 46 32 55Z" fill="#f2d9a4"/><path d="M50 96 32 45 50 54 68 45Z" fill="#697269"/><circle cx="50" cy="50" r="5" fill="#d5ab64"/></svg>
-</div>
-</div>
-<div id="qiblaBearing" class="bearing" dir="ltr">—°</div>
-<div id="compassStatus" class="status" role="status" aria-live="polite">اسمح بالموقع لمعرفة اتجاه القبلة.</div>
-<div class="qibla-actions">
-<button class="btn" type="button" id="compassBtn">تشغيل البوصلة</button>
-<button class="btn" type="button" id="qiblaLocateBtn">تحديد موقعي</button>
-</div>
-</div>
-<p class="notice">البوصلة تحتاج إلى جهاز يدعم مستشعر الاتجاه، وقد تتطلب إذنًا إضافيًا. إن لم تتوفر، استخدم زاوية القبلة بالنسبة إلى الشمال واتبع تعليمات معايرة الجهاز.</p>
-</div>
-</section>
-      <section id="adhkar" hidden>
-<div class="chapter-heading"><span class="chapter-number">02·2</span><div><small>أدوات الصلاة · الأذكار</small><h2>زاد الذاكرين</h2><p>أذكار الصباح والمساء في مساحة هادئة.</p></div><span class="chapter-ornament" aria-hidden="true">۞</span></div>
-<div class="card">
-<h2 class="section-title">الأذكار</h2>
-<p class="section-subtitle">أذكار الصباح والمساء — يُحفظ تقدمك على هذا الجهاز لليوم.</p>
-<div class="adhkar-switch" role="group" aria-label="اختيار الأذكار">
-<button id="morningBtn" class="adhkar-choice on" type="button" aria-pressed="true">أذكار الصباح</button>
-<button id="eveningBtn" class="adhkar-choice" type="button" aria-pressed="false">أذكار المساء</button>
-</div>
-<div id="adhkarList"></div>
-<p class="notice">عداد الأذكار وسيلة للتذكير، وليس فتوى أو بديلًا عن الرجوع إلى مصادر الذكر المعتمدة.</p>
-</div>
-</section>
-      <section id="media" hidden>
-<div class="chapter-heading"><span class="chapter-number">03</span><div><small>الفصل الثالث · أرشيف المعرفة</small><h2>مكتبة الأثر</h2><p>خزانة منتقاة من الصوتيات والمرئيات والكتب.</p></div><span class="chapter-ornament" aria-hidden="true">۞</span></div>
-<div class="library-feature" aria-hidden="true"><div class="library-feature-art"><span>خَزَائِنُ</span><strong>الأَثَر</strong><i></i><small>ARCHIVE · 01</small></div><div class="library-feature-copy"><small>أرشيف المعرفة</small><h3>من مجالس العلم<br>إلى رفوف المكتبة</h3><p>صوتٌ يُسمع، وعلمٌ يُقرأ، وأثرٌ يُحفظ.</p></div></div>
-<div class="card library-content">
-<h2 class="section-title">مكتبة المجلس</h2>
-<p class="section-subtitle">مواد المجموعة المصنفة — لا تظهر الملفات إلا بعد اعتماد مشرف.</p>
-<div id="mediaFilters" class="media-filters" role="group" aria-label="تصفية المكتبة">
-<button class="media-filter on" type="button" data-media-category="all" aria-pressed="true">الكل</button>
-<button class="media-filter" type="button" data-media-category="audio" aria-pressed="false">الصوتيات</button>
-<button class="media-filter" type="button" data-media-category="video" aria-pressed="false">الفيديو</button>
-<button class="media-filter" type="button" data-media-category="books" aria-pressed="false">الكتب</button>
-<button class="media-filter" type="button" data-media-category="images" aria-pressed="false">الصور</button>
-<button class="media-filter" type="button" data-media-category="other" aria-pressed="false">أخرى</button>
-</div>
-<p id="mediaStatus" class="status" role="status" aria-live="polite">جارٍ تحميل المكتبة…</p>
-<div id="mediaItems" class="media-grid"></div>
-</div>
-</section>
-      <section id="q" hidden>
-<div class="chapter-heading"><span class="chapter-number">05</span><div><small>الفصل الخامس · باب السؤال</small><h2>اسأل واستشر</h2><p>اكتب سؤالك ليصل إلى المراجعة العلمية.</p></div><span class="chapter-ornament" aria-hidden="true">۞</span></div>
-<div class="consultation-scene">
-<div class="note">الأسئلة الشرعية يراجعها الدكتور خالد وحده. Gemini ينشئ مسودة أولية للمراجعة، ولا تُعد المسودة فتوى أو ردًا معتمدًا.</div>
-<div class="card">
-<h2>اكتب سؤالك</h2>
-<p class="section-subtitle">يُرسل السؤال إلى Gemini لإنشاء مسودة، ثم يُرسل السؤال والمسودة إلى وجهة Telegram للمراجعة. لا ترسل معلومات شخصية أو حساسة.</p>
-<textarea id="qt" maxlength="1600" placeholder="سؤالك أو ملاحظتك"></textarea>
-<div id="questionTurnstile" class="question-turnstile" hidden aria-label="التحقق الأمني"></div>
-<p id="questionTurnstileStatus" class="status" role="status" aria-live="polite" hidden></p>
-<label class="question-consent"><input id="questionConsent" type="checkbox"><span>أوافق على إرسال سؤالي إلى Gemini ثم Telegram للمراجعة.</span></label>
-<div class="question-actions"><button class="btn" id="sendQuestionBtn" type="button" disabled>أرسل السؤال للمراجعة</button><button class="btn" type="button" onclick="copyQ()">انسخ السؤال</button></div>
-<p class="status" id="qm" role="status" aria-live="polite">لن يُرسل السؤال قبل موافقتك.</p>
-<div class="notice question-draft" id="questionDraft" hidden><h3>مسودة Gemini للمراجعة فقط</h3><p id="questionDraftText"></p></div>
-</div>
-</div>
-</section>
-      <section id="account" hidden>
-<div class="chapter-heading"><span class="chapter-number">07</span><div><small>الفصل السابع · حسابك</small><h2>حسابك</h2><p>إعداداتك ومزامنة تقدمك بأمان.</p></div><span class="chapter-ornament" aria-hidden="true">۞</span></div>
-<div class="card">
-<h2 class="section-title">حسابك</h2>
-<p class="section-subtitle">سجّل الدخول ببريدك لحفظ تقدم الأذكار وطريقة الحساب ومزامنتها بين أجهزتك.</p>
-<p id="authMessage" class="status" role="status" aria-live="polite"></p>
-<div id="authConfigMissing" class="notice" hidden>تسجيل الدخول غير مفعّل بعد. أنشئ مشروع Supabase، ونفّذ <code>supabase/schema.sql</code> في SQL Editor، ثم أضف رابط المشروع والمفتاح العام إلى <code>app/supabase-config.js</code> وشغّل <code>npm.cmd run build:app</code>. لا تضع مفتاح service_role هنا.</div>
-<form id="authForm" class="auth-form" hidden>
-<label class="field" for="authEmail">البريد الإلكتروني
-<input id="authEmail" type="email" autocomplete="email" inputmode="email" required placeholder="name@example.com">
-</label>
-<label class="field" for="authPassword">كلمة المرور
-<input id="authPassword" type="password" autocomplete="current-password" minlength="8" required placeholder="ثمانية أحرف على الأقل">
-</label>
-<div class="auth-actions">
-<button id="signInBtn" class="btn" type="submit">تسجيل الدخول</button>
-<button id="signUpBtn" class="btn" type="button">إنشاء حساب</button>
-</div>
-</form>
-<div id="accountSignedIn" hidden>
-<p>تم تسجيل الدخول بالبريد:</p>
-<p id="accountEmail" class="account-email"></p>
-<p id="syncStatus" class="status" role="status" aria-live="polite">جاري مزامنة بيانات الحساب…</p>
-<button id="signOutBtn" class="btn" type="button">تسجيل الخروج</button>
-</div>
-<p class="notice">يتولى Supabase المصادقة الآمنة وحفظ جلسة الدخول. تُزامن الأذكار وطريقة الحساب فقط؛ لا نرفع إحداثيات موقعك. استخدم كلمة مرور فريدة ولا تشاركها.</p>
-</div>
-</section>
-      <section id="about" hidden>
-<div class="chapter-heading"><span class="chapter-number">06</span><div><small>الفصل السادس · رسالة المجلس</small><h2>عن المجلس</h2><p>رسالة الاستراحة وأبواب التواصل.</p></div><span class="chapter-ornament" aria-hidden="true">۞</span></div>
-<div class="card"><h2>عن المجلس</h2><p class="leading-relaxed">مجلس لتدارس العلم والأدب، فيه دروس يومية في الحديث والعقيدة والتفسير والفقه.</p><p class="leading-relaxed">الدروس: السبت إلى الخميس، الساعة 7:00 والساعة 10:00 مساءً. الجمعة بلا دروس.</p><nav class="social-links" aria-label="حسابات المجلس"><a class="social-link" href="https://www.youtube.com/@Khaled_Najm" target="_blank" rel="noopener noreferrer" aria-label="يوتيوب"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8ZM9.6 15.6V8.4l6.3 3.6-6.3 3.6Z"/></svg></a><a class="social-link" href="https://www.tiktok.com/@d.khaled.4" target="_blank" rel="noopener noreferrer" aria-label="تيك توك"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.6 6.2a5.5 5.5 0 0 1-3.4-4.8V1h-4.1v15.4a3.3 3.3 0 1 1-2.8-3.2v-4.2a7.5 7.5 0 1 0 6.9 7.4V8.5a9.5 9.5 0 0 0 5.5 1.8V6.2a5.5 5.5 0 0 1-2.1 0Z"/></svg></a><a class="social-link" href="https://t.me/khaled_najm1" target="_blank" rel="noopener noreferrer" aria-label="تيليجرام"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.9 3.2a1.5 1.5 0 0 0-1.6-.2L2.1 10.1c-1.3.5-1.3 1.2-.2 1.6l4.7 1.5 1.8 5.6c.2.6.1.8.7.8.5 0 .7-.2 1-.5l2.3-2.2 4.8 3.5c.9.5 1.5.2 1.7-.8l3.2-15c.2-.7-.1-1.1-.2-1.4ZM8.1 12.9l10.3-6.5c.5-.3.9-.1.5.2l-8.5 7.7-.3 3.1-2-4.5Z"/></svg></a></nav><button class="btn" type="button" onclick="share()">شارك التطبيق</button><button class="btn" id="inst" type="button" hidden onclick="install()">ثبّت على الهاتف</button></div>
-</section>
+    <section id="qibla" class="feature-section" hidden>
+      <div class="section-heading"><div><p class="eyebrow">أدوات الصلاة · اتجاه القبلة</p><h2>إلى <em>البيت الحرام</em></h2></div><p>اتجاه القبلة من موضعك إلى الكعبة المشرفة.</p></div>
+      <article class="feature-panel qibla-panel"><div id="compass" class="compass" role="img" aria-label="بوصلة اتجاه القبلة"><span class="compass-north">شمال</span><div id="compassArrow" class="compass-arrow"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 4 68 55 50 46 32 55Z" fill="#c5a46b"/><path d="M50 96 32 45 50 54 68 45Z" fill="#77716a"/><circle cx="50" cy="50" r="5" fill="#c5a46b"/></svg></div></div>
+        <div id="qiblaBearing" class="bearing" dir="ltr">—°</div><div id="compassStatus" class="status" role="status" aria-live="polite">اسمح بالموقع لمعرفة اتجاه القبلة.</div>
+        <div class="inline-actions"><button class="button-gold" type="button" id="compassBtn">تشغيل البوصلة</button><button class="button-outline" type="button" id="qiblaLocateBtn">تحديد موقعي</button></div>
+        <p class="notice">البوصلة تحتاج إلى جهاز يدعم مستشعر الاتجاه، وقد تتطلب إذنًا إضافيًا. إن لم تتوفر، استخدم زاوية القبلة بالنسبة إلى الشمال واتبع تعليمات معايرة الجهاز.</p>
+      </article>
     </section>
-  </main>
 
-  
-  <footer class="colophon">
-    <div class="colophon-top"><span>استراحة أهل الأثر</span><i></i><small>ختام المجلس</small></div>
-    <div class="colophon-copy"><h2>وما كان للهِ دامَ واتّصل.</h2><p>نسأل الله أن يجعل هذا المجلس بابًا للعلم النافع والعمل الصالح.</p><button class="colophon-support" type="button" onclick="document.getElementById('supportDialog').showModal()">ساهم في بقاء الأثر <span>↗</span></button></div>
-    <div class="colophon-bottom"><span>© استراحة أهل الأثر</span><span class="design-signature" dir="rtl">تصميم محمد سراج</span><span>بإشراف الدكتور خالد الحارس</span></div>
-  </footer>
-</div>
+    <section id="adhkar" class="feature-section" hidden>
+      <div class="section-heading"><div><p class="eyebrow">زاد اليوم · الذكر</p><h2>أنس <em>الذاكرين</em></h2></div><p>أذكار الصباح والمساء في مساحة هادئة، وتقدم محفوظ على جهازك.</p></div>
+      <article class="feature-panel"><div class="adhkar-switch" role="group" aria-label="اختيار الأذكار"><button id="morningBtn" class="adhkar-choice on" type="button" aria-pressed="true">أذكار الصباح</button><button id="eveningBtn" class="adhkar-choice" type="button" aria-pressed="false">أذكار المساء</button></div>
+        <div id="adhkarList"></div><p class="notice">عداد الأذكار وسيلة للتذكير، وليس فتوى أو بديلًا عن الرجوع إلى مصادر الذكر المعتمدة.</p>
+      </article>
+    </section>
 
+    <section id="media" class="feature-section" hidden>
+      <div class="section-heading"><div><p class="eyebrow">الفصل الثالث · أرشيف المعرفة</p><h2>خزانة <em>الأثر</em></h2></div><p>صوتٌ يُسمع، وعلمٌ يُقرأ، وأثرٌ يُحفظ.</p></div>
+      <div class="library-masthead"><span>ARCHIVE / 01</span><strong>مِنَ المَجَالِسِ<br>إِلَى الرُّفُوف</strong><i>۞</i></div>
+      <article class="feature-panel"><h3>مواد المجلس</h3><p class="section-subtitle">مواد المجموعة المصنفة — لا تظهر الملفات إلا بعد اعتماد مشرف.</p>
+        <div id="mediaFilters" class="media-filters" role="group" aria-label="تصفية المكتبة"><button class="media-filter on" type="button" data-media-category="all" aria-pressed="true">الكل</button><button class="media-filter" type="button" data-media-category="audio" aria-pressed="false">الصوتيات</button><button class="media-filter" type="button" data-media-category="video" aria-pressed="false">الفيديو</button><button class="media-filter" type="button" data-media-category="books" aria-pressed="false">الكتب</button><button class="media-filter" type="button" data-media-category="images" aria-pressed="false">الصور</button><button class="media-filter" type="button" data-media-category="other" aria-pressed="false">أخرى</button></div>
+        <p id="mediaStatus" class="status" role="status" aria-live="polite">جارٍ تحميل المكتبة…</p><div id="mediaItems" class="media-grid"></div>
+      </article>
+    </section>
 
-<nav class="floating-index" aria-label="التنقل الرئيسي">
-  <button class="tab on" id="t1" type="button" aria-pressed="true" onclick="show('sched')"><span>⌂</span><small>المجالس</small></button>
-  <button class="tab" id="t5" type="button" aria-pressed="false" onclick="show('media')"><span>▤</span><small>المكتبة</small></button>
-  <button class="tab" id="t6" type="button" aria-pressed="false" onclick="show('q')"><span>؟</span><small>اسأل</small></button>
-  <button class="tab" id="t2" type="button" aria-pressed="false" onclick="show('prayers')"><span>◷</span><small>الصلاة</small></button>
-  <details class="mobile-more">
-    <summary aria-label="المزيد من الأقسام"><span>۞</span><small>المزيد</small></summary>
-    <div class="more-menu">
-      <button class="tab" id="t3" type="button" aria-pressed="false" onclick="show('qibla')">القبلة</button>
-      <button class="tab" id="t4" type="button" aria-pressed="false" onclick="show('adhkar')">الأذكار</button>
-      <button class="tab" id="t7" type="button" aria-pressed="false" onclick="show('about')">عن المجلس</button>
-      <button class="tab" id="t8" type="button" aria-pressed="false" onclick="show('account')">حسابي</button>
-    </div>
-  </details>
+    <section id="q" class="feature-section consultation-scene" hidden>
+      <div class="section-heading"><div><p class="eyebrow">الفصل الرابع · باب السؤال</p><h2>مجلس <em>المشاورة</em></h2></div><p>سؤالٌ يُكتب بعناية، ويصل إلى المراجعة العلمية.</p></div>
+      <div class="consultation-intro"><span>مَجْلِسُ السُّؤَال</span><p>لكل سؤالٍ حقه من التثبت، ولكل جوابٍ أمانته.</p></div>
+      <article class="feature-panel"><div class="notice">الأسئلة الشرعية يراجعها الدكتور خالد وحده. Gemini ينشئ مسودة أولية للمراجعة، ولا تُعد المسودة فتوى أو ردًا معتمدًا.</div>
+        <h3>اكتب سؤالك</h3><p class="section-subtitle">يُرسل السؤال إلى Gemini لإنشاء مسودة، ثم يُرسل السؤال والمسودة إلى وجهة Telegram للمراجعة. لا ترسل معلومات شخصية أو حساسة.</p>
+        <textarea id="qt" maxlength="1600" placeholder="اكتب سؤالك أو ملاحظتك هنا"></textarea>
+        <div id="questionTurnstile" class="question-turnstile" hidden aria-label="التحقق الأمني"></div><p id="questionTurnstileStatus" class="status" role="status" aria-live="polite" hidden></p>
+        <label class="question-consent"><input id="questionConsent" type="checkbox"><span>أوافق على إرسال سؤالي إلى Gemini ثم Telegram للمراجعة.</span></label>
+        <div class="inline-actions"><button class="button-gold" id="sendQuestionBtn" type="button" disabled>أرسل السؤال للمراجعة</button><button class="button-outline" type="button" onclick="copyQ()">انسخ السؤال</button></div>
+        <p class="status" id="qm" role="status" aria-live="polite">لن يُرسل السؤال قبل موافقتك.</p><div class="notice question-draft" id="questionDraft" hidden><h3>مسودة Gemini للمراجعة فقط</h3><p id="questionDraftText"></p></div>
+      </article>
+    </section>
+
+    <section id="about" class="feature-section" hidden>
+      <div class="section-heading"><div><p class="eyebrow">الفصل الخامس · رسالة المجلس</p><h2>عن <em>المجلس</em></h2></div><p>علمٌ نافع، وذكرٌ دائب، وصحبةٌ على الخير.</p></div>
+      <article class="feature-panel"><h3>رسالة الاستراحة</h3><p class="leading-relaxed">مجلس لتدارس العلم والأدب، فيه دروس يومية في الحديث والعقيدة والتفسير والفقه.</p><p class="leading-relaxed">الدروس: السبت إلى الخميس، الساعة 7:00 والساعة 10:00 مساءً. الجمعة بلا دروس.</p>
+        <nav class="social-links" aria-label="حسابات المجلس"><a class="social-link" href="https://www.youtube.com/@Khaled_Najm" target="_blank" rel="noopener noreferrer" aria-label="يوتيوب">يوتيوب ↗</a><a class="social-link" href="https://www.tiktok.com/@d.khaled.4" target="_blank" rel="noopener noreferrer" aria-label="تيك توك">تيك توك ↗</a><a class="social-link" href="https://t.me/khaled_najm1" target="_blank" rel="noopener noreferrer" aria-label="تيليجرام">تيليجرام ↗</a></nav>
+        <div class="inline-actions"><button class="button-outline" type="button" onclick="share()">شارك التطبيق</button><button class="button-outline" id="inst" type="button" hidden onclick="install()">ثبّت على الهاتف</button></div>
+      </article>
+    </section>
+
+    <section id="account" class="feature-section" hidden>
+      <div class="section-heading"><div><p class="eyebrow">الفصل السادس · حسابك</p><h2>مساحتك <em>الخاصة</em></h2></div><p>إعداداتك ومزامنة تقدمك بأمان.</p></div>
+      <article class="feature-panel"><h3>حسابك</h3><p class="section-subtitle">سجّل الدخول ببريدك لحفظ تقدم الأذكار وطريقة الحساب ومزامنتها بين أجهزتك.</p>
+        <p id="authMessage" class="status" role="status" aria-live="polite"></p><div id="authConfigMissing" class="notice" hidden>تسجيل الدخول غير مفعّل بعد. أنشئ مشروع Supabase، ونفّذ <code>supabase/schema.sql</code> في SQL Editor، ثم أضف رابط المشروع والمفتاح العام إلى <code>app/supabase-config.js</code> وشغّل <code>npm.cmd run build:app</code>. لا تضع مفتاح service_role هنا.</div>
+        <form id="authForm" class="auth-form" hidden><label class="field" for="authEmail">البريد الإلكتروني<input id="authEmail" type="email" autocomplete="email" inputmode="email" required placeholder="name@example.com"></label><label class="field" for="authPassword">كلمة المرور<input id="authPassword" type="password" autocomplete="current-password" minlength="8" required placeholder="ثمانية أحرف على الأقل"></label><div class="inline-actions"><button id="signInBtn" class="button-gold" type="submit">تسجيل الدخول</button><button id="signUpBtn" class="button-outline" type="button">إنشاء حساب</button></div></form>
+        <div id="accountSignedIn" hidden><p>تم تسجيل الدخول بالبريد:</p><p id="accountEmail" class="account-email"></p><p id="syncStatus" class="status" role="status" aria-live="polite">جاري مزامنة بيانات الحساب…</p><button id="signOutBtn" class="button-outline" type="button">تسجيل الخروج</button></div>
+        <p class="notice">يتولى Supabase المصادقة الآمنة وحفظ جلسة الدخول. تُزامن الأذكار وطريقة الحساب فقط؛ لا نرفع إحداثيات موقعك. استخدم كلمة مرور فريدة ولا تشاركها.</p>
+      </article>
+    </section>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-mark"><img src="icon.svg" alt=""><span>استراحة أهل الأثر</span></div>
+  <p>وما كان للهِ دامَ واتّصل.</p><small>نسأل الله أن يجعل هذا المجلس بابًا للعلم النافع والعمل الصالح.</small>
+  <div class="footer-actions"><button class="button-gold" type="button" onclick="document.getElementById('supportDialog').showModal()">ساهم في بقاء الأثر ↗</button><button class="button-outline" type="button" onclick="share()">مشاركة المنصة</button></div>
+  <div class="footer-meta"><span>© استراحة أهل الأثر</span><span>تصميم محمد سراج</span><span>بإشراف الدكتور خالد الحارس</span></div>
+</footer>
+
+<nav class="mobile-dock" aria-label="التنقل الرئيسي">
+  <button class="tab on" id="t1" type="button" aria-pressed="true" onclick="show('sched')"><span>٠١</span><small>المجالس</small></button>
+  <button class="tab" id="t5" type="button" aria-pressed="false" onclick="show('media')"><span>٠٢</span><small>المكتبة</small></button>
+  <button class="tab" id="t6" type="button" aria-pressed="false" onclick="show('q')"><span>٠٣</span><small>اسأل</small></button>
+  <button class="tab" id="t2" type="button" aria-pressed="false" onclick="show('prayers')"><span>٠٤</span><small>الصلاة</small></button>
+  <details class="mobile-more"><summary aria-label="المزيد من الأقسام"><span>۞</span><small>المزيد</small></summary><div class="more-menu"><button class="tab" id="t3" type="button" aria-pressed="false" onclick="show('qibla')">القبلة</button><button class="tab" id="t4" type="button" aria-pressed="false" onclick="show('adhkar')">الأذكار</button><button class="tab" id="t7" type="button" aria-pressed="false" onclick="show('about')">عن المجلس</button><button class="tab" id="t8" type="button" aria-pressed="false" onclick="show('account')">حسابي</button></div></details>
 </nav>
 
 <dialog class="support-dialog" id="supportDialog" aria-labelledby="supportDialogTitle">
-<h2 class="section-title" id="supportDialogTitle">ادعم تطوير المنصة</h2>
-<p>يمكنك دعم استراحة أهل الأثر عبر فودافون كاش. جزاك الله خيرًا على مساهمتك.</p>
-<div class="wallet-detail"><strong>فودافون كاش</strong><div class="wallet-number" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:12px"><b dir="ltr" style="font-size:22px;letter-spacing:1px">01020744923</b><button class="btn" type="button" data-support-number="01020744923" onclick="copySupportNumber(this)">نسخ الرقم</button></div><p>حوّل المبلغ إلى الرقم أعلاه من محفظة فودافون كاش، ثم احتفظ بإيصال التحويل.</p><span class="copy-feedback" role="status" aria-live="polite"></span></div>
-<form method="dialog"><button class="btn" type="submit">إغلاق</button></form>
+  <div class="section-kicker"><span>باب المساهمة</span><b>دعم المجلس</b></div><h2 id="supportDialogTitle">ادعم تطوير المنصة</h2><p>يمكنك دعم استراحة أهل الأثر عبر فودافون كاش. جزاك الله خيرًا على مساهمتك.</p>
+  <div class="wallet-detail"><strong>فودافون كاش</strong><div class="wallet-number"><b dir="ltr">01020744923</b><button class="button-outline" type="button" data-support-number="01020744923" onclick="copySupportNumber(this)">نسخ الرقم</button></div><p>حوّل المبلغ إلى الرقم أعلاه من محفظة فودافون كاش، ثم احتفظ بإيصال التحويل.</p><span class="copy-feedback" role="status" aria-live="polite"></span></div>
+  <form method="dialog"><button class="button-outline" type="submit">إغلاق</button></form>
 </dialog>
 <script>
 window.copySupportNumber = async function(button) {
@@ -337,6 +216,5 @@ window.copySupportNumber = async function(button) {
 <script src="auth-client.js"></script>
 <script src="app.js"></script>
 <script src="visual-identity-v2.js"></script>
-<script src="interactive-identity.js" defer></script>
 </body>
 </html>
