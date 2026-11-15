@@ -17,11 +17,11 @@ function sourceFiles(dir) {
   });
 }
 
-test('V3 runtime is independent from the legacy application entry point', () => {
+test('V3.1 runtime is independent from the legacy application entry point', () => {
   const files = sourceFiles(root);
   assert.ok(files.includes(path.join(root, 'v3-runtime.js')), 'native V3 runtime module must exist');
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  assert.match(html, /\/v3\/v3-runtime\.js/, 'V3 page must load its own runtime');
+  assert.match(html, /\/v3\/v3-runtime\.js/, 'V3.1 page must load its own runtime');
   for (const file of files) {
     const source = fs.readFileSync(file, 'utf8');
     assert.equal(source.toLowerCase().includes(forbidden), false,
@@ -30,7 +30,7 @@ test('V3 runtime is independent from the legacy application entry point', () => 
   }
 });
 
-test('V3 adapter is a passive native boundary, not a script loader', () => {
+test('V3.1 adapter is a passive native boundary, not a script loader', () => {
   const adapter = fs.readFileSync(path.join(root, 'v3-adapter.js'), 'utf8');
   assert.doesNotMatch(adapter, /createElement\s*\(\s*['"]script['"]\s*\)/i);
   assert.doesNotMatch(adapter, /\b(?:fetch|importScripts)\s*\(/i);
@@ -39,11 +39,23 @@ test('V3 adapter is a passive native boundary, not a script loader', () => {
 
 test('V3 native runtime owns required feature entry points', () => {
   const runtime = fs.readFileSync(path.join(root, 'v3-runtime.js'), 'utf8');
-  assert.match(runtime, /register\(['"]\/v3\/sw\.js['"],\s*\{scope:['"]\/v3\/['"]\}\)/, 'V3 must register its own scoped service worker');
+  assert.match(runtime, /register\(['"]\/v3\/sw\.js['"],\s*\{scope:['"]\/v3\/['"]\}\)/, 'V3.1 must register its own scoped service worker');
   for (const marker of [
     'function renderSchedule', 'function navigate', 'function initRadio',
     'function updatePrayerTimes', 'function updateQibla', 'function renderAdhkar',
     'async function loadLibrary', 'async function sendQuestion', 'function initAuth',
     'beforeinstallprompt', 'function scheduleSync'
   ]) assert.ok(runtime.includes(marker), 'missing native feature: ' + marker);
+});
+
+
+test('V3.1 design system preserves the approved identity and reduced-motion support', () => {
+  const css = fs.readFileSync(path.join(root, 'v3.css'), 'utf8');
+  assert.match(css, /--v31-space-1:/, 'V3.1 spacing tokens must be present');
+  assert.match(css, /--v31-text-display:/, 'V3.1 Arabic type scale must be present');
+  assert.match(css, /--v31-motion:/, 'V3.1 motion token must be present');
+  assert.match(css, /prefers-reduced-motion:\\s*reduce/, 'motion must respect reduced-motion preferences');
+  assert.match(css, /--paper:#f4f0e6/, 'approved warm ivory canvas must remain');
+  assert.match(css, /--forest:#183d31/, 'approved forest-green identity must remain');
+  assert.match(css, /--bronze:#9a7042/, 'restrained bronze accent must remain');
 });
