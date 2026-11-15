@@ -15,8 +15,20 @@
     var el = $(id); if (!el) return;
     el.textContent = message; el.classList.toggle('error', !!error);
   }
+  function safeStorage() {
+    try { return window.localStorage; }
+    catch (e) { return null; }
+  }
+  function readStore(key) {
+    var storage = safeStorage();
+    if (!storage) return null;
+    try { return storage.getItem(key); }
+    catch (e) { return null; }
+  }
   function store(key, value) {
-    try { localStorage.setItem(key, value); return true; }
+    var storage = safeStorage();
+    if (!storage) return false;
+    try { storage.setItem(key, value); return true; }
     catch (e) { status('locationStatus', 'تعذر حفظ الإعدادات على هذا الجهاز.', true); return false; }
   }
   function cairoClock() {
@@ -170,8 +182,9 @@
   var prayerKeys = Object.keys(prayerNames), salatKeys = ['fajr','dhuhr','asr','maghrib','isha'];
   function loadLocation() {
     try {
-      var lat = Number(localStorage.getItem('ahl-athar-latitude')), lon = Number(localStorage.getItem('ahl-athar-longitude'));
-      if (localStorage.getItem('ahl-athar-latitude') !== null && localStorage.getItem('ahl-athar-longitude') !== null &&
+      var savedLat = readStore('ahl-athar-latitude'), savedLon = readStore('ahl-athar-longitude');
+      var lat = Number(savedLat), lon = Number(savedLon);
+      if (savedLat !== null && savedLon !== null &&
           Number.isFinite(lat) && Math.abs(lat) <= 90 && Number.isFinite(lon) && Math.abs(lon) <= 180) return { latitude:lat, longitude:lon };
     } catch (e) {}
     return null;
@@ -296,7 +309,7 @@
     var host = $('adhkarList'); if (!host) return; host.replaceChildren();
     adhkar[state.period].forEach(function (entry) {
       var key = 'ahl-athar-dhikr-'+dateKey(new Date())+'-'+state.period+'-'+entry.id, count = 0;
-      try { count = Math.min(entry.count,Number(localStorage.getItem(key))||0); } catch (e) {}
+      try { count = Math.min(entry.count,Number(readStore(key))||0); } catch (e) {}
       var article = document.createElement('article'); article.className = 'v3-dhikr-entry';
       var text = document.createElement('p'); text.textContent = entry.text;
       var footer = document.createElement('div'); footer.className = 'v3-dhikr-footer';
@@ -399,7 +412,7 @@
   /* Supabase client contract is provided by the generated authentication bundle. */
   function collectDhikr() {
     var data={}, prefix='ahl-athar-dhikr-'+dateKey(new Date())+'-';
-    try { for(var i=0;i<localStorage.length;i++){var key=localStorage.key(i);if(key&&key.indexOf(prefix)===0)data[key.slice('ahl-athar-dhikr-'.length)]=Number(localStorage.getItem(key))||0;} } catch(e){}
+    try { var storage = safeStorage(); if (storage) for(var i=0;i<storage.length;i++){var key=storage.key(i);if(key&&key.indexOf(prefix)===0)data[key.slice('ahl-athar-dhikr-'.length)]=Number(readStore(key))||0;} } catch(e){}
     return data;
   }
   async function syncAccount(user,merge) {
@@ -478,8 +491,8 @@
 
   function init() {
     renderSchedule(); updateScheduleClock(); loadLectures();
-    $('calcMethod').value=localStorage.getItem('ahl-athar-calculation-method')||'auto';
-    $('asrMadhab').value=localStorage.getItem('ahl-athar-asr-madhab')||'shafi';
+    $('calcMethod').value=readStore('ahl-athar-calculation-method')||'auto';
+    $('asrMadhab').value=readStore('ahl-athar-asr-madhab')||'shafi';
     state.location=loadLocation();
     if(state.location){$('latitude').value=state.location.latitude;$('longitude').value=state.location.longitude;updateLocationStatus();}
     $('calcMethod').addEventListener('change',function(){store('ahl-athar-calculation-method',this.value);updatePrayerTimes();scheduleSync();});
@@ -491,7 +504,7 @@
       $('mediaFilters').querySelectorAll('[data-media-category]').forEach(function(item){var active=item===button;item.classList.toggle('on',active);item.setAttribute('aria-pressed',String(active));});renderLibrary();});
     $('questionConsent').addEventListener('change',function(){ $('sendQuestionBtn').disabled=!this.checked;if(this.checked&&siteKey())prepareTurnstile();if(!this.checked&&window.turnstile&&state.turnstileId!==null)window.turnstile.reset(state.turnstileId);});
     $('sendQuestionBtn').addEventListener('click',sendQuestion);
-    $('adhanUrl').value=localStorage.getItem('ahl-athar-adhan-url')||'';
+    $('adhanUrl').value=readStore('ahl-athar-adhan-url')||'';
     if($('adhanUrl').value){$('adhanAudio').src=$('adhanUrl').value;$('adhanAudio').hidden=false;}
     $('saveAdhan').addEventListener('click',function(){
       try{var url=new URL($('adhanUrl').value.trim());if(url.protocol!=='https:')throw new Error('protocol');
