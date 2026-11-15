@@ -5,7 +5,7 @@
   script.async = false;
   script.onload = function () {
     function syncNavigation(activeTarget) {
-      document.querySelectorAll('[data-v3-target]').forEach(function (button) {
+      document.querySelectorAll('.side-nav .nav-item[data-v3-target]').forEach(function (button) {
         var active = button.getAttribute('data-v3-target') === activeTarget;
         button.className = 'nav-item' + (active ? ' is-active' : '');
         button.setAttribute('aria-pressed', active ? 'true' : 'false');
