@@ -44,6 +44,8 @@ jobs:
         run: git restore -- app/auth-client.js app/tailwind.css
       - name: Check whitespace
         run: git diff --check
+      - name: Report working tree status
+        run: git status --short
       - name: Verify generated assets
         run: |
           test -s app/auth-client.js
