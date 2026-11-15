@@ -1,65 +1,12 @@
 (function () {
   'use strict';
-  var script = document.createElement('script');
-  script.src = '/app.js';
-  script.async = false;
-  script.onload = function () {
-    function syncNavigation(activeTarget) {
-      document.querySelectorAll('.side-nav .nav-item[data-v3-target]').forEach(function (button) {
-        var active = button.getAttribute('data-v3-target') === activeTarget;
-        button.className = 'nav-item' + (active ? ' is-active' : '');
-        button.setAttribute('aria-pressed', active ? 'true' : 'false');
-      });
-    }
-    window.addEventListener('haress-v3:navigate', function (event) {
-      var target = event.detail;
-      if (typeof window.show === 'function') {
-        window.show(target);
-        syncNavigation(target);
-      }
-    });
-    var radioButton = document.getElementById('quranRadioButton');
-    var radioPanel = document.getElementById('quranRadioPanel');
-    if (radioButton && radioPanel) {
-      radioButton.addEventListener('click', function () {
-        window.setTimeout(function () {
-          if (!radioPanel.hidden) radioPanel.scrollIntoView({
-            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-            block: 'nearest'
-          });
-        }, 0);
-      });
-    }
-    window.dispatchEvent(new CustomEvent('haress-v3:ready'));
-  };
-  script.onerror = function () {
-    var status = document.getElementById('authMessage');
-    if (status) status.textContent = 'تعذر تحميل طبقة وظائف المجلس. أعد تحميل الصفحة.';
-    document.body.classList.add('v3-adapter-error');
-  };
-  document.head.appendChild(script);
-
-  window.copySupportNumber = async function (button) {
-    var number = button && button.getAttribute('data-support-number');
-    if (!number) return;
-    var feedback = button.parentElement && button.parentElement.parentElement.querySelector('.copy-feedback');
-    try {
-      if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(number);
-      else {
-        var field = document.createElement('textarea');
-        field.value = number;
-        field.setAttribute('readonly', '');
-        field.style.position = 'fixed';
-        field.style.opacity = '0';
-        document.body.appendChild(field);
-        field.select();
-        var copied = document.execCommand('copy');
-        field.remove();
-        if (!copied) throw new Error('copy-unavailable');
-      }
-      if (feedback) feedback.textContent = 'تم نسخ رقم فودافون كاش.';
-    } catch (error) {
-      if (feedback) feedback.textContent = 'تعذر النسخ. يمكنك نسخ الرقم يدويًا.';
-    }
-  };
+  /*
+   * V3 adapter boundary.
+   * All UI and feature behavior lives in V3-native runtime modules.
+   * This file intentionally does not load or bridge the legacy application.
+   */
+  window.HaressV3Adapter = Object.freeze({
+    runtime: 'native',
+    ready: true
+  });
 })();
