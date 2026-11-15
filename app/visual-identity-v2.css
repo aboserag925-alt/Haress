@@ -393,3 +393,31 @@ html[data-theme="light"] .media-card{background:rgba(255,255,255,.35)}
  .motion-reveal{opacity:1!important;transform:none!important}
  .geometry-field{animation:none!important}
 }
+
+
+/* Final art-direction details: drawn architecture, progressive timeline, archive shelf */
+.haress-motion-ready .arch-outer,.haress-motion-ready .arch-inner{
+ stroke-dasharray:2200;stroke-dashoffset:2200;animation:arch-line-draw 2.1s .2s var(--ease) forwards;
+}
+.haress-motion-ready .arch-inner{animation-delay:.42s}
+.haress-motion-ready .arch-pattern{opacity:0;animation:arch-pattern-in 1.4s 1s ease forwards}
+.haress-motion-ready #sched.schedule-timeline::before{
+ transform:scaleY(0);transform-origin:top;animation:timeline-line-draw 2.4s .35s var(--ease) forwards;
+}
+@keyframes arch-line-draw{to{stroke-dashoffset:0}}
+@keyframes arch-pattern-in{to{opacity:.72}}
+@keyframes timeline-line-draw{to{transform:scaleY(1)}}
+.floating-index>.tab::after{width:0;transition:width .3s var(--ease)}
+.floating-index>.tab.on::after{width:60%}
+.media-grid{display:flex;align-items:stretch;gap:20px;overflow-x:auto;overscroll-behavior-inline:contain;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:var(--gold) transparent;padding:4px 0 20px}
+.media-grid>.media-card{flex:0 0 min(430px,48%);scroll-snap-align:start}
+@media(max-width:700px){
+ .media-grid{gap:13px;scroll-padding-inline:18px}
+ .media-grid>.media-card{flex-basis:86%;padding:14px}
+}
+@media(prefers-reduced-motion:reduce){
+ .arch-outer,.arch-inner{stroke-dasharray:none!important;stroke-dashoffset:0!important;animation:none!important}
+ .arch-pattern{opacity:.72!important;animation:none!important}
+ #sched.schedule-timeline::before{transform:none!important;animation:none!important}
+ .floating-index>.tab::after{transition:none!important}
+}
