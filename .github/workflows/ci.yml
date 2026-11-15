@@ -44,6 +44,8 @@ jobs:
         run: |
           node --check app/v3/v3.js
           node --check app/v3/v3-adapter.js
+          node --check app/v3/v3-runtime.js
+          node --test app/v3/v3-runtime.test.js
           node <<'NODE'
           const fs = require('node:fs');
           const base = fs.readFileSync('app/index.html', 'utf8');
