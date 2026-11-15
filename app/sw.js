@@ -2,7 +2,7 @@
    Authenticated/API and third-party responses are deliberately never cached. */
 'use strict';
 
-var CACHE_NAME = 'ahl-athar-v2';
+var CACHE_NAME = 'ahl-athar-v3';
 var APP_FILES = [
   './',
   './index.html',
@@ -10,6 +10,9 @@ var APP_FILES = [
   './icon.svg'
 ];
 var STATIC_FILE = /\.(?:css|js|mjs|json|svg|png|jpe?g|webp|ico|woff2?|ttf|eot)$/i;
+/* Mutable frontend assets (JS/CSS) must be revalidated on every load so a
+   returning visitor can never stay pinned to a stale cached copy. */
+var MUTABLE_FILE = /\.(?:css|js|mjs)$/i;
 
 self.addEventListener('install', function (event) {
   event.waitUntil((async function () {
@@ -75,7 +78,29 @@ self.addEventListener('fetch', function (event) {
     return;
   }
 
-  // Cache-first is limited to local static assets with no query-string tokens.
+  // Mutable frontend assets (JS/CSS) are revalidated on every load so a
+  // returning visitor can never stay pinned to a stale cached copy. The cache
+  // is only a fallback for offline use.
+  if (MUTABLE_FILE.test(url.pathname)) {
+    event.respondWith((async function () {
+      var cache = await caches.open(CACHE_NAME);
+      try {
+        var fresh = await fetch(request);
+        if (fresh.ok && fresh.status === 200 && fresh.type === 'basic') {
+          await cache.put(request, fresh.clone()).catch(function () {});
+        }
+        return fresh;
+      } catch (error) {
+        var cached = await cache.match(request);
+        if (cached) return cached;
+        throw error;
+      }
+    })());
+    return;
+  }
+
+  // Immutable static assets (images, fonts, and other static files) may be
+  // served cache-first because their content does not change under one URL.
   if (!STATIC_FILE.test(url.pathname) || url.search) {
     return;
   }
