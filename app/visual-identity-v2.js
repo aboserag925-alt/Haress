@@ -3,6 +3,7 @@
  'use strict';
  var root=document.documentElement;
  var reduced=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+ try{var savedTheme=localStorage.getItem('hares-ui-theme');if(savedTheme==='light'||savedTheme==='dark')root.setAttribute('data-theme',savedTheme)}catch(_){}
  var sectionIds=['sched','prayers','qibla','adhkar','media','q','about','account'];
  var tabIds=['t1','t2','t3','t4','t5','t6','t7','t8'];
  function progress(){
