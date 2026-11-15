@@ -1,13 +1,13 @@
 {
-  "name": "استراحة أهل الأثر — V3",
+  "name": "استراحة أهل الأثر — V3.1",
   "short_name": "أهل الأثر",
   "lang": "ar",
   "dir": "rtl",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#11100f",
-  "theme_color": "#11100f",
+  "background_color": "#f4f0e6",
+  "theme_color": "#183d31",
   "icons": [
     {
       "src": "../icon.svg",
