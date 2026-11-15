@@ -440,7 +440,7 @@
       host.appendChild(article);
     });
     /* featured rail on home */
-    var rail = $('featuredLibRail');
+    var rail = $('homeLibRail');
     if (rail) {
       rail.replaceChildren();
       var featured = state.media.slice(0, 5);

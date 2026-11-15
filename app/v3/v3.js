@@ -69,7 +69,7 @@
       });
       setActiveNav(target);
       window.scrollTo(0, 0);
-      if (target === 'library') {
+      if (target === 'library' || target === 'home') {
         if (typeof window.HaressV3Runtime !== 'undefined' && window.HaressV3Runtime.loadLibrary) {
           window.HaressV3Runtime.loadLibrary();
         }

@@ -27,10 +27,10 @@
   <!-- ========== HEADER ========== -->
   <header class="masthead" aria-label="الرئيسية">
     <a class="wordmark" href="/v3/" aria-label="استراحة أهل الأثر — الرئيسية">
-      <span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span class="mark" aria-hidden="true"><i></i><i></i></span>
       <span>
         <b>أهل الأثر</b>
-        <small>منصة العلم والذكر التفاعلية</small>
+        <small>مجلس العلم والذكر</small>
       </span>
     </a>
 
@@ -46,11 +46,11 @@
     </div>
 
     <div class="mobile-header-actions">
-      <button class="radio-launch" id="quranRadioButton" type="button" aria-expanded="false" aria-controls="quranRadioPanel">استمع إلى القرآن <span aria-hidden="true">◖</span></button>
-      <button class="icon-button" type="button" data-v3-theme-toggle aria-label="تبديل المظهر">◐</button>
+      <button class="icon-button" type="button" data-v3-theme-toggle aria-label="تبديل المظهر">⟳</button>
       <button class="icon-button" type="button" onclick="share()" aria-label="مشاركة">↗</button>
-      <button class="icon-button" type="button" onclick="document.getElementById('supportDialog').showModal()" aria-label="دعم المجلس">↗</button>
+      <button class="icon-button" type="button" onclick="document.getElementById('supportDialog').showModal()" aria-label="دعم المجلس">✳</button>
     </div>
+    <button class="radio-launch" id="quranRadioButton" type="button" aria-expanded="false" aria-controls="quranRadioPanel">القرآن</button>
   </header>
 
   <!-- ========== MAIN / VIEW SYSTEM ========== -->
@@ -92,8 +92,17 @@
         <div class="prayer-toolbar">
           <button class="gold-action compact" type="button" id="locateBtnHome">تحديد موقعي</button>
           <span id="homeTimezone" class="timezone">—</span>
-          <button class="outline-action compact" type="button" data-v3-target="prayers">المواقيت全部 <span>→</span></button>
+          <button class="outline-action compact" type="button" data-v3-target="prayers">المواقيت <span>→</span></button>
         </div>
+      </section>
+
+      <section class="home-library" aria-labelledby="homeLibTitle">
+        <div class="shelf-head compact">
+          <h3 id="homeLibTitle">المكتبة العلمية</h3>
+          <span class="shelf-view-all" data-v3-target="library">عرض الكل <span>→</span></span>
+        </div>
+        <div class="media-rail" id="homeLibRail"></div>
+        <p id="homeLibStatus" class="library-status" style="margin-top:8px;"></p>
       </section>
 
       <section class="site-sections" aria-labelledby="sectionsTitle">
@@ -392,11 +401,26 @@
 
 <!-- ========== MOBILE BOTTOM NAV ========== -->
 <nav class="bottom-nav" aria-label="التنقل السفلي">
-  <button class="bottom-nav-item is-active" data-v3-target="home" type="button" aria-pressed="true"><i>🏠</i><span>الرئيسية</span></button>
-  <button class="bottom-nav-item" data-v3-target="library" type="button" aria-pressed="false"><i>📚</i><span>المكتبة</span></button>
-  <button class="bottom-nav-item" data-v3-target="questions" type="button" aria-pressed="false"><i>✍️</i><span>اسأل</span></button>
-  <button class="bottom-nav-item" data-v3-target="adhkar" type="button" aria-pressed="false"><i>☪️</i><span>الأذكار</span></button>
-  <button class="bottom-nav-item" data-v3-target="account" type="button" aria-pressed="false"><i>👤</i><span>حسابي</span></button>
+  <button class="bottom-nav-item is-active" data-v3-target="home" type="button" aria-pressed="true">
+    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 7-7 7-7-7 7-7z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>الرئيسية</span>
+  </button>
+  <button class="bottom-nav-item" data-v3-target="library" type="button" aria-pressed="false">
+    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm0 0L4 5v17a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H4l-2 2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>المكتبة</span>
+  </button>
+  <button class="bottom-nav-item" data-v3-target="questions" type="button" aria-pressed="false">
+    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 2a1 1 0 0 1 1 1v1a1 1 0 0 0 1 1h3a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="7" r="1" fill="currentColor"/></svg>
+    <span>اسأل</span>
+  </button>
+  <button class="bottom-nav-item" data-v3-target="adhkar" type="button" aria-pressed="false">
+    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v4m0 4v4m-4-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>الأذكار</span>
+  </button>
+  <button class="bottom-nav-item" data-v3-target="account" type="button" aria-pressed="false">
+    <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="7" r="4" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+    <span>حسابي</span>
+  </button>
 </nav>
 
 <!-- ========== QURAN RADIO PANEL (desktop header-triggered) ========== -->
