@@ -392,7 +392,7 @@
     finally { if(window.turnstile&&state.turnstileId!==null)window.turnstile.reset(state.turnstileId); button.disabled=!$('questionConsent').checked; }
   }
 
-  /* Supabase client contract is provided by the generated auth-client bundle; no app.js is involved. */
+  /* Supabase client contract is provided by the generated authentication bundle. */
   function collectDhikr() {
     var data={}, prefix='ahl-athar-dhikr-'+dateKey(new Date())+'-';
     try { for(var i=0;i<localStorage.length;i++){var key=localStorage.key(i);if(key&&key.indexOf(prefix)===0)data[key.slice('ahl-athar-dhikr-'.length)]=Number(localStorage.getItem(key))||0;} } catch(e){}
