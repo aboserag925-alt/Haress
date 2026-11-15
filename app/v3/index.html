@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="ar" dir="rtl" data-theme="dark">
+<html lang="ar" dir="rtl" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#11100f">
+<meta name="theme-color" content="#f5f1e7">
 <meta name="description" content="استراحة أهل الأثر — مجلس للعلم والذكر">\n<link rel="manifest" href="/v3/manifest.json">
 <base href="/">
 <title>استراحة أهل الأثر | مجلس العلم والذكر</title>
@@ -22,32 +22,43 @@
 </head>
 <body>
 <a class="skip-link" href="#main">تجاوز إلى المحتوى</a>
-<div class="grain" aria-hidden="true"></div>
-<div class="frame">
-  <header class="masthead">
+<div class="frame editorial-frame">
+  <header class="masthead editorial-masthead">
     <a class="wordmark" href="/v3/" aria-label="استراحة أهل الأثر — الرئيسية">
       <span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-      <span><b>أهل الأثر</b><small>مجلس العلم والذكر</small></span>
+      <span><b>أهل الأثر</b><small>مجلة المجلس العلمي</small></span>
     </a>
-    <div class="masthead-meta"><span class="edition">المجلس العلمي الرقمي</span><button class="icon-button" type="button" data-v3-theme-toggle aria-label="تبديل المظهر">◐</button><button class="text-button" type="button" onclick="share()">مشاركة <span aria-hidden="true">↗</span></button></div>
+    <div class="masthead-meta">
+      <span class="edition">القرآن والسنة بفهم أهل السنة</span>
+      <button class="radio-launch" id="quranRadioButton" type="button" aria-expanded="false" aria-controls="quranRadioPanel">استمع إلى القرآن <span aria-hidden="true">◖</span></button>
+      <button class="icon-button" type="button" data-v3-theme-toggle aria-label="تبديل المظهر">◐</button>
+      <button class="text-button" type="button" onclick="share()">مشاركة <span aria-hidden="true">↗</span></button>
+      <button class="text-button" type="button" onclick="document.getElementById('supportDialog').showModal()">دعم المجلس <span aria-hidden="true">↗</span></button>
+    </div>
   </header>
 
   <main id="main">
-    <section class="opening" aria-labelledby="welcomeTitle">
-      <div class="opening-art" aria-hidden="true">
-        <div class="geometry geometry-a"></div><div class="geometry geometry-b"></div>
-        <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
-        <div class="art-seal">عِلْمٌ<br>وَعَمَل</div>
-        <span class="art-index">١٤٤٨ هـ · ٢٠٢٦ م</span>
-      </div>
+    <section class="opening editorial-opening" aria-labelledby="welcomeTitle">
       <div class="opening-copy">
-        <p class="eyebrow"><span class="live-dot"></span> مساحة للعلم النافع</p>
-        <h1 id="welcomeTitle">على خُطى<br><em>الأثر</em></h1>
-        <p class="opening-lede">مجلسٌ يجمع شرف التعلّم، وسكينة الذكر، وأدب السؤال؛ على هدي القرآن والسنة بفهم أهل العلم.</p>
-        <div class="opening-actions"><button class="gold-action" type="button" data-v3-target="sched">اكتشف المجلس <span>←</span></button><button class="quiet-action" type="button" data-v3-target="q">اسأل سؤالًا شرعيًا</button></div>
-        <div class="opening-foot"><span>القرآن والسنة</span><span class="foot-rule"></span><span>بفهم أهل السنة</span></div>
+        <p class="eyebrow"><span class="live-dot"></span> العدد الأول · مجلس العلم والذكر</p>
+        <p class="opening-kicker">مساحةٌ للعلم النافع، والذكر، وحسن السؤال</p>
+        <h1 id="welcomeTitle">على مَهَلٍ،<br><em>نقرأ الأثر.</em></h1>
+        <p class="opening-lede">هنا يلتقي درسٌ يُنير الفهم، وذكرٌ يطمئن القلب، وسؤالٌ يُفتح له باب المراجعة. مجلسٌ علمي على هدي القرآن والسنة بفهم أهل السنة.</p>
+        <div class="opening-actions">
+          <button class="gold-action" type="button" data-v3-target="sched">تصفّح برنامج المجلس <span>←</span></button>
+          <button class="quiet-action" type="button" data-v3-target="q">اكتب سؤالك</button>
+        </div>
+        <div class="opening-foot"><span>علمٌ نافع</span><span class="foot-rule"></span><span>عملٌ وأدب</span></div>
       </div>
-      <div class="opening-bottom"><span>01 / 08</span><span>SCROLL TO EXPLORE</span><span class="scroll-mark">↓</span></div>
+      <aside class="opening-aside" aria-label="منهج المجلس">
+        <span class="aside-index">ملفّ تعريفي / ٠١</span>
+        <blockquote>«مَن يُرِدِ اللهُ به خيرًا يُفقِّهْهُ في الدِّين»</blockquote>
+        <span class="aside-source">حديث نبوي · متفق عليه</span>
+        <div class="aside-note"><span>من السبت إلى الخميس</span><b>٧:٠٠ – ١٠:٠٠ مساءً</b><small>بتوقيت القاهرة</small></div>
+        <span class="aside-rule"></span>
+        <span class="aside-issue">١٤٤٨ هـ <i>／</i> ٢٠٢٦ م</span>
+      </aside>
+      <div class="opening-bottom"><span>استراحة أهل الأثر</span><span>مجلة علمية رقمية</span><span class="scroll-mark">↓</span></div>
     </section>
 
     <div class="signal-row">
@@ -57,21 +68,18 @@
     </div>
 
     <div class="workspace">
-      <aside class="side-nav" aria-label="أقسام المجلس">
-        <span class="side-nav-caption">الفهرس</span>
-        <button class="nav-item is-active" id="t1" type="button" data-v3-target="sched" aria-pressed="true"><i>٠١</i><span>البرنامج</span></button>
-        <button class="nav-item" id="t2" type="button" data-v3-target="prayers" aria-pressed="false"><i>٠٢</i><span>المواقيت</span></button>
-        <button class="nav-item" id="t3" type="button" data-v3-target="qibla" aria-pressed="false"><i>٠٣</i><span>القبلة</span></button>
-        <button class="nav-item" id="t4" type="button" data-v3-target="adhkar" aria-pressed="false"><i>٠٤</i><span>الأذكار</span></button>
-        <button class="nav-item" id="t5" type="button" data-v3-target="media" aria-pressed="false"><i>٠٥</i><span>المكتبة</span></button>
-        <button class="nav-item" id="t6" type="button" data-v3-target="q" aria-pressed="false"><i>٠٦</i><span>الاستشارة</span></button>
-        <button class="nav-item" id="t7" type="button" data-v3-target="about" aria-pressed="false"><i>٠٧</i><span>عن المجلس</span></button>
-        <button class="nav-item" id="t8" type="button" data-v3-target="account" aria-pressed="false"><i>٠٨</i><span>حسابي</span></button>
-        <div class="nav-divider"></div>
-        <button class="radio-launch" id="quranRadioButton" type="button" aria-expanded="false" aria-controls="quranRadioPanel"><span class="radio-glyph">♫</span><span>إذاعة القرآن</span><span class="radio-wave">•••</span></button>
-        <button class="support-link" type="button" onclick="document.getElementById('supportDialog').showModal()">ادعم استمرار المجلس <span>↗</span></button>
+      <aside class="side-nav editorial-index" aria-label="فهرس المجلس">
+        <span class="side-nav-caption">في هذا المجلس</span>
+        <button class="nav-item is-active" id="t1" type="button" data-v3-target="sched" aria-pressed="true"><i>01</i><span>البرنامج</span></button>
+        <button class="nav-item" id="t2" type="button" data-v3-target="prayers" aria-pressed="false"><i>02</i><span>المواقيت</span></button>
+        <button class="nav-item" id="t3" type="button" data-v3-target="qibla" aria-pressed="false"><i>03</i><span>القبلة</span></button>
+        <button class="nav-item" id="t4" type="button" data-v3-target="adhkar" aria-pressed="false"><i>04</i><span>الأذكار</span></button>
+        <button class="nav-item" id="t5" type="button" data-v3-target="media" aria-pressed="false"><i>05</i><span>المكتبة</span></button>
+        <button class="nav-item" id="t6" type="button" data-v3-target="q" aria-pressed="false"><i>06</i><span>السؤال</span></button>
+        <button class="nav-item" id="t7" type="button" data-v3-target="about" aria-pressed="false"><i>07</i><span>عن المجلس</span></button>
+        <button class="nav-item" id="t8" type="button" data-v3-target="account" aria-pressed="false"><i>08</i><span>حسابي</span></button>
+        <span class="index-caption">اختر بابًا للقراءة</span>
       </aside>
-
       <div class="content-stage">
         <section class="radio-console" id="quranRadioPanel" hidden aria-label="مشغل إذاعة القرآن الكريم">
           <div class="console-heading"><span class="eyebrow">بث مباشر</span><strong>إذاعة القرآن الكريم</strong><span class="console-note">القاهرة — مصر افتراضيًا</span></div>
