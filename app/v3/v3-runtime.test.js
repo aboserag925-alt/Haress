@@ -5,7 +5,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = __dirname;
-const forbidden = ['/', 'app', '.js'].join('');
+const forbidden = ['app', '.js'].join('');
+const concatenatedLegacyPath = /(?:\\/app|app)\\s*['\"]?\\s*\\+\\s*['\"]\\.js/i;
 
 function sourceFiles(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -23,8 +24,9 @@ test('V3 runtime is independent from the legacy application entry point', () => 
   assert.match(html, /\/v3\/v3-runtime\.js/, 'V3 page must load its own runtime');
   for (const file of files) {
     const source = fs.readFileSync(file, 'utf8');
-    assert.equal(source.includes(forbidden), false,
+    assert.equal(source.toLowerCase().includes(forbidden), false,
       path.relative(process.cwd(), file) + ' must not reference the legacy app entry point');
+    assert.doesNotMatch(source, concatenatedLegacyPath, 'must not construct the legacy app path from fragments');
   }
 });
 
@@ -37,6 +39,7 @@ test('V3 adapter is a passive native boundary, not a script loader', () => {
 
 test('V3 native runtime owns required feature entry points', () => {
   const runtime = fs.readFileSync(path.join(root, 'v3-runtime.js'), 'utf8');
+  assert.match(runtime, /register\\(['\"]\\/v3\\/sw\\.js['\"],\\s*\\{scope:['\"]\\/v3\\/['\"]\\}\\)/, 'V3 must register its own scoped service worker');
   for (const marker of [
     'function renderSchedule', 'function navigate', 'function initRadio',
     'function updatePrayerTimes', 'function updateQibla', 'function renderAdhkar',
