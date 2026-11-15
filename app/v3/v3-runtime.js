@@ -498,7 +498,7 @@
     $('adhanAudio').addEventListener('play',function(){status('audioStatus','يُشغّل التسجيل الآن.');});
     renderAdhkar(); updatePrayerTimes(); updateQibla(); initRadio(); initAuth();
     setInterval(updateScheduleClock,1000);setInterval(updatePrayerTimes,60000);
-    if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(function(){});
+    if('serviceWorker' in navigator) navigator.serviceWorker.register('/v3/sw.js',{scope:'/v3/'}).catch(function(){});
     document.body.classList.add('v3-ready');
     var opening=document.querySelector('.opening');if(opening&&!reduced)opening.classList.add('is-revealed');
     window.dispatchEvent(new CustomEvent('haress-v3:ready'));
