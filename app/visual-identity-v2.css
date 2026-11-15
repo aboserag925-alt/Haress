@@ -328,3 +328,6 @@ html[data-theme="dark"] .theme-toggle{color:#e6d6b2}
 }
 .masthead .theme-toggle{left:0;top:calc(100% + 12px);transform:none}
 .reading-progress{position:fixed;z-index:150;top:0;right:0;left:0;height:2px;transform:scaleX(0);transform-origin:right center;background:linear-gradient(90deg,#d9c18a,#a37b3e);pointer-events:none}
+
+.opening-principle{margin:9px 0 0;color:rgba(224,201,151,.75);font-family:var(--font-editorial);font-size:13px;letter-spacing:.02em}
+@media(max-width:760px){.opening-principle{font-size:11px}}
