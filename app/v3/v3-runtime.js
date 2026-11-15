@@ -219,10 +219,14 @@
         return false;
       });
       if (!state.nextPrayer) { var tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1); state.nextPrayer = computePrayerTimes(tomorrow).fajr; state.nextPrayerName = 'الفجر'; }
-      var remaining = Math.max(0,Math.floor((state.nextPrayer-Date.now())/60000));
-      status('nextPrayerLabel','الصلاة التالية: '+state.nextPrayerName+' بعد '+Math.floor(remaining/60)+':'+String(remaining%60).padStart(2,'0'));
-      $('nextPrayerLabel').hidden = false;
+      updatePrayerCountdown();
     } catch (e) { status('locationStatus','تعذر حساب المواقيت. تحقق من الإحداثيات وطريقة الحساب.',true); }
+  }
+  function updatePrayerCountdown() {
+    if (!state.nextPrayer) return;
+    var remaining = Math.max(0,Math.floor((state.nextPrayer-Date.now())/60000));
+    status('nextPrayerLabel','الصلاة التالية: '+state.nextPrayerName+' بعد '+Math.floor(remaining/60)+':'+String(remaining%60).padStart(2,'0'));
+    $('nextPrayerLabel').hidden = false;
   }
   function saveLocation() {
     var lat = Number($('latitude').value), lon = Number($('longitude').value);
@@ -497,7 +501,7 @@
     $('adhanAudio').addEventListener('error',function(){status('audioStatus','تعذر تحميل تسجيل الأذان.',true);});
     $('adhanAudio').addEventListener('play',function(){status('audioStatus','يُشغّل التسجيل الآن.');});
     renderAdhkar(); updatePrayerTimes(); updateQibla(); initRadio(); initAuth();
-    setInterval(updateScheduleClock,1000);setInterval(updatePrayerTimes,60000);
+    setInterval(updateScheduleClock,1000);setInterval(updatePrayerCountdown,1000);setInterval(updatePrayerTimes,60000);
     if('serviceWorker' in navigator) navigator.serviceWorker.register('/v3/sw.js',{scope:'/v3/'}).catch(function(){});
     document.body.classList.add('v3-ready');
     var opening=document.querySelector('.opening');if(opening&&!reduced)opening.classList.add('is-revealed');
