@@ -23,7 +23,8 @@ body::before{background:radial-gradient(ellipse at 12% 2%,color-mix(in srgb,var(
 .theme-toggle:focus-visible{outline:3px solid color-mix(in srgb,var(--id-green) 45%,transparent);outline-offset:3px}
 .theme-toggle svg{width:17px;height:17px;flex:none}
 .nav .theme-toggle{flex:none}
-body .wrap>header{position:relative}\nbody .wrap>header .theme-toggle{position:absolute;inset-inline-start:0;top:8px;z-index:8}
+body .wrap>header{position:relative}
+body .wrap>header .theme-toggle{position:absolute;inset-inline-start:0;top:8px;z-index:8}
 html[data-theme="dark"] .site,
 html[data-theme="dark"] .site .nav{background-color:var(--id-bg)!important;color:var(--id-text)!important}
 html[data-theme="dark"] .site .nav{background:rgba(13,23,19,.88)!important;border-color:var(--id-line)!important}
@@ -71,7 +72,8 @@ body .wrap textarea,body .wrap .field input,body .wrap .field select{background:
 body .wrap textarea::placeholder{color:#83948a}
 body .wrap .note,body .wrap .notice{background:#f1f6f0;border-color:var(--id-line);color:#52685c}
 body .wrap .btn{border-color:rgba(23,107,80,.18)}
-\n/* Soft motion language: reveal, lift, and ambient movement without blocking interaction. */
+
+/* Soft motion language: reveal, lift, and ambient movement without blocking interaction. */
 .motion-ready .motion-reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
 .motion-ready .motion-reveal.is-visible{opacity:1;transform:translateY(0)}
 .motion-card{transform-style:preserve-3d;will-change:transform;transition:transform .28s ease,border-color .28s,box-shadow .28s}
@@ -84,3 +86,98 @@ body .wrap .btn{border-color:rgba(23,107,80,.18)}
  .motion-ready .motion-reveal{opacity:1;transform:none;transition:none}
  .site .orb{animation:none!important}
 }
+
+
+/* Light-first palette for the public landing page, not only the /app shell. */
+html:not([data-theme="dark"]) body{
+ background:var(--id-bg)!important;
+ color:var(--id-text)!important;
+}
+html:not([data-theme="dark"]) .site{
+ background:var(--id-bg)!important;
+ color:var(--id-text)!important;
+}
+html:not([data-theme="dark"]) .site .nav{
+ background:rgba(255,255,255,.9)!important;
+ border-color:var(--id-line)!important;
+ box-shadow:0 8px 28px rgba(25,65,48,.06);
+}
+html:not([data-theme="dark"]) .site .nav a,
+html:not([data-theme="dark"]) .site .lead,
+html:not([data-theme="dark"]) .site .sub,
+html:not([data-theme="dark"]) .site footer{
+ color:var(--id-muted)!important;
+}
+html:not([data-theme="dark"]) .site .logo,
+html:not([data-theme="dark"]) .site h1.big,
+html:not([data-theme="dark"]) .site h2.t,
+html:not([data-theme="dark"]) .site .card h3{
+ color:var(--id-green)!important;
+}
+html:not([data-theme="dark"]) .site .hero-arabic{
+ font-family:'Noto Naskh Arabic',serif!important;
+}
+html:not([data-theme="dark"]) .site .gold{
+ background:none!important;
+ color:var(--id-green)!important;
+ -webkit-text-fill-color:currentColor;
+ animation:none!important;
+}
+html:not([data-theme="dark"]) .site .eyebrow,
+html:not([data-theme="dark"]) .site .sheikh{
+ background:#fff!important;
+ border-color:var(--id-line)!important;
+ color:var(--id-green)!important;
+}
+html:not([data-theme="dark"]) .site .strip{
+ background:#edf5ef!important;
+ border-color:var(--id-line)!important;
+}
+html:not([data-theme="dark"]) .site .track span{color:#718278!important}
+html:not([data-theme="dark"]) .site .track span.g{color:var(--id-green)!important}
+html:not([data-theme="dark"]) .site .card,
+html:not([data-theme="dark"]) .site .row,
+html:not([data-theme="dark"]) .site .majlis{
+ background:linear-gradient(145deg,#fff,#f2f7f2)!important;
+ border-color:var(--id-line)!important;
+ color:var(--id-text)!important;
+ box-shadow:var(--id-shadow);
+}
+html:not([data-theme="dark"]) .site .card p,
+html:not([data-theme="dark"]) .site .row span,
+html:not([data-theme="dark"]) .site .wallet-detail p{
+ color:var(--id-muted)!important;
+}
+html:not([data-theme="dark"]) .site .card .n{color:rgba(23,107,80,.28)!important}
+html:not([data-theme="dark"]) .site .row b{color:var(--id-green)!important}
+html:not([data-theme="dark"]) .site .thumb{
+ background:radial-gradient(circle at 70% 20%,#e1eee4,#f7faf7)!important;
+ color:var(--id-green)!important;
+}
+html:not([data-theme="dark"]) .site .ring{
+ border-color:var(--id-line)!important;
+ border-top-color:var(--id-gold)!important;
+}
+html:not([data-theme="dark"]) .site .btn.line{
+ color:var(--id-green)!important;
+ border-color:var(--id-gold)!important;
+}
+html:not([data-theme="dark"]) .site .support-button{
+ background:linear-gradient(135deg,#fff,#edf5ef)!important;
+ color:var(--id-green)!important;
+ border-color:var(--id-gold)!important;
+}
+html:not([data-theme="dark"]) .site .support-dialog{
+ background:#fff!important;
+ color:var(--id-text)!important;
+ border-color:var(--id-line)!important;
+}
+html:not([data-theme="dark"]) .site .wallet-detail,
+html:not([data-theme="dark"]) .site .mobile-site-menu{
+ background:#f2f7f2!important;
+ border-color:var(--id-line)!important;
+}
+html:not([data-theme="dark"]) .site .mobile-site-menu a{
+ color:var(--id-text)!important;
+}
+html:not([data-theme="dark"]) .site .orb{opacity:.28}

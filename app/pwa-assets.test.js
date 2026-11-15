@@ -8,6 +8,8 @@ const test = require('node:test');
 const appDirectory = __dirname;
 const html = fs.readFileSync(path.join(appDirectory, 'index.html'), 'utf8');
 const manifest = JSON.parse(fs.readFileSync(path.join(appDirectory, 'manifest.json'), 'utf8'));
+const rootHtml = fs.readFileSync(path.join(appDirectory, '..', 'index.html'), 'utf8');
+const identityCss = fs.readFileSync(path.join(appDirectory, 'interactive-identity.css'), 'utf8');
 
 test('provides an iOS home-screen icon and supported PWA metadata', function () {
   assert.match(html, /name="viewport" content="[^"]*viewport-fit=cover/);
@@ -37,4 +39,18 @@ test('all PWA manifest and offline-cache files exist within the app', function (
     assert.ok(worker.includes("'" + asset + "'"), asset);
     assert.ok(fs.existsSync(path.join(appDirectory, asset.replace(/^\.\//, ''))), asset);
   }
+});
+
+test('keeps the approved light identity and top-level radio/login actions', function () {
+  assert.equal(manifest.background_color, '#f6faf6');
+  assert.equal(manifest.theme_color, '#f6faf6');
+  assert.match(html, /id="quranRadioButton"/);
+  assert.match(html, /class="social-link login-launch"/);
+  const radioIndex = html.indexOf('id="quranRadioButton"');
+  const tabsIndex = html.indexOf('<nav class="tabs"');
+  assert.ok(radioIndex >= 0 && tabsIndex > radioIndex, 'radio action belongs in the app header, before the section tabs');
+  assert.match(rootHtml, /assets\/brand-mark-light\.svg/);
+  assert.doesNotMatch(html, /\\\\n/, 'app HTML must not contain literal newline escapes');
+  assert.doesNotMatch(rootHtml, /\\\\n/, 'root HTML must not contain literal newline escapes');
+  assert.doesNotMatch(identityCss, /\\\\n/, 'identity CSS must not contain literal newline escapes');
 });
