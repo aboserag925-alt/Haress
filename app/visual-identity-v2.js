@@ -95,7 +95,7 @@
         tab.setAttribute('aria-pressed', selected ? 'true' : 'false');
       });
       root.setAttribute('data-active-section', match[1]);
-    });
+    }, true);
   }
 
   function boot() {
