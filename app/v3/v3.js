@@ -26,8 +26,7 @@
   navButtons.forEach(function (button) {
     button.addEventListener('click', function () {
       var target = button.getAttribute('data-v3-target');
-      if (typeof window.show === 'function') window.show(target);
-      else window.dispatchEvent(new CustomEvent('haress-v3:navigate', { detail: target }));
+      window.dispatchEvent(new CustomEvent('haress-v3:navigate', { detail: target }));
     });
   });
 
