@@ -8,6 +8,7 @@ const { createSuggestionsApi } = require('./suggestions/suggestion-api');
 const { createSuggestionService } = require('./suggestions/suggestion-service');
 const { createApprovalApi } = require('./ai/approval-api');
 const { createTaskService } = require('./ai/task-service');
+const { normalizeSupabaseEnv } = require('./supabase-env');
 
 const PUBLIC_ROOT = path.resolve(__dirname, '..');
 const MAX_BODY_BYTES = 16 * 1024;
@@ -323,7 +324,7 @@ async function sendToTelegram(question, draft, env, fetchImpl) {
 
 function createServer(options) {
   options = options || {};
-  const env = options.env || process.env;
+  const env = normalizeSupabaseEnv(options.env || process.env);
   const fetchImpl = options.fetch || global.fetch;
   const limits = new Map();
   const adminApi = createAdminApi({ env: env, fetch: fetchImpl });
@@ -557,7 +558,7 @@ if (require.main === module) {
     throw new Error('PORT must be a valid TCP port.');
   }
   const host = process.env.HOST || '127.0.0.1';
-  const mediaLibrary = createMediaLibrary({ env: process.env });
+  const mediaLibrary = createMediaLibrary({ env: normalizeSupabaseEnv(process.env) });
   const server = createServer({ mediaLibrary: mediaLibrary });
   server.listen(port, host, function () {
     console.log('Ahl Athar server listening on port ' + port);
