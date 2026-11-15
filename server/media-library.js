@@ -112,9 +112,32 @@ function createMediaLibrary(options) {
   let running = false;
   let pollPromise = null;
 
+  const remoteIndexKey = 'library/_index.json';
+
   async function initialize() {
     if (initialized) return;
     if (useRemote) {
+      const remoteIndex = await storage.get(remoteIndexKey);
+      if (remoteIndex) {
+        let stored;
+        try {
+          stored = JSON.parse(remoteIndex.body.toString('utf8'));
+        } catch {
+          throw new Error('Invalid remote media library index.');
+        }
+        if (!stored || !Array.isArray(stored.items) ||
+            (stored.offset !== null && !Number.isSafeInteger(stored.offset))) {
+          throw new Error('Invalid remote media library index.');
+        }
+        items = stored.items;
+        offset = stored.offset;
+      } else {
+        // Older remote deployments stored media objects without a durable index.
+        // Start with an empty index; never infer approval from object presence.
+        items = [];
+        offset = null;
+        await save();
+      }
       initialized = true;
       return;
     }
@@ -136,10 +159,14 @@ function createMediaLibrary(options) {
   }
 
   async function save() {
-    if (useRemote) return;
+    const serialized = JSON.stringify({ offset: offset, items: items });
+    if (useRemote) {
+      await storage.put(remoteIndexKey, Buffer.from(serialized, 'utf8'), 'application/json', { upsert: true });
+      return;
+    }
     await fs.mkdir(storageDirectory, { recursive: true });
     const temporaryPath = indexPath + '.' + randomUUID() + '.tmp';
-    await fs.writeFile(temporaryPath, JSON.stringify({ offset: offset, items: items }), 'utf8');
+    await fs.writeFile(temporaryPath, serialized, 'utf8');
     await fs.rename(temporaryPath, indexPath);
   }
 

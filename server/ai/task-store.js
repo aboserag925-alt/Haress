@@ -5,6 +5,6 @@ function transition(task,next,approval={}) {
   return {...task,...approval,status:next,updatedAt:new Date().toISOString()};
 }
 function createTask(input={},riskAssessment) {
-  return {id:input.id,source:input.source||'suggestion',status:'PROPOSED',risk:riskAssessment.risk,confidence:null,requiresApproval:riskAssessment.requiresApproval,approved:false,tainted:false,affectedAreas:Array.isArray(input.affectedAreas)?input.affectedAreas:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+  return {id:input.id,source:input.source||'suggestion',status:'PROPOSED',risk:riskAssessment.risk,confidence:null,requiresApproval:riskAssessment.requiresApproval,approved:false,tainted:input.trustedSource!==true,affectedAreas:Array.isArray(input.affectedAreas)?input.affectedAreas:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
 }
 module.exports={transition,createTask};
