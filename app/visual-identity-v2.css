@@ -316,3 +316,15 @@ html[data-theme="dark"] .theme-toggle{color:#e6d6b2}
  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}
  .motion-reveal{opacity:1!important;transform:none!important}
 }
+
+/* Specificity guard against legacy inline styles retained by the functional shell. */
+#sched.schedule-timeline{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 55px;padding:8px 0}
+#sched.schedule-timeline>.card{display:grid;grid-template-columns:100px 1fr;align-items:start;gap:14px;margin:0;padding:24px 0;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;box-shadow:none}
+#sched.schedule-timeline>.card.today{background:linear-gradient(90deg,transparent,rgba(176,139,80,.08))}
+#sched.schedule-timeline>.card:last-child{display:block;grid-column:1/-1}
+@media(max-width:760px){
+ #sched.schedule-timeline{grid-template-columns:1fr;padding-right:18px}
+ #sched.schedule-timeline>.card{grid-template-columns:82px 1fr;gap:10px;padding:18px 0}
+}
+.masthead .theme-toggle{left:0;top:calc(100% + 12px);transform:none}
+.reading-progress{position:fixed;z-index:150;top:0;right:0;left:0;height:2px;transform:scaleX(0);transform-origin:right center;background:linear-gradient(90deg,#d9c18a,#a37b3e);pointer-events:none}
