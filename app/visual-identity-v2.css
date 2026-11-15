@@ -342,7 +342,7 @@ a{color:inherit}
  .colophon-copy h2{font-size:34px}
  .colophon-bottom{align-items:flex-start;flex-direction:column;gap:5px}
  .floating-index{position:fixed;right:10px;bottom:max(9px,env(safe-area-inset-bottom));left:10px;z-index:90;display:flex;align-items:stretch;justify-content:space-around;gap:3px;padding:7px;border:1px solid rgba(218,192,145,.24);background:rgba(17,18,19,.9);backdrop-filter:blur(24px);box-shadow:0 14px 42px rgba(0,0,0,.48);border-radius:4px}
- .floating-index>.tab,.mobile-more>summary{display:flex;flex:1 1 0;min-width:0;min-height:56px;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px 2px;border:0;background:transparent;color:var(--muted);font-size:11px}
+ .floating-index>.tab,.mobile-more>summary{display:flex;position:relative;flex:1 1 0;min-width:0;min-height:56px;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px 2px;border:0;background:transparent;color:var(--muted);font-size:11px}
  .floating-index .tab span,.mobile-more>summary span{font-size:19px;line-height:1.1;color:var(--gold)}
  .floating-index .tab small,.mobile-more>summary small{font-size:9px;color:inherit;white-space:nowrap}
  .floating-index .tab.on{background:rgba(200,166,109,.1);color:var(--gold-bright)}
