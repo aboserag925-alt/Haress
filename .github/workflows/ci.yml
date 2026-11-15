@@ -49,13 +49,13 @@ jobs:
           const base = fs.readFileSync('app/index.html', 'utf8');
           const v3 = fs.readFileSync('app/v3/index.html', 'utf8');
           const app = fs.readFileSync('app/app.js', 'utf8');
-          const ids = (s) => [...s.matchAll(/\\bid=["']([^"']+)["']/g)].map((m) => m[1]);
+          const ids = (s) => [...s.matchAll(/\bid=["']([^"']+)["']/g)].map((m) => m[1]);
           const baseIds = ids(base);
           const v3Ids = ids(v3);
           const v3Set = new Set(v3Ids);
           const duplicates = v3Ids.filter((id, i) => v3Ids.indexOf(id) !== i);
           const missingIds = baseIds.filter((id) => !v3Set.has(id));
-          const selectors = [...new Set([...app.matchAll(/getElementById\\(['"]([^'"]+)['"]\\)/g)].map((m) => m[1]))];
+          const selectors = [...new Set([...app.matchAll(/getElementById\(['"]([^'"]+)['"]\)/g)].map((m) => m[1]))];
           const missingSelectors = selectors.filter((id) => !v3Set.has(id));
           if (duplicates.length || missingIds.length || missingSelectors.length) {
             throw new Error(JSON.stringify({ duplicates, missingIds, missingSelectors }));
@@ -63,7 +63,7 @@ jobs:
           if (!v3.includes('/v3/manifest.json') || !fs.existsSync('app/v3/manifest.json')) {
             throw new Error('V3 install manifest missing');
           }
-          if (/tailwind\\.css|visual-identity-v2|brand-motion|interactive-identity/.test(v3)) {
+          if (/tailwind\.css|visual-identity-v2|brand-motion|interactive-identity/.test(v3)) {
             throw new Error('V3 imports a legacy visual asset');
           }
           console.log('V3 contract OK: ' + baseIds.length + ' legacy IDs and ' + selectors.length + ' app.js selectors preserved');
