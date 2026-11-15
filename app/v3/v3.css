@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap');
-
 :root{
   color-scheme:light;
   --paper:#f4f0e6;--paper-deep:#eae4d7;--paper-white:#fbf9f3;
@@ -256,3 +254,9 @@ a{color:inherit}
 @media(prefers-reduced-motion:reduce){
  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+.editorial-reveal{opacity:0;transform:translateY(13px);transition:opacity .65s var(--ease),transform .65s var(--ease)}
+.editorial-reveal.editorial-visible{opacity:1;transform:none}
+.v3-timeline-entry:nth-child(2n){transition-delay:.06s}
+.v3-timeline-entry:nth-child(3n){transition-delay:.12s}
+button:focus-visible,a:focus-visible{outline:2px solid var(--bronze);outline-offset:3px}
