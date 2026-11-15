@@ -289,3 +289,11 @@ html[data-theme="dark"] .theme-toggle{background:#1b3025;color:#e4d4a7;border-co
  .motion-reveal{opacity:1!important;transform:none!important;transition:none!important}
  .editorial-hero,.site-header,.brand-seal,.hero-emblem{animation:none!important}
 }
+
+/* Theme control is injected by the existing identity controller. */
+.site-header{position:relative!important}
+.site-header>.theme-toggle{position:absolute;left:18px;bottom:14px;top:auto;z-index:4;grid-area:auto;min-height:32px;padding-inline:10px}
+@media(max-width:760px){
+ .site-header>.theme-toggle{left:12px;bottom:10px;min-height:30px;font-size:10px}
+ .site-header .header-meta{padding-inline-start:0;padding-bottom:28px}
+}
