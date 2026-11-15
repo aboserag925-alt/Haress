@@ -62,30 +62,29 @@ test('V3.1 design system preserves the approved identity and reduced-motion supp
 
 test('V3.1 page has no root base URL and keeps fragment navigation local', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  assert.doesNotMatch(html, /<base\\s+href=["']\\/["']\\s*>/i);
+  assert.equal(html.includes('<base href="/">'), false);
   assert.match(html, /href=["']#main["']/);
 });
 
 test('V3 service worker cache namespace is isolated from legacy cleanup', () => {
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert.match(sw, /CACHE_NAMESPACE\\s*=\\s*['"]haress-v3-cache-/);
-  assert.doesNotMatch(sw, /CACHE_NAMESPACE\\s*=\\s*['"]ahl-athar-/);
-  assert.match(sw, /key\\.indexOf\\(CACHE_NAMESPACE\\)/);
-  assert.doesNotMatch(sw, /ahl-athar-/);
+  assert.match(sw, /CACHE_NAMESPACE\s*=\s*['"]haress-v3-cache-/);
+  assert.doesNotMatch(sw, /CACHE_NAMESPACE\s*=\s*['"]ahl-athar-/);
+  assert.match(sw, /key\.indexOf\(CACHE_NAMESPACE\)/);
+  assert.equal(sw.includes('ahl-athar-'), false);
 });
 
 test('blocked localStorage is handled without throwing during storage access', () => {
   const runtime = fs.readFileSync(path.join(root, 'v3-runtime.js'), 'utf8');
-  assert.match(runtime, /function safeStorage\\(\\)\\s*\\{\\s*try\\s*\\{\\s*return window\\.localStorage;\\s*\\}\\s*catch/);
-  assert.match(runtime, /function readStore\\(key\\)/);
-  assert.match(runtime, /function store\\(key, value\\)/);
-  assert.doesNotMatch(runtime, /localStorage\\.(?:getItem|setItem|length|key)\\s*(?:\\(|\\b)/);
+  assert.match(runtime, /function safeStorage\(\)\s*\{\s*try\s*\{\s*return window\.localStorage;\s*\}\s*catch/);
+  assert.match(runtime, /function readStore\(key\)/);
+  assert.match(runtime, /function store\(key, value\)/);
+  assert.doesNotMatch(runtime, /localStorage\.(?:getItem|setItem|length|key)\s*(?:\(|\b)/);
   const vm = require('node:vm');
   const helperStart = runtime.indexOf('  function safeStorage()');
   const helperEnd = runtime.indexOf('  function cairoClock()', helperStart);
   assert.ok(helperStart >= 0 && helperEnd > helperStart);
-  const sandbox = { window: Object.defineProperty({}, 'localStorage', { get() { throw new Error('blocked'); } }),
-    status() {} };
+  const sandbox = { window: Object.defineProperty({}, 'localStorage', { get() { throw new Error('blocked'); } }) };
   vm.runInNewContext(runtime.slice(helperStart, helperEnd), sandbox);
   assert.equal(sandbox.safeStorage(), null);
   assert.equal(sandbox.readStore('key'), null);
@@ -95,6 +94,5 @@ test('blocked localStorage is handled without throwing during storage access', (
 test('V3.1 runtime and page remain independent from /app.js', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const runtime = fs.readFileSync(path.join(root, 'v3-runtime.js'), 'utf8');
-  assert.doesNotMatch(html + runtime, /(?:src|href)=["'][^"']*\\/app\\.js/i);
-  assert.doesNotMatch(html + runtime, /\\/app\\.js/);
+  assert.equal((html + runtime).includes('/app.js'), false);
 });
