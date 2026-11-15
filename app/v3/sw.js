@@ -1,5 +1,6 @@
 'use strict';
-var CACHE_NAME = 'ahl-athar-v3-native';
+var CACHE_NAMESPACE = 'haress-v3-cache-';
+var CACHE_NAME = CACHE_NAMESPACE + 'native';
 var SHELL = [
   '/v3/',
   '/v3/index.html',
@@ -20,7 +21,7 @@ self.addEventListener('activate', function (event) {
   event.waitUntil((async function () {
     var keys = await caches.keys();
     await Promise.all(keys.filter(function (key) {
-      return key.indexOf('ahl-athar-v3-native') === 0 && key !== CACHE_NAME;
+      return key.indexOf(CACHE_NAMESPACE) === 0 && key !== CACHE_NAME;
     }).map(function (key) { return caches.delete(key); }));
     await self.clients.claim();
   })());
