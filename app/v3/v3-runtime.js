@@ -474,9 +474,6 @@
 
   function init() {
     renderSchedule(); updateScheduleClock(); loadLectures();
-    document.querySelectorAll('[data-v3-target]').forEach(function(button){
-      button.addEventListener('click',function(){navigate(button.getAttribute('data-v3-target'));});
-    });
     $('calcMethod').value=localStorage.getItem('ahl-athar-calculation-method')||'auto';
     $('asrMadhab').value=localStorage.getItem('ahl-athar-asr-madhab')||'shafi';
     state.location=loadLocation();
