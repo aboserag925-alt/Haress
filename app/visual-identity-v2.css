@@ -297,3 +297,30 @@ html[data-theme="dark"] .theme-toggle{background:#1b3025;color:#e4d4a7;border-co
  .site-header>.theme-toggle{left:12px;bottom:10px;min-height:30px;font-size:10px}
  .site-header .header-meta{padding-inline-start:0;padding-bottom:28px}
 }
+
+/* Native controls and secondary widgets follow the active color scheme. */
+:root{color-scheme:light}
+html[data-theme="dark"]{color-scheme:dark}
+.content-frame .field input,.content-frame .field select,.content-frame textarea{
+ background:#fffefa!important;color:#1a4532!important;border:1px solid rgba(26,82,56,.18)!important
+}
+.content-frame .field select option{background:#fffefa;color:#173b2d}
+.content-frame textarea::placeholder{color:#8a988c}
+.content-frame .note,.content-frame .notice{background:#f5f1e4;border-color:rgba(178,139,77,.25);color:#7e6a43}
+.content-frame .question-consent,.content-frame .field{color:#627568}
+.content-frame .media-card,.content-frame .dhikr{background:#f7f8f1;border-color:rgba(26,82,56,.12)}
+.content-frame .media-card h3,.content-frame .dhikr p{color:#234b36}
+.content-frame .prayer-time{background:#f6f7f0;border-color:rgba(26,82,56,.12)}
+.content-frame .prayer-time span{color:#758578}
+.content-frame .prayer-time time{color:#1c4933}
+.content-frame .compass{background:radial-gradient(circle,#f1ead7,#e7eee6 68%);box-shadow:inset 0 0 40px rgba(178,139,77,.08),0 0 50px rgba(26,82,56,.08)}
+html[data-theme="dark"] .content-frame .field input,html[data-theme="dark"] .content-frame .field select,html[data-theme="dark"] .content-frame textarea{background:#102219!important;color:#e7eee7!important;border-color:rgba(226,202,145,.18)!important}
+html[data-theme="dark"] .content-frame .field select option{background:#102219;color:#e7eee7}
+html[data-theme="dark"] .content-frame .note,html[data-theme="dark"] .content-frame .notice{background:#24372a;border-color:rgba(226,202,145,.18);color:#d9c99f}
+html[data-theme="dark"] .content-frame .question-consent,html[data-theme="dark"] .content-frame .field{color:#b7c6b8}
+html[data-theme="dark"] .content-frame .media-card,html[data-theme="dark"] .content-frame .dhikr{background:#172a20;border-color:rgba(226,202,145,.14)}
+html[data-theme="dark"] .content-frame .media-card h3,html[data-theme="dark"] .content-frame .dhikr p{color:#e2ebe1}
+html[data-theme="dark"] .content-frame .prayer-time{background:#172a20;border-color:rgba(226,202,145,.14)}
+html[data-theme="dark"] .content-frame .prayer-time span{color:#b7c6b8}
+html[data-theme="dark"] .content-frame .prayer-time time{color:#e2ebe1}
+html[data-theme="dark"] .content-frame .compass{background:radial-gradient(circle,rgba(226,202,145,.1),#14251c 68%)}
