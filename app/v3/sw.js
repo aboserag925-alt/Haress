@@ -1,6 +1,6 @@
 'use strict';
 var CACHE_NAMESPACE = 'haress-v3-cache-';
-var CACHE_NAME = CACHE_NAMESPACE + 'native';
+var CACHE_NAME = CACHE_NAMESPACE + 'native-v3.2';
 var SHELL = [
   '/v3/',
   '/v3/index.html',

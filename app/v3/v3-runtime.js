@@ -40,7 +40,9 @@
       seconds: (Number(p.hour) % 24) * 3600 + Number(p.minute) * 60 + Number(p.second) };
   }
 
-  /* Schedule: V3 owns its semantic timeline and never creates legacy card/tab/button markup. */
+  /* ============================================================
+     Schedule / program
+     ============================================================ */
   var schedule = [
     ['السبت','شرح صحيح الإمام مسلم','شرح علم مصطلح الحديث'],
     ['الأحد','مناهج البيان في أصول التفسير وقواعد فهم القرآن','قواعد عقائد أهل السنة والجماعة'],
@@ -50,6 +52,7 @@
     ['الخميس','عظماء الإسلام','منوعات ومقتطفات وحوارات']
   ];
   var days = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+
   function renderSchedule() {
     var host = $('sched'); if (!host) return;
     host.replaceChildren();
@@ -70,6 +73,26 @@
     var friday = document.createElement('p'); friday.className = 'v3-friday-note';
     friday.textContent = 'الجمعة · لا دروس'; host.appendChild(friday);
   }
+
+  function renderProgramTimeline() {
+    var host = $('programTimeline'); if (!host) return;
+    host.replaceChildren();
+    var today = days[cairoClock().day];
+    schedule.forEach(function (row) {
+      var section = document.createElement('article');
+      section.className = 'timeline-entry' + (row[0] === today ? ' is-today' : '');
+      var heading = document.createElement('h3'); heading.textContent = row[0] + (row[0] === today ? ' · اليوم' : '');
+      var slots = document.createElement('div'); slots.className = 'timeline-slots';
+      [[ '٧:٠٠ مساءً', row[1] ], [ '١٠:٠٠ مساءً', row[2] ]].forEach(function (slot) {
+        var line = document.createElement('p');
+        var time = document.createElement('time'); time.textContent = slot[0];
+        var title = document.createElement('span'); title.textContent = slot[1];
+        line.append(time, title); slots.appendChild(line);
+      });
+      section.append(heading, slots); host.appendChild(section);
+    });
+  }
+
   async function loadLectures() {
     try {
       var response = await fetch(api('/api/lectures'), { cache: 'no-store' });
@@ -95,6 +118,29 @@
       host.hidden = false;
     } catch (e) { /* Built-in schedule remains available. */ }
   }
+
+  function renderProgramLectures() {
+    /* client-side program surface using the built-in schedule; no fabricated production data */
+    var host = $('programLectures'); if (!host) return;
+    host.replaceChildren();
+    schedule.forEach(function (row) {
+      var card = document.createElement('article');
+      card.className = 'lecture-card';
+      var thumb = document.createElement('div');
+      thumb.className = 'lecture-thumb';
+      thumb.textContent = '📖';
+      var h3 = document.createElement('h3'); h3.textContent = row[1];
+      var meta = document.createElement('div'); meta.className = 'lecture-meta';
+      meta.textContent = row[0] + ' · الساعة ٧:٠٠ مساءً';
+      var actions = document.createElement('div'); actions.className = 'lecture-actions';
+      var btn = document.createElement('button'); btn.type = 'button'; btn.textContent = 'تفاصيل الدرس';
+      btn.onclick = function () { navigateTo('home'); };
+      actions.appendChild(btn);
+      card.appendChild(thumb); card.appendChild(h3); card.appendChild(meta); card.appendChild(actions);
+      host.appendChild(card);
+    });
+  }
+
   function updateScheduleClock() {
     var now = cairoClock(), slots = [19 * 3600, 22 * 3600], lessonDays = ['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس'];
     for (var offset = 0; offset < 8; offset++) {
@@ -107,79 +153,30 @@
         if ($('nextLessonTitle')) $('nextLessonTitle').textContent = row[i + 1];
         if ($('cd')) $('cd').textContent = [Math.floor(delta / 3600), Math.floor(delta % 3600 / 60), delta % 60]
           .map(function (n) { return String(n).padStart(2, '0'); }).join(':');
+        if ($('homeNextLesson')) $('homeNextLesson').textContent = days[day] + ' · ' + (i ? '١٠:٠٠' : '٧:٠٠') + ' مساءً: ' + row[i + 1];
         return;
       }
     }
+    if ($('homeNextLesson')) $('homeNextLesson').textContent = 'لا يوجد درس منتظر هذا الأسبوع';
   }
 
-  function navigate(id) {
-    var ids = ['sched','prayers','qibla','adhkar','media','q','about','account'];
-    if (ids.indexOf(id) < 0) return;
-    ids.forEach(function (key) { var el = $(key); if (el) el.hidden = key !== id; });
-    var scheduleView = id === 'sched';
-    document.querySelectorAll('.side-nav .nav-item[data-v3-target]').forEach(function (button) {
-      var active = button.getAttribute('data-v3-target') === id;
-      button.classList.toggle('is-active', active); button.setAttribute('aria-pressed', String(active));
-    });
-    var heading = document.querySelector('.section-heading'), next = document.querySelector('.next');
-    if (heading) heading.hidden = !scheduleView;
-    if (next) next.hidden = !scheduleView;
-    var target = $(id);
-    if (target) {
-      target.setAttribute('tabindex','-1');
-      target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
-      target.focus({ preventScroll: true });
+  /* ============================================================
+     Navigation helper (runtime-owned)
+     ============================================================ */
+  function navigateTo(id) {
+    if (typeof window.HaressV3 !== 'undefined' && window.HaressV3.navigate) {
+      window.HaressV3.navigate(id);
+    } else if (window.dispatchEvent) {
+      window.dispatchEvent(new CustomEvent('haress-v3:navigate', { detail: id }));
     }
-    if (id === 'media') loadLibrary();
-    if (id === 'adhkar') renderAdhkar();
-    if (id === 'qibla') updateQibla();
-  }
-  window.addEventListener('haress-v3:navigate', function (event) { navigate(event.detail); });
-
-  /* Quran radio */
-  function initRadio() {
-    var button = $('quranRadioButton'), panel = $('quranRadioPanel'), audio = $('quranRadioAudio');
-    var station = $('quranRadioStation'), open = $('quranRadioOpen'), mute = $('quranRadioMute');
-    if (!button || !panel || !audio || !station) return;
-    var cairoStream = 'https://stream.radiojar.com/8s5u5tpdtwzuv';
-    function stop() { clearTimeout(state.radioTimer); audio.pause(); audio.removeAttribute('src'); audio.load(); }
-    function sync() {
-      button.setAttribute('aria-expanded', String(!panel.hidden));
-      mute.textContent = audio.muted ? 'إلغاء الكتم' : 'كتم الإذاعة';
-      mute.setAttribute('aria-pressed', String(audio.muted));
-    }
-    function playCairo() {
-      stop(); audio.src = cairoStream; audio.volume = 0.06;
-      open.href = 'https://misrquran.gov.eg/'; open.textContent = 'الموقع الرسمي لإذاعة القاهرة';
-      if (audio.muted) { status('quranRadioStatus','الإذاعة مكتومة. ألغِ الكتم ثم اضغط تشغيل.'); return; }
-      var attempt = audio.play();
-      if (attempt && attempt.then) attempt.then(function () {
-        status('quranRadioStatus','إذاعة القرآن الكريم — القاهرة تعمل بصوت منخفض.');
-        state.radioTimer = setTimeout(function () { if (!audio.paused && !audio.muted) audio.volume = 0.16; }, 5000);
-      }).catch(function () { status('quranRadioStatus','قد يمنع المتصفح التشغيل التلقائي. اضغط تشغيل من المشغل.'); });
-    }
-    button.addEventListener('click', function () {
-      panel.hidden = !panel.hidden; sync();
-      if (!panel.hidden && station.value === 'cairo' && audio.paused) playCairo();
-    });
-    station.addEventListener('change', function () {
-      if (station.value === 'saudi') {
-        stop(); open.href = 'https://radioplus.sba.sa/ar/live/4'; open.textContent = 'فتح البث الرسمي السعودي';
-        status('quranRadioStatus','البث السعودي الرسمي متاح عبر مشغل الهيئة. افتح الرابط الرسمي.');
-      } else playCairo();
-    });
-    mute.addEventListener('click', function () {
-      audio.muted = !audio.muted; sync();
-      if (!audio.muted && station.value === 'cairo' && audio.paused) playCairo();
-      if (audio.muted) clearTimeout(state.radioTimer);
-    });
-    audio.addEventListener('error', function () { status('quranRadioStatus','تعذر تحميل بث القاهرة حاليًا. يمكنك فتح الموقع الرسمي.'); });
-    sync(); playCairo();
   }
 
-  /* Prayer calculations and Qibla use the existing pinned Adhan browser bundle. */
+  /* ============================================================
+     Prayer dashboard (home compact + full view)
+     ============================================================ */
   var prayerNames = { fajr:'الفجر', sunrise:'الشروق', dhuhr:'الظهر', asr:'العصر', maghrib:'المغرب', isha:'العشاء' };
   var prayerKeys = Object.keys(prayerNames), salatKeys = ['fajr','dhuhr','asr','maghrib','isha'];
+
   function loadLocation() {
     try {
       var savedLat = readStore('ahl-athar-latitude'), savedLon = readStore('ahl-athar-longitude');
@@ -190,7 +187,8 @@
     return null;
   }
   function methodName() {
-    var saved = $('calcMethod').value;
+    var el = $('calcMethod') || $('calcMethodPray');
+    var saved = el ? el.value : 'auto';
     if (saved !== 'auto') return saved;
     if (tz === 'Africa/Cairo') return 'egypt';
     if (/^Asia\/(Riyadh|Makkah|Kuwait|Qatar|Bahrain)$/.test(tz)) return 'umm';
@@ -199,13 +197,17 @@
   function prayerParams() {
     var a = window.adhan, methods = { egypt:a.CalculationMethod.Egyptian, umm:a.CalculationMethod.UmmAlQura, mwl:a.CalculationMethod.MuslimWorldLeague };
     var params = (methods[methodName()] || methods.mwl)();
-    params.madhab = $('asrMadhab').value === 'hanafi' ? a.Madhab.Hanafi : a.Madhab.Shafi;
+    var madhabEl = $('asrMadhab') || $('asrMadhabPray');
+    params.madhab = madhabEl && madhabEl.value === 'hanafi' ? a.Madhab.Hanafi : a.Madhab.Shafi;
     return params;
   }
-  function updateLocationStatus(message) {
-    status('locationStatus', state.location ? (message || 'الموقع محفوظ محليًا') + ' · ' +
+  function updateLocationStatus(message, targetId) {
+    var el = $(targetId || 'locationStatus') || $('prayerLocationStatus');
+    status(targetId || 'locationStatus', message || '', error);
+    if (!el) return;
+    el.textContent = state.location ? (message || 'الموقع محفوظ محليًا') + ' · ' +
       state.location.latitude.toFixed(4) + ', ' + state.location.longitude.toFixed(4) :
-      'لم يُحدَّد الموقع بعد. احفظ موقعًا يدويًا أو اسمح بتحديده تلقائيًا.');
+      'لم يُحدَّد الموقع بعد. احفظ موقعًا يدويًا أو اسمح بتحديده تلقائيًا.';
   }
   function computePrayerTimes(date) {
     return new window.adhan.PrayerTimes(new window.adhan.Coordinates(state.location.latitude, state.location.longitude), date, prayerParams());
@@ -213,22 +215,66 @@
   function formatPrayerTime(date) {
     return new Intl.DateTimeFormat('ar-EG',{hour:'numeric',minute:'2-digit',timeZone:tz}).format(date);
   }
+  function renderHomePrayerDashboard() {
+    var grid = $('prayerDashGrid'); if (!grid) return;
+    grid.replaceChildren();
+    prayerKeys.forEach(function (key) {
+      var cell = document.createElement('div');
+      cell.className = 'dash-cell';
+      var label = document.createElement('div'); label.className = 'label'; label.textContent = prayerNames[key];
+      var time = document.createElement('div'); time.className = 'time'; time.textContent = '—';
+      cell.appendChild(label); cell.appendChild(time);
+      grid.appendChild(cell);
+    });
+    updatePrayerTimes();
+  }
   function updatePrayerTimes() {
     if ($('timezoneLabel')) $('timezoneLabel').textContent = tz;
-    if (!state.location || !window.adhan) { status('prayerDate','حدد موقعك لحساب المواقيت.'); return; }
+    if ($('prayerTimezone')) $('prayerTimezone').textContent = tz;
+    if ($('prayerDate')) $('prayerDate').textContent = 'حدد موقعك لحساب المواقيت.';
+    if ($('prayerDateFull')) $('prayerDateFull').textContent = 'تُحسب المواقيت حسب موقعك والمنطقة الزمنية لجهازك.';
+    if (!state.location || !window.adhan) {
+      var grid = $('prayerDashGrid');
+      if (grid) {
+        prayerKeys.forEach(function (key, i) {
+          var timeEl = grid.children[i] && grid.children[i].querySelector('.time');
+          if (timeEl) timeEl.textContent = '—';
+        });
+      }
+      var surface = $('nextPrayerSurface');
+      if (surface) {
+        surface.querySelector('.name').textContent = 'جارٍ التحميل…';
+        surface.querySelector('.countdown').textContent = '--:--:--';
+      }
+      return;
+    }
     try {
       var now = new Date(), times = computePrayerTimes(now);
-      $('prayerDate').textContent = new Intl.DateTimeFormat('ar-EG',{dateStyle:'full',timeZone:tz}).format(now) + ' · ' + tz;
+      if ($('prayerDate')) $('prayerDate').textContent = new Intl.DateTimeFormat('ar-EG',{dateStyle:'full',timeZone:tz}).format(now) + ' · ' + tz;
+      if ($('prayerDateFull')) $('prayerDateFull').textContent = new Intl.DateTimeFormat('ar-EG',{dateStyle:'full',timeZone:tz}).format(now) + ' · ' + tz;
       prayerKeys.forEach(function (key) {
         var time = times.timeForPrayer(window.adhan.Prayer[key.charAt(0).toUpperCase()+key.slice(1)]);
         var output = $('time-'+key);
         if (output) output.textContent = time ? formatPrayerTime(time) : 'غير متاح';
         var cell = $('prayer-'+key); if (cell) cell.classList.remove('next-prayer');
+        /* home dashboard */
+        var grid = $('prayerDashGrid');
+        if (grid && grid.children[key]) {
+          var t = grid.children[key].querySelector('.time');
+          if (t) t.textContent = time ? formatPrayerTime(time) : '—';
+        }
+        var cellFull = $('cell-'+key);
+        if (cellFull) cellFull.classList.remove('next-prayer');
       });
       state.nextPrayer = null;
       salatKeys.some(function (key) {
         var candidate = times.timeForPrayer(window.adhan.Prayer[key.charAt(0).toUpperCase()+key.slice(1)]);
-        if (candidate && candidate > now) { state.nextPrayer = candidate; state.nextPrayerName = prayerNames[key]; $('prayer-'+key).classList.add('next-prayer'); return true; }
+        if (candidate && candidate > now) {
+          state.nextPrayer = candidate; state.nextPrayerName = prayerNames[key];
+          var cell = $('prayer-'+key); if (cell) cell.classList.add('next-prayer');
+          var cellFull = $('cell-'+key); if (cellFull) cellFull.classList.add('next-prayer');
+          return true;
+        }
         return false;
       });
       if (!state.nextPrayer) { var tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1); state.nextPrayer = computePrayerTimes(tomorrow).fajr; state.nextPrayerName = 'الفجر'; }
@@ -238,29 +284,49 @@
   function updatePrayerCountdown() {
     if (!state.nextPrayer) return;
     var remaining = Math.max(0,Math.floor((state.nextPrayer-Date.now())/60000));
-    status('nextPrayerLabel','الصلاة التالية: '+state.nextPrayerName+' بعد '+Math.floor(remaining/60)+':'+String(remaining%60).padStart(2,'0'));
-    $('nextPrayerLabel').hidden = false;
+    if ($('nextPrayerLabel')) {
+      $('nextPrayerLabel').textContent = 'الصلاة التالية: '+state.nextPrayerName+' بعد '+Math.floor(remaining/60)+':'+String(remaining%60).padStart(2,'0');
+      $('nextPrayerLabel').hidden = false;
+    }
+    var surface = $('nextPrayerSurface');
+    if (surface) {
+      surface.querySelector('.name').textContent = state.nextPrayerName;
+      surface.querySelector('.countdown').textContent = Math.floor(remaining/60)+':'+String(remaining%60).padStart(2,'0')+' remain';
+    }
   }
-  function saveLocation() {
-    var lat = Number($('latitude').value), lon = Number($('longitude').value);
+  function saveLocation(targetIds) {
+    var latEl = $('latitude') || $('latitudePray');
+    var lonEl = $('longitude') || $('longitudePray');
+    var lat = Number(latEl.value), lon = Number(lonEl.value);
     if (!Number.isFinite(lat) || Math.abs(lat)>90 || !Number.isFinite(lon) || Math.abs(lon)>180) {
       status('locationStatus','أدخل خط عرض بين -90 و90 وخط طول بين -180 و180.',true); return;
     }
     if (!store('ahl-athar-latitude',String(lat)) || !store('ahl-athar-longitude',String(lon))) return;
-    state.location = { latitude:lat, longitude:lon }; updateLocationStatus('تم حفظ الموقع'); updatePrayerTimes(); updateQibla();
+    state.location = { latitude:lat, longitude:lon };
+    if (latEl) latEl.value = state.location.latitude.toFixed(6);
+    if (lonEl) lonEl.value = state.location.longitude.toFixed(6);
+    updateLocationStatus('تم حفظ الموقع');
+    updatePrayerTimes(); updateQibla();
   }
   function locate() {
     if (!navigator.geolocation) { status('locationStatus','تحديد الموقع غير متاح. أدخل الإحداثيات يدويًا.',true); return; }
     status('locationStatus','بانتظار إذنك لتحديد الموقع…');
     navigator.geolocation.getCurrentPosition(function (position) {
       state.location = { latitude:position.coords.latitude, longitude:position.coords.longitude };
-      $('latitude').value = state.location.latitude.toFixed(6); $('longitude').value = state.location.longitude.toFixed(6);
+      var latEl = $('latitude') || $('latitudePray');
+      var lonEl = $('longitude') || $('longitudePray');
+      if (latEl) latEl.value = state.location.latitude.toFixed(6);
+      if (lonEl) lonEl.value = state.location.longitude.toFixed(6);
       store('ahl-athar-latitude',String(state.location.latitude)); store('ahl-athar-longitude',String(state.location.longitude));
       updateLocationStatus('تم تحديد الموقع بإذنك'); updatePrayerTimes(); updateQibla();
     }, function (error) {
       status('locationStatus',({1:'لم يُسمح بالوصول إلى الموقع. أدخل الإحداثيات يدويًا.',2:'تعذر تحديد الموقع الآن.',3:'انتهت مهلة تحديد الموقع.'})[error.code] || 'تعذر تحديد الموقع.',true);
     },{enableHighAccuracy:false,timeout:15000,maximumAge:60000});
   }
+
+  /* ============================================================
+     Qibla
+     ============================================================ */
   function updateQibla() {
     if (!state.location || !window.adhan) { $('qiblaBearing').textContent='—°'; status('compassStatus','حدد موقعك من قسم الصلاة أولًا.'); return; }
     var bearing = window.adhan.Qibla(new window.adhan.Coordinates(state.location.latitude,state.location.longitude));
@@ -285,7 +351,9 @@
       }).catch(function () { status('compassStatus','تعذر تشغيل مستشعر الاتجاه أو لم يُسمح به.',true); });
   }
 
-  /* Daily adhkar: counts are device-local and synced through the same user_data row. */
+  /* ============================================================
+     Adhkar
+     ============================================================ */
   var adhkar = {
     morning:[
       {id:'kursi',text:'آية الكرسي — الله لا إله إلا هو الحي القيوم، تُقرأ كاملة.',count:1,ref:'البقرة: 255'},
@@ -328,21 +396,34 @@
     renderAdhkar();
   }
 
-  /* Published library API contract: GET /api/library -> { items: [...] }. */
+  /* ============================================================
+     Library
+     ============================================================ */
   async function loadLibrary() {
-    status('mediaStatus','جارٍ تحميل المكتبة…');
+    var statusEl = $('libraryStatus'); if (statusEl) statusEl.textContent = 'جارٍ تحميل المكتبة…';
     try {
       var response = await fetch(api('/api/library'),{cache:'no-store'});
       var decoded = new TextDecoder('utf-8',{fatal:true}).decode(await response.arrayBuffer());
       var result = JSON.parse(decoded);
       if (!response.ok || !Array.isArray(result.items)) throw new Error('invalid');
-      state.media = result.items; renderLibrary();
-    } catch (e) { status('mediaStatus','تعذر تحميل المكتبة الآن. حاول مرة أخرى.',true); }
+      state.media = result.items;
+      if (window.__v32Library) window.__v32Library.setItems(result.items);
+      renderLibrary();
+    } catch (e) {
+      var err = $('libraryError'); if (err) err.hidden = false;
+      var statusEl = $('libraryStatus'); if (statusEl) statusEl.hidden = true;
+    }
   }
   function renderLibrary() {
-    var host = $('mediaItems'); host.replaceChildren();
+    var host = $('mediaItems'); if (!host) return;
+    host.replaceChildren();
     var items = state.media.filter(function (item) { return state.mediaCategory==='all' || item.category===state.mediaCategory; });
-    status('mediaStatus',items.length?'عدد المواد: '+items.length:(state.media.length?'لا توجد مواد في هذا التصنيف.':'لا توجد مواد منشورة بعد.'));
+    var statusEl = $('libraryStatus');
+    if (statusEl) {
+      statusEl.hidden = false;
+      statusEl.textContent = items.length ? 'عدد المواد: '+items.length : (state.media.length ? 'لا توجد مواد في هذا التصنيف.' : 'لا توجد مواد منشورة بعد.');
+    }
+    var empty = $('libraryEmpty'); if (empty) empty.hidden = items.length > 0;
     items.forEach(function (item) {
       var article = document.createElement('article'); article.className = 'v3-library-entry';
       var kind = document.createElement('span'); kind.textContent = item.categoryName || item.category || 'مادة';
@@ -358,9 +439,35 @@
       if (item.uploadedAt) { var date = document.createElement('time'); date.dateTime=item.uploadedAt; date.textContent=new Intl.DateTimeFormat('ar-EG',{dateStyle:'medium'}).format(new Date(item.uploadedAt)); article.appendChild(date); }
       host.appendChild(article);
     });
+    /* featured rail on home */
+    var rail = $('featuredLibRail');
+    if (rail) {
+      rail.replaceChildren();
+      var featured = state.media.slice(0, 5);
+      featured.forEach(function (item) {
+        var card = document.createElement('article');
+        card.className = 'media-card';
+        card.setAttribute('role','button'); card.setAttribute('tabindex','0'); card.setAttribute('aria-label', item.title || 'مادة علمية');
+        var thumb = document.createElement('div'); thumb.className = 'media-thumb';
+        thumb.textContent = item.kind === 'audio' ? '▶' : item.kind === 'video' ? '⏯' : item.kind === 'image' ? '🖼' : '📄';
+        var t = document.createElement('h3'); t.textContent = item.title || 'مادة علمية';
+        var m = document.createElement('div'); m.className = 'media-meta';
+        m.textContent = (item.categoryName || item.category || 'مادة');
+        var a = document.createElement('div'); a.className = 'media-actions';
+        var b1 = document.createElement('button'); b1.type='button'; b1.textContent='فتح'; b1.onclick=function(ev){ev.stopPropagation(); openMediaDetail(item);};
+        var b2 = document.createElement('button'); b2.type='button'; b2.textContent='تفاصيل'; b2.onclick=function(ev){ev.stopPropagation(); openMediaDetail(item);};
+        a.appendChild(b1); a.appendChild(b2);
+        card.appendChild(thumb); card.appendChild(t); card.appendChild(m); card.appendChild(a);
+        card.onclick=function(){ openMediaDetail(item); };
+        card.onkeydown=function(ev){ if (ev.key==='Enter'||ev.key===' ') { ev.preventDefault(); openMediaDetail(item); } };
+        rail.appendChild(card);
+      });
+    }
   }
 
-  /* Turnstile + questions: preserve POST /api/questions and payload contract. */
+  /* ============================================================
+     Turnstile + questions (preserve payload contract)
+     ============================================================ */
   function siteKey() { return String(window.AHL_TURNSTILE_SITE_KEY || '').trim(); }
   function loadTurnstile() {
     if (window.turnstile) return Promise.resolve();
@@ -374,7 +481,8 @@
   }
   async function prepareTurnstile() {
     if (!siteKey()) return false;
-    $('questionTurnstile').hidden=false; $('questionTurnstileStatus').hidden=false;
+    var wrap = $('questionTurnstile'); var stat = $('questionTurnstileStatus');
+    if (wrap) wrap.hidden=false; if (stat) stat.hidden=false;
     try {
       await loadTurnstile();
       if (state.turnstileId===null) state.turnstileId=window.turnstile.render($('questionTurnstile'),{
@@ -387,16 +495,18 @@
     } catch(e) { status('questionTurnstileStatus','تعذر تحميل التحقق الأمني. حاول مجددًا.',true); return false; }
   }
   async function sendQuestion() {
-    var question=$('qt').value.trim(), button=$('sendQuestionBtn');
-    if(question.length<5||question.length>1600){status('qm','اكتب سؤالًا بين 5 و1600 حرف.',true);return;}
-    if(!$('questionConsent').checked){status('qm','وافق على إرسال السؤال للمراجعة أولًا.',true);return;}
+    var qt = $('questionText'); var question = qt ? qt.value.trim() : '';
+    var button = $('sendQuestionBtn');
+    if(!question || question.length<5||question.length>1600){var m=$('questionMsg');if(m){m.textContent='اكتب سؤالًا بين 5 و1600 حرف.';m.className='qm error';}return;}
+    if(!$('questionConsent').checked){var m=$('questionMsg');if(m){m.textContent='وافق على إرسال السؤال للمراجعة أولًا.';m.className='qm error';}return;}
     var token='';
     if(siteKey()) {
       if(!await prepareTurnstile()) return;
       token=window.turnstile.getResponse(state.turnstileId)||'';
-      if(!token){status('qm','أكمل التحقق الأمني قبل الإرسال.',true);return;}
+      if(!token){var m=$('questionMsg');if(m){m.textContent='أكمل التحقق الأمني قبل الإرسال.';m.className='qm error';}return;}
     }
-    button.disabled=true; $('questionDraft').hidden=true; status('qm','جارٍ إرسال السؤال للمراجعة…');
+    button.disabled=true; $('questionDraft').hidden=true;
+    var m=$('questionMsg');if(m){m.textContent='جارٍ إرسال السؤال للمراجعة…';m.className='qm';}
     try {
       var payload={question:question}; if(token) payload.turnstileToken=token;
       var response=await fetch(api('/api/questions'),{method:'POST',headers:{'Content-Type':'application/json; charset=utf-8'},body:JSON.stringify(payload)});
@@ -404,12 +514,61 @@
       catch(e){throw new Error('استجابة الخادم غير صالحة. حاول لاحقًا.');}
       if(typeof result.draft==='string'){$('questionDraftText').textContent=result.draft;$('questionDraft').hidden=false;}
       if(!response.ok) throw new Error(result.error||'تعذر إرسال السؤال.');
-      status('qm','وصل السؤال والمسودة إلى Telegram للمراجعة. المسودة ليست فتوى معتمدة.');
-    } catch(e) { status('qm',e instanceof TypeError?'تعذر الاتصال بالخادم الخلفي. حاول مجددًا.':e.message,true); }
+      var m=$('questionMsg');if(m){m.textContent='وصل السؤال والمسودة للمراجعة. المسودة ليست فتوى معتمدة.';m.className='qm';}
+      if(qt) qt.value='';
+      var cc=$('questionCharCount');if(cc)cc.textContent='0 / 1600';
+    } catch(e) {
+      var m=$('questionMsg');if(m){m.textContent=e instanceof TypeError?'تعذر الاتصال بالخادم الخلفي. حاول مجددًا.':e.message;m.className='qm error';}
+    }
     finally { if(window.turnstile&&state.turnstileId!==null)window.turnstile.reset(state.turnstileId); button.disabled=!$('questionConsent').checked; }
   }
 
-  /* Supabase client contract is provided by the generated authentication bundle. */
+  /* ============================================================
+     Quran radio
+     ============================================================ */
+  function initRadio() {
+    var button = $('quranRadioButton'), panel = $('quranRadioPanel'), audio = $('quranRadioAudio');
+    var station = $('quranRadioStation'), open = $('quranRadioOpen'), mute = $('quranRadioMute');
+    if (!button || !panel || !audio || !station) return;
+    var cairoStream = 'https://stream.radiojar.com/8s5u5tpdtwzuv';
+    function stop() { clearTimeout(state.radioTimer); audio.pause(); audio.removeAttribute('src'); audio.load(); }
+    function sync() {
+      button.setAttribute('aria-expanded', String(!panel.hidden));
+      mute.textContent = audio.muted ? 'إلغاء الكتم' : 'كتم الإذاعة';
+      mute.setAttribute('aria-pressed', String(audio.muted));
+    }
+    function playCairo() {
+      stop(); audio.src = cairoStream; audio.volume = 0.06;
+      open.href = 'https://misrquran.gov.eg/'; open.textContent = 'الموقع الرسمي لإذاعة القاهرة';
+      if (audio.muted) { status('quranRadioStatus','الإذاعة مكتومة. ألغِ الكتم ثم اضغط تشغيل.'); return; }
+      var attempt = audio.play();
+      if (attempt && attempt.then) attempt.then(function () {
+        status('quranRadioStatus','إذاعة القرآن الكريم — القاهرة تعمل بصوت منخفض.');
+        state.radioTimer = setTimeout(function () { if (!audio.paused && !audio.muted) audio.volume = 0.16; }, 5000);
+      }).catch(function () { status('quranRadioStatus','قد يمنع المتصفح التشغيل التلقائي. اضغط تشغيل من المشغل.'); });
+    }
+    button.addEventListener('click', function () {
+      panel.hidden = !panel.hidden; sync();
+      if (!panel.hidden && station.value === 'cairo' && audio.paused) playCairo();
+    });
+    station.addEventListener('change', function () {
+      if (station.value === 'saudi') {
+        stop(); open.href = 'https://radioplus.sba.sa/ar/live/4'; open.textContent = 'فتح البث الرسمي السعودي';
+        status('quranRadioStatus','البث السعودي الرسمي متاح عبر مشغل الهيئة. افتح الرابط الرسمي.');
+      } else playCairo();
+    });
+    mute.addEventListener('click', function () {
+      audio.muted = !audio.muted; sync();
+      if (!audio.muted && station.value === 'cairo' && audio.paused) playCairo();
+      if (audio.muted) clearTimeout(state.radioTimer);
+    });
+    audio.addEventListener('error', function () { status('quranRadioStatus','تعذر تحميل بث القاهرة حاليًا. يمكنك فتح الموقع الرسمي.'); });
+    sync(); playCairo();
+  }
+
+  /* ============================================================
+     Supabase/auth
+     ============================================================ */
   function collectDhikr() {
     var data={}, prefix='ahl-athar-dhikr-'+dateKey(new Date())+'-';
     try { var storage = safeStorage(); if (storage) for(var i=0;i<storage.length;i++){var key=storage.key(i);if(key&&key.indexOf(prefix)===0)data[key.slice('ahl-athar-dhikr-'.length)]=Number(readStore(key))||0;} } catch(e){}
@@ -420,12 +579,12 @@
     status('syncStatus','جارٍ مزامنة الأذكار وطريقة الحساب…');
     try {
       var remote=await window.ahlAuth.loadUserData(user.id), data=remote&&remote.data&&typeof remote.data==='object'?remote.data:{};
-      if(merge&&['auto','egypt','umm','mwl'].indexOf(data.calculationMethod)>=0){$('calcMethod').value=data.calculationMethod;store('ahl-athar-calculation-method',data.calculationMethod);}
-      if(merge&&['shafi','hanafi'].indexOf(data.asrMadhab)>=0){$('asrMadhab').value=data.asrMadhab;store('ahl-athar-asr-madhab',data.asrMadhab);}
+      if(merge&&['auto','egypt','umm','mwl'].indexOf(data.calculationMethod)>=0){var el=$('calcMethod')||$('calcMethodPray');if(el){el.value=data.calculationMethod;store('ahl-athar-calculation-method',data.calculationMethod);}}
+      if(merge&&['shafi','hanafi'].indexOf(data.asrMadhab)>=0){var el=$('asrMadhab')||$('asrMadhabPray');if(el){el.value=data.asrMadhab;store('ahl-athar-asr-madhab',data.asrMadhab);}}
       var local=collectDhikr(), remoteDhikr=data.dhikr&&typeof data.dhikr==='object'&&!Array.isArray(data.dhikr)?data.dhikr:{};
       var today=dateKey(new Date())+'-';
       Object.keys(remoteDhikr).forEach(function(key){if(key.indexOf(today)!==0)return;var n=Number(remoteDhikr[key]);if(Number.isFinite(n)&&n>=0){var merged=Math.max(Number(local[key])||0,n);local[key]=merged;store('ahl-athar-dhikr-'+key,String(merged));}});
-      await window.ahlAuth.saveUserData(user.id,{version:1,calculationMethod:$('calcMethod').value,asrMadhab:$('asrMadhab').value,dhikr:collectDhikr()});
+      await window.ahlAuth.saveUserData(user.id,{version:1,calculationMethod:$('calcMethod')||$('calcMethodPray')?$('calcMethod')||$('calcMethodPray'):{value:'auto'}.value,asrMadhab:$('asrMadhab')||$('asrMadhabPray')?$('asrMadhab')||$('asrMadhabPray'):{value:'shafi'}.value,dhikr:collectDhikr()});
       renderAdhkar();updatePrayerTimes();status('syncStatus','تمت المزامنة. الموقع الدقيق محفوظ على هذا الجهاز فقط.');
     } catch(e) { status('syncStatus','تعذرت المزامنة: '+e.message,true); }
   }
@@ -434,39 +593,42 @@
     clearTimeout(state.syncTimer);state.syncTimer=setTimeout(function(){syncAccount(state.account,false);},600);
   }
   function accountState(info) {
-    var form=$('authForm'), signed=$('accountSignedIn');
-    if(!info.configured){state.account=null;$('authConfigMissing').hidden=false;form.hidden=true;signed.hidden=true;status('authMessage','أضف إعدادات Supabase لتفعيل الحسابات.');return;}
-    $('authConfigMissing').hidden=true;state.account=info.user;
-    if(!info.user){form.hidden=false;signed.hidden=true;status('authMessage','سجّل الدخول أو أنشئ حسابًا بالبريد الإلكتروني.');return;}
-    form.hidden=true;signed.hidden=false;$('accountEmail').textContent=info.user.email||'';
-    status('authMessage','تسجيل الدخول محفوظ تلقائيًا على هذا الجهاز.');
+    var form=$('accountAuthForm'), signed=$('accountSignedIn');
+    if(!info.configured){state.account=null;$('accountAuthConfigMissing').hidden=false;form.hidden=true;signed.hidden=true;status('accountAuthMessage','أضف إعدادات Supabase لتفعيل الحسابات.');return;}
+    $('accountAuthConfigMissing').hidden=true;state.account=info.user;
+    if(!info.user){form.hidden=false;signed.hidden=true;status('accountAuthMessage','سجّل الدخول أو أنشئ حسابًا بالبريد الإلكتروني.');return;}
+    form.hidden=true;signed.hidden=false;$('accountSignedEmail').textContent=info.user.email||'';
+    status('accountAuthMessage','تسجيل الدخول محفوظ تلقائيًا على هذا الجهاز.');
     syncAccount(info.user,true);
   }
   function initAuth() {
-    if(!window.ahlAuth){status('authMessage','تعذر تحميل مكتبة تسجيل الدخول.',true);return;}
+    if(!window.ahlAuth){status('accountAuthMessage','تعذر تحميل مكتبة تسجيل الدخول.',true);return;}
     window.ahlAuth.init(accountState);
-    $('authForm').addEventListener('submit',async function(event){
-      event.preventDefault();if(!$('authForm').reportValidity())return;
-      $('signInBtn').disabled=true;$('signUpBtn').disabled=true;status('authMessage','جارٍ تسجيل الدخول…');
-      try{var result=await window.ahlAuth.signIn($('authEmail').value.trim(),$('authPassword').value);if(result.error)throw result.error;status('authMessage','تم تسجيل الدخول.');}
-      catch(e){status('authMessage','تعذر تسجيل الدخول: '+e.message,true);}
-      finally{$('signInBtn').disabled=false;$('signUpBtn').disabled=false;}
+    var form=$('accountAuthForm');
+    form.addEventListener('submit',async function(event){
+      event.preventDefault();if(!$('accountAuthForm').reportValidity())return;
+      $('accountSignInBtn').disabled=true;$('accountSignUpBtn').disabled=true;status('accountAuthMessage','جارٍ تسجيل الدخول…');
+      try{var result=await window.ahlAuth.signIn($('accountAuthEmail').value.trim(),$('accountAuthPassword').value);if(result.error)throw result.error;status('accountAuthMessage','تم تسجيل الدخول.');}
+      catch(e){status('accountAuthMessage','تعذر تسجيل الدخول: '+e.message,true);}
+      finally{$('accountSignInBtn').disabled=false;$('accountSignUpBtn').disabled=false;}
     });
-    $('signUpBtn').addEventListener('click',async function(){
-      if(!$('authForm').reportValidity())return;
-      $('signInBtn').disabled=true;$('signUpBtn').disabled=true;status('authMessage','جارٍ إنشاء الحساب…');
-      try{var result=await window.ahlAuth.signUp($('authEmail').value.trim(),$('authPassword').value);if(result.error)throw result.error;
-        status('authMessage',result.data.session?'تم إنشاء الحساب وتسجيل الدخول.':'تم إنشاء الحساب. افتح رسالة البريد لتأكيد العنوان ثم سجّل الدخول.');}
-      catch(e){status('authMessage','تعذر إنشاء الحساب: '+e.message,true);}
-      finally{$('signInBtn').disabled=false;$('signUpBtn').disabled=false;}
+    $('accountSignUpBtn').addEventListener('click',async function(){
+      if(!$('accountAuthForm').reportValidity())return;
+      $('accountSignInBtn').disabled=true;$('accountSignUpBtn').disabled=true;status('accountAuthMessage','جارٍ إنشاء الحساب…');
+      try{var result=await window.ahlAuth.signUp($('accountAuthEmail').value.trim(),$('accountAuthPassword').value);if(result.error)throw result.error;
+        status('accountAuthMessage',result.data.session?'تم إنشاء الحساب وتسجيل الدخول.':'تم إنشاء الحساب. افتح رسالة البريد لتأكيد العنوان ثم سجّل الدخول.');}
+      catch(e){status('accountAuthMessage','تعذر إنشاء الحساب: '+e.message,true);}
+      finally{$('accountSignInBtn').disabled=false;$('accountSignUpBtn').disabled=false;}
     });
-    $('signOutBtn').addEventListener('click',async function(){
-      status('authMessage','جارٍ تسجيل الخروج…');try{var result=await window.ahlAuth.signOut();if(result.error)throw result.error;status('authMessage','تم تسجيل الخروج.');}
-      catch(e){status('authMessage','تعذر تسجيل الخروج: '+e.message,true);}
+    $('accountSignOutBtn').addEventListener('click',async function(){
+      status('accountAuthMessage','جارٍ تسجيل الخروج…');try{var result=await window.ahlAuth.signOut();if(result.error)throw result.error;status('accountAuthMessage','تم تسجيل الخروج.');}
+      catch(e){status('accountAuthMessage','تعذر تسجيل الخروج: '+e.message,true);}
     });
   }
 
-  /* Support, clipboard, sharing and install */
+  /* ============================================================
+     Support, clipboard, sharing and install
+     ============================================================ */
   window.copySupportNumber = async function(button) {
     var number=button&&button.getAttribute('data-support-number');if(!number)return;
     var feedback=button.parentElement&&button.parentElement.parentElement.querySelector('.copy-feedback');
@@ -474,9 +636,9 @@
     catch(e){if(feedback)feedback.textContent='تعذر النسخ. يمكنك نسخ الرقم يدويًا.';}
   };
   window.copyQ = async function() {
-    var value=$('qt').value;if(!value){status('qm','اكتب سؤالك أولًا.');return;}
-    try{await navigator.clipboard.writeText(value);status('qm','تم نسخ السؤال.');}
-    catch(e){status('qm','تعذر نسخ السؤال. تحقق من إذن الحافظة.',true);}
+    var value=$('questionText');if(!value||!value.value){var m=$('questionMsg');if(m){m.textContent='اكتب سؤالك أولًا.';m.className='qm error';}return;}
+    try{await navigator.clipboard.writeText(value.value);var m=$('questionMsg');if(m){m.textContent='تم نسخ السؤال.';m.className='qm';}}
+    catch(e){var m=$('questionMsg');if(m){m.textContent='تعذر نسخ السؤال. تحقق من إذن الحافظة.';m.className='qm error';}}
   };
   window.share = async function() {
     try{if(navigator.share)await navigator.share({title:'استراحة أهل الأثر',url:location.href});
@@ -489,20 +651,38 @@
     state.installPrompt.prompt();await state.installPrompt.userChoice;state.installPrompt=null;$('inst').hidden=true;
   };
 
+  /* ============================================================
+     Character counters
+     ============================================================ */
+  function initCounters() {
+    var qt=$('questionText'); var cc=$('questionCharCount');
+    if(qt&&cc){ qt.addEventListener('input',function(){cc.textContent=(qt.value.length||0)+' / 1600';}); }
+    var ls=$('librarySearch'); var lc=$('librarySearchCount');
+    if(ls&&lc){ ls.addEventListener('input',function(){lc.textContent=(ls.value.length||0)+' / 100';}); }
+  }
+
+  /* ============================================================
+     Init
+     ============================================================ */
   function init() {
-    renderSchedule(); updateScheduleClock(); loadLectures();
-    $('calcMethod').value=readStore('ahl-athar-calculation-method')||'auto';
-    $('asrMadhab').value=readStore('ahl-athar-asr-madhab')||'shafi';
+    renderSchedule(); renderProgramTimeline(); updateScheduleClock(); loadLectures(); renderProgramLectures();
+    var cm=$('calcMethod')||$('calcMethodPray'); if(cm) cm.value=readStore('ahl-athar-calculation-method')||'auto';
+    var am=$('asrMadhab')||$('asrMadhabPray'); if(am) am.value=readStore('ahl-athar-asr-madhab')||'shafi';
     state.location=loadLocation();
-    if(state.location){$('latitude').value=state.location.latitude;$('longitude').value=state.location.longitude;updateLocationStatus();}
-    $('calcMethod').addEventListener('change',function(){store('ahl-athar-calculation-method',this.value);updatePrayerTimes();scheduleSync();});
-    $('asrMadhab').addEventListener('change',function(){store('ahl-athar-asr-madhab',this.value);updatePrayerTimes();scheduleSync();});
-    $('saveLocation').addEventListener('click',saveLocation);$('locateBtn').addEventListener('click',locate);$('qiblaLocateBtn').addEventListener('click',locate);$('compassBtn').addEventListener('click',startCompass);
+    if(state.location){ var lat=$('latitude')||$('latitudePray'); var lon=$('longitude')||$('longitudePray'); if(lat)lat.value=state.location.latitude; if(lon)lon.value=state.location.longitude; updateLocationStatus(); }
+    if(cm) cm.addEventListener('change',function(){store('ahl-athar-calculation-method',this.value);updatePrayerTimes();scheduleSync();});
+    if(am) am.addEventListener('change',function(){store('ahl-athar-asr-madhab',this.value);updatePrayerTimes();scheduleSync();});
+    var saveLoc=$('saveLocation')||$('saveLocationBtn');
+    if(saveLoc) saveLoc.addEventListener('click',saveLocation);
+    $('locateBtn').addEventListener('click',locate);$('qiblaLocateBtn').addEventListener('click',locate);$('compassBtn').addEventListener('click',startCompass);
     $('morningBtn').addEventListener('click',function(){selectPeriod('morning');});$('eveningBtn').addEventListener('click',function(){selectPeriod('evening');});
-    $('mediaFilters').addEventListener('click',function(event){var button=event.target.closest('[data-media-category]');if(!button)return;
+    var libFilters=$('libraryFilters');
+    if(libFilters){ libFilters.addEventListener('click',function(event){var button=event.target.closest('[data-media-category]');if(!button)return;
       state.mediaCategory=button.getAttribute('data-media-category');
-      $('mediaFilters').querySelectorAll('[data-media-category]').forEach(function(item){var active=item===button;item.classList.toggle('on',active);item.setAttribute('aria-pressed',String(active));});renderLibrary();});
-    $('questionConsent').addEventListener('change',function(){ $('sendQuestionBtn').disabled=!this.checked;if(this.checked&&siteKey())prepareTurnstile();if(!this.checked&&window.turnstile&&state.turnstileId!==null)window.turnstile.reset(state.turnstileId);});
+      libFilters.querySelectorAll('[data-media-category]').forEach(function(item){var active=item===button;item.classList.toggle('on',active);item.setAttribute('aria-pressed',String(active));});renderLibrary();});}
+    var libRetry=$('libraryRetry');
+    if(libRetry) libRetry.addEventListener('click',function(){var err=$('libraryError');if(err)err.hidden=true;var st=$('libraryStatus');if(st){st.hidden=false;st.textContent='جارٍ تحميل المكتبة…';}loadLibrary();});
+    $('questionConsent').addEventListener('change',function(){$('sendQuestionBtn').disabled=!this.checked;if(this.checked&&siteKey())prepareTurnstile();if(!this.checked&&window.turnstile&&state.turnstileId!==null)window.turnstile.reset(state.turnstileId);});
     $('sendQuestionBtn').addEventListener('click',sendQuestion);
     $('adhanUrl').value=readStore('ahl-athar-adhan-url')||'';
     if($('adhanUrl').value){$('adhanAudio').src=$('adhanUrl').value;$('adhanAudio').hidden=false;}
@@ -514,12 +694,14 @@
     $('adhanAudio').addEventListener('error',function(){status('audioStatus','تعذر تحميل تسجيل الأذان.',true);});
     $('adhanAudio').addEventListener('play',function(){status('audioStatus','يُشغّل التسجيل الآن.');});
     renderAdhkar(); updatePrayerTimes(); updateQibla(); initRadio(); initAuth();
+    renderHomePrayerDashboard();
     setInterval(updateScheduleClock,1000);setInterval(updatePrayerCountdown,1000);setInterval(updatePrayerTimes,60000);
     if('serviceWorker' in navigator) navigator.serviceWorker.register('/v3/sw.js',{scope:'/v3/'}).catch(function(){});
+    initCounters();
     document.body.classList.add('v3-ready');
-    var opening=document.querySelector('.opening');if(opening&&!reduced)opening.classList.add('is-revealed');
+    var opening=document.querySelector('.hero');if(opening&&!reduced)opening.classList.add('is-revealed');
     window.dispatchEvent(new CustomEvent('haress-v3:ready'));
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-  window.HaressV3Runtime={navigate:navigate,loadLibrary:loadLibrary,renderAdhkar:renderAdhkar};
+  window.HaressV3Runtime={navigate:navigateTo,loadLibrary:loadLibrary,renderAdhkar:renderAdhkar,updatePrayerTimes:updatePrayerTimes,updateQibla:updateQibla};
 })();
