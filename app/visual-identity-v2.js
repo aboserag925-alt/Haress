@@ -6,7 +6,7 @@
 
   function reveal() {
     var nodes = document.querySelectorAll(
-      '.main-intro,.weekly-stage,.destination-index,.section-stage-heading,.section-stage>section,.colophon,.destination-link'
+      '.main-intro,.weekly-stage,.destination-index,.section-stage-heading,.section-stage>section,.colophon,.destination-link,#sched > .card'
     );
     if (reduced || !('IntersectionObserver' in window)) {
       nodes.forEach(function (node) { node.classList.add('is-visible'); });
@@ -86,6 +86,8 @@
       if (!match) return;
       var ids = { sched: 't1', prayers: 't2', qibla: 't3', adhkar: 't4', media: 't5', q: 't6', about: 't7', account: 't8' };
       var active = ids[match[1]];
+      var scheduleStage = document.querySelector('.weekly-stage');
+      if (scheduleStage) scheduleStage.hidden = match[1] !== 'sched';
       if (!active) return;
       document.querySelectorAll('.floating-index .tab').forEach(function (tab) {
         var selected = tab.id === active;
