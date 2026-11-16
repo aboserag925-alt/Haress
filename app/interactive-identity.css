@@ -401,3 +401,10 @@ html[data-theme="dark"] textarea,html[data-theme="dark"] .field input,html[data-
 html[data-theme="dark"] .radio-panel{background:var(--brown)!important;color:var(--parchment)!important}
 html[data-theme="dark"] .radio-panel-head,html[data-theme="dark"] .radio-panel-head span{color:var(--parchment)!important}
 html[data-theme="dark"] .development-notice{background:var(--brown)!important;color:var(--parchment)!important}
+
+
+/* Match the one-time brand introduction to the same ink-and-parchment palette. */
+.haress-intro{background:rgba(42,20,14,.98)!important}
+.haress-intro__logo{filter:drop-shadow(0 12px 20px rgba(201,162,75,.18))!important}
+.haress-intro__name{color:#F4EAD5!important;font-family:'Reem Kufi','Noto Naskh Arabic',sans-serif!important}
+.haress-intro__tag{color:#C9A24B!important;font-family:'Noto Naskh Arabic',serif!important}
