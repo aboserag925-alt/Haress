@@ -123,6 +123,22 @@ jobs:
             exit 1
           fi
 
+      - name: Validate downloaded artifact contains required runtime configuration
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import vm from 'node:vm';
+          const source = fs.readFileSync('app/supabase-config.js', 'utf8');
+          const sandbox = { window: {} };
+          vm.runInNewContext(source, sandbox, { timeout: 1000 });
+          const config = sandbox.window.AHL_SUPABASE_CONFIG;
+          if (!config || !config.url || !config.anonKey) {
+            console.error('Deploy blocked: downloaded artifact is missing required Supabase runtime configuration.');
+            process.exit(1);
+          }
+          console.log('Deploy validation: required Supabase runtime configuration present in tested artifact; values withheld.');
+          NODE
+
       - name: Deploy Worker with Wrangler
         uses: cloudflare/wrangler-action@v4
         with:
