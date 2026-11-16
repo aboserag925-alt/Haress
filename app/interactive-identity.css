@@ -417,3 +417,13 @@ html[data-theme="dark"] .development-notice{background:var(--brown)!important;co
 .support-wallet-inline .support-button{min-height:48px;padding:8px 16px}
 .support-wallet-inline .copy-feedback{flex-basis:100%;font-size:13px;color:var(--parchment);text-align:center}
 @media(max-width:680px){.support-wallet-inline{width:100%;justify-content:space-between}.support-wallet-inline .support-button{flex:1 1 100%}}
+
+
+/* Reading-size and touch-target refinements. */
+.card p,.section-subtitle,.note,.notice,.question-draft p,.wallet-detail p{
+  font-size:18px!important;line-height:1.9!important;
+}
+.status,.empty,.field,.question-consent{font-size:16px!important;line-height:1.9!important}
+.time,.media-date,.dhikr-ref,.radio-panel-head span,.section-heading>small{font-size:14px!important}
+.media-card h3,.prayer-time span,.prayer-time time{font-size:16px!important}
+.quick-item small,.development-notice-copy span{font-size:14px!important}
