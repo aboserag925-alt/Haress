@@ -408,3 +408,12 @@ html[data-theme="dark"] .development-notice{background:var(--brown)!important;co
 .haress-intro__logo{filter:drop-shadow(0 12px 20px rgba(201,162,75,.18))!important}
 .haress-intro__name{color:#F4EAD5!important;font-family:'Reem Kufi','Noto Naskh Arabic',sans-serif!important}
 .haress-intro__tag{color:#C9A24B!important;font-family:'Noto Naskh Arabic',serif!important}
+
+
+/* Keep the Vodafone Cash number and copy action visible in the support panel. */
+.support-wallet-inline{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border:1px solid rgba(201,162,75,.6);border-radius:4px;background:var(--brown);color:var(--parchment)}
+.support-wallet-inline strong{color:var(--antique-gold);font-family:'Reem Kufi',sans-serif}
+.support-wallet-inline b{font-size:19px;letter-spacing:.04em;color:var(--parchment)}
+.support-wallet-inline .support-button{min-height:48px;padding:8px 16px}
+.support-wallet-inline .copy-feedback{flex-basis:100%;font-size:13px;color:var(--parchment);text-align:center}
+@media(max-width:680px){.support-wallet-inline{width:100%;justify-content:space-between}.support-wallet-inline .support-button{flex:1 1 100%}}
