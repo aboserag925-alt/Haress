@@ -40,4 +40,14 @@ describe('scripts/build-cloudflare.mjs', () => {
     const after = await readFile(runtimeConfig, 'utf8');
     assert.equal(before, after, 'runtime-config.js يجب ألا يتغير أثناء البناء');
   });
+
+  it('يضبط Cloudflare Assets binding ومسار API في موضعهما الصحيح', async () => {
+    const config = JSON.parse(await readFile(wranglerConfig, 'utf8'));
+    assert.equal(config.main, 'src/worker/index.js');
+    assert.equal(config.assets?.directory, './app');
+    assert.equal(config.assets?.binding, 'ASSETS');
+    assert.deepEqual(config.assets?.run_worker_first, ['/api/*']);
+    assert.equal(config.rules, undefined, 'توجيه الأصول ليس من قواعد bundling');
+  });
+
 });
