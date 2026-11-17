@@ -62,7 +62,8 @@ function copyHeaders(source) {
 }
 
 async function proxyToBackend(request, backendUrl, fetchImpl) {
-  const apiPath = apiPathFrom(new URL(request.url).pathname);
+  const requestUrl = new URL(request.url);
+  const apiPath = apiPathFrom(requestUrl.pathname);
   if (!apiPath) return null;
 
   if (!isSecureBackendUrl(backendUrl)) {
@@ -78,7 +79,10 @@ async function proxyToBackend(request, backendUrl, fetchImpl) {
     );
   }
 
-  const target = new URL(apiPath, backendUrl).href;
+  const targetUrl = new URL(apiPath, backendUrl);
+  // Preserve query parameters used by filtered, paginated, and searched API requests.
+  targetUrl.search = requestUrl.search;
+  const target = targetUrl.href;
   const init = {
     method: request.method,
     headers: copyHeaders(request.headers),
