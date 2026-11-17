@@ -6,7 +6,7 @@ const MAX_DESCRIPTION = 4000;
 // Remove a leading UTF-8 BOM and surrounding whitespace before using secrets
 // as HTTP header values. A BOM in a Railway variable makes Fetch reject it.
 function headerSecret(value) {
-  return typeof value === 'string' ? value.replace(/^\\uFEFF/, '').trim() : '';
+  return typeof value === 'string' ? value.replace(/^\uFEFF/, '').trim() : '';
 }
 
 function sendJson(response, status, body) {
@@ -50,8 +50,8 @@ function validateLecture(body, partial) {
 function createAdminApi(options) {
   const env = options.env || process.env;
   const fetchImpl = options.fetch || global.fetch;
-  const anonKey = headerSecret(anonKey);
-  const serviceRoleKey = headerSecret(serviceRoleKey);
+  const anonKey = headerSecret(env.SUPABASE_ANON_KEY);
+  const serviceRoleKey = headerSecret(env.SUPABASE_SERVICE_ROLE_KEY);
 
   async function supabase(path, init) {
     const response = await fetchImpl(env.SUPABASE_URL.replace(/\/$/, '') + path, {
