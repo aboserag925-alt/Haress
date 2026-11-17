@@ -1,9 +1,10 @@
-/* Hares interactive identity: light-first emerald system with accessible dark mode. */
+/* Hares interactive identity — unified light identity: white, calm green, restrained gold. */
+/* شعار: درع أخضر بإطار ذهبي رفيع، نص "حرس حدود" فقط، بدون رموز إضافية. دعم RTL لكل الواجهات. */
 :root{
  color-scheme:light;
- --id-bg:#f7f8f4;--id-surface:#ffffff;--id-surface-2:#edf3ee;--id-text:#18352d;
- --id-muted:#63756d;--id-green:#176b50;--id-green-2:#248665;--id-gold:#b58b43;
- --id-line:rgba(23,77,59,.14);--id-shadow:0 18px 48px rgba(25,65,48,.09);
+ --id-bg:#f7faf7;--id-surface:#ffffff;--id-surface-2:#edf5ef;--id-text:#18352d;
+ --id-muted:#63756d;--id-green:#0e7a4d;--id-green-2:#248665;--id-gold:#c5a04a;
+ --id-line:rgba(14,122,77,.14);--id-shadow:0 18px 48px rgba(25,65,48,.09);
 }
 html[data-theme="dark"]{
  color-scheme:dark;
@@ -87,28 +88,29 @@ body .wrap .btn{border-color:rgba(23,107,80,.18)}
 
 
 
-/* Heritage manuscript identity — production override layer */
+/* Heritage manuscript identity — production override layer, aligned to unified light identity. */
+/* درع أخضر بإطار ذهبي رفيع، نص "حرس حدود" فقط، ألوان فاتحة: أبيض وأخضر هادئ ولمسات ذهبية. */
 :root{
   color-scheme:light;
-  --ink:#2A140E;
-  --brown:#4A2A1C;
-  --antique-gold:#C9A24B;
-  --dark-gold:#7A5A12;
-  --parchment:#F4EAD5;
-  --paper:#FBF5E6;
-  --paper-border:#D9C69B;
-  --olive:#3F5B45;
-  --reading:#4A3A2E;
-  --muted-reading:#665546;
+  --ink:#18352d;
+  --brown:#0e7a4d;
+  --antique-gold:#c5a04a;
+  --dark-gold:#7a5a12;
+  --parchment:#f7faf7;
+  --paper:#ffffff;
+  --paper-border:rgba(14,122,77,.14);
+  --olive:#0e7a4d;
+  --reading:#18352d;
+  --muted-reading:#63756d;
   --id-bg:var(--parchment);
   --id-surface:var(--paper);
-  --id-surface-2:#EADCBC;
+  --id-surface-2:#edf5ef;
   --id-text:var(--reading);
   --id-muted:var(--muted-reading);
   --id-green:var(--olive);
-  --id-gold:var(--dark-gold);
+  --id-gold:var(--antique-gold);
   --id-line:var(--paper-border);
-  --id-shadow:0 8px 22px rgba(42,20,14,.08);
+  --id-shadow:0 8px 22px rgba(14,122,77,.08);
 }
 html,body{background:var(--parchment)!important;color:var(--reading)!important}
 body{

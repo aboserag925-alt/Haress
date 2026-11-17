@@ -1,4 +1,13 @@
-window.AHL_API_BASE_URL = 'https://haress-production.up.railway.app';
+// عنوان واجهة برمجة التطبيقات الذي يستدعي منه المتصفح.
+// سلسلة فارغة ("") تعني المنشأ نفسه (same-origin)، وذلك عندما يعمل موقع الاستراحة
+// خلف وكيل Cloudflare Worker: يتصل المتصفح بـ /api/* على المضيف نفسه (الWorker)،
+// ويقوم الوكيل بتحويل الطلب إلى الخادم الخلفي عبر متغير الربط API_BACKEND_URL.
+// لا تُضَع عنوان خدمة إنتاجية ثابتة (مثل Railway) هنا؛ ذلك سيجعل معاينة (Preview)
+// تستدعي خادم إنتاج Production.
+//
+// عنوان الخادم الخلفي يُحقن منفصلاً لكل بيئة عبر wrangler (API_BACKEND_URL)،
+// ما يضمن فصلاً صريحاً بين معاينة Preview والإنتاج Production.
+window.AHL_API_BASE_URL = '';
 
 /* Library loading guard: never leave the library on "loading" forever.
    Replaces loadMediaLibrary after app.js has loaded. */

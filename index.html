@@ -3,11 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#2a140e">
+<meta name="theme-color" content="#f5f1e8">
 <title>استراحة أهل الأثر</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link href="app/tailwind.css" rel="stylesheet">\n<link href="app/interactive-identity.css" rel="stylesheet">
+<link href="app/tailwind.css" rel="stylesheet">
+<link href="app/interactive-identity.css" rel="stylesheet">
 <style>
 body{margin:0;background:#0b0e0d}
 html{scroll-behavior:smooth}
@@ -30,7 +31,7 @@ html{scroll-behavior:smooth}
 .nav .wrap{display:flex;align-items:center;gap:28px;height:72px}
 .nav a{color:#a9ada2;text-decoration:none;font-size:15px;transition:color .25s}
 .nav a:hover{color:#f2d9a4}
-.logo{font-family:'Reem Kufi',sans-serif;font-size:22px;font-weight:700;color:#f2d9a4!important;margin-inline-end:auto}
+.logo{font-family:'Reem Kufi','Noto Naskh Arabic',sans-serif;font-size:22px;font-weight:700;color:#0e7a4d!important;margin-inline-end:auto}
 .btn{display:inline-flex;align-items:center;justify-content:center;height:48px;padding:0 26px;border-radius:26px;font-weight:700;font-size:15px;text-decoration:none;transition:transform .25s,box-shadow .25s}
 .btn:hover{transform:translateY(-3px)}
 .btn.fill{background:linear-gradient(135deg,#f2d9a4,#d5ab64 55%,#b58b4d);color:#0b0e0d;box-shadow:0 10px 30px rgba(212,162,76,.28)}
@@ -123,7 +124,7 @@ html,body{background:#fff!important;color:#333!important}
 .site{background:#fff!important;color:#333!important}
 .site .nav{background:rgba(255,255,255,.94)!important;border-bottom:1px solid #e7e3d8!important;box-shadow:0 5px 22px rgba(23,63,53,.045)}
 .site .nav a{color:#52635d!important}.site .nav a:hover{color:#173f35!important}
-.site .logo{color:#173f35!important}
+.site .logo{color:#0e7a4d!important}
 .site .gold{background:none!important;-webkit-background-clip:initial!important;background-clip:initial!important;color:#173f35!important;animation:none!important}
 .site .lead,.site .sub,.site .card p,.site footer{color:#5e6863!important}
 .site .eyebrow{color:#173f35!important;background:#f5f1e8!important;border-color:#e5dcc7!important}
@@ -254,7 +255,8 @@ body,.app-shell,button,input,textarea,select{
 @keyframes development-pulse{70%{box-shadow:0 0 0 8px rgba(181,139,66,0)}100%{box-shadow:0 0 0 0 rgba(181,139,66,0)}}
 @media(max-width:600px){.development-notice{width:calc(100% - 28px);margin-top:10px;padding:10px 12px;gap:9px;border-radius:13px}.development-notice-icon{width:32px;height:32px;flex-basis:32px}.development-notice-copy strong{font-size:12px}.development-notice-copy span{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.development-notice-dot{animation:none}}
-</style>\n<link href="app/interactive-identity.css" rel="stylesheet">
+</style>
+<link href="app/interactive-identity.css" rel="stylesheet">
 
 </head>
 <body>
@@ -263,7 +265,7 @@ body,.app-shell,button,input,textarea,select{
 <div class="orb" style="width:420px;height:420px;background:rgba(212,162,76,.18);top:40px;right:-80px"></div>
 <div class="orb" style="width:340px;height:340px;background:rgba(138,100,32,.22);top:520px;left:-100px;animation-delay:-4s"></div>
 <header class="nav"><div class="wrap">
-<a class="logo" href="#top" style="display:flex;align-items:center;gap:12px"><img src="assets/logo.jpg" alt="" style="width:44px;height:44px;border-radius:50%;border:1px solid #d5ab64">استراحة أهل الأثر</a>
+<a class="logo" href="#top" style="display:flex;align-items:center;gap:12px"><img src="app/icon.svg" alt="شعار حرس حدود" style="width:44px;height:44px;border:1px solid var(--paper-border);background:#ffffff;border-radius:6px">استراحة أهل الأثر</a>
 <nav class="desktop-links" aria-label="التنقل الرئيسي"><a class="nl" href="#sections">الأقسام</a><a class="nl" href="#schedule">الجدول</a><a class="nl" href="#archive">الأرشيف</a><a class="nl" href="#majlis">المجلس</a></nav>
 <button class="mobile-menu-toggle" type="button" aria-expanded="false" aria-controls="mobileSiteMenu" onclick="toggleSiteMenu()" aria-label="فتح قائمة التنقل"><span></span><span></span><span></span></button>
 <a class="btn fill nav-cta" href="#live" style="height:42px;padding:0 20px;color:#0b0e0d">تابع البث</a>
@@ -290,7 +292,7 @@ body,.app-shell,button,input,textarea,select{
 </nav>
 
 </div>
-<div class="emblem in d2"><div class="ring"></div><div class="ring b"></div><div class="core"><img src="assets/logo.jpg" alt="شعار استراحة أهل الأثر" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div></div>
+<div class="emblem in d2"><div class="ring"></div><div class="ring b"></div><div class="core"><img src="app/icon.svg" alt="شعار حرس حدود" style="width:100%;height:100%;object-fit:contain;background:#ffffff;padding:8px;border-radius:8px"></div></div>
 </div></div>
 <div class="strip"><div class="track">
 <span class="g">مصطلح الحديث</span><span>الفقه</span><span class="g">السيرة</span><span>العقيدة</span><span class="g">صحيح مسلم</span><span>أصول الفقه</span><span class="g">عظماء الإسلام</span><span>منوعات</span>
@@ -322,7 +324,7 @@ body,.app-shell,button,input,textarea,select{
 <article class="card rv"><div class="thumb"><svg width="46" height="46" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></div><span class="tag">العقيدة</span><h3>جميل حليم يزعم أن الحسن البصري ينفي علو الله على عرشه</h3><p>19:21 · يوتيوب</p></article>
 <article class="card rv"><div class="thumb"><svg width="46" height="46" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></div><span class="tag">العقيدة</span><h3>الفرق بين نسبة الخلق إلى الله ونسبته إلى الإنسان</h3><p>[التاريخ] · تيك توك</p></article>
 </div></div></section>
-<section class="s" id="majlis"><div class="wrap"><div class="majlis rv"><img class="mlogo" src="assets/logo.jpg" alt="شعار استراحة أهل الأثر"><div><h2 class="t gold" style="margin:0 0 10px">استراحة أهل الأثر</h2><p class="lead" style="margin:0 0 22px">مجلس تدارس العلم والأدب: مجموعة على تيليجرام لدروس في العلوم الشرعية والحديث، بإشراف الشيخ.</p><a class="btn fill" href="https://t.me/+H-Rpxhc371VhYzU0">انضم إلى المجلس</a></div></div></div></section>
+<section class="s" id="majlis"><div class="wrap"><div class="majlis rv"><img class="mlogo" src="app/icon.svg" alt="شعار حرس حدود" style="width:120px;height:120px;object-fit:contain;background:#ffffff;padding:12px;border-radius:12px;border:1px solid var(--paper-border)"><div><h2 class="t gold" style="margin:0 0 10px">استراحة أهل الأثر</h2><p class="lead" style="margin:0 0 22px">مجلس تدارس العلم والأدب: مجموعة على تيليجرام لدروس في العلوم الشرعية والحديث، بإشراف الشيخ.</p><a class="btn fill" href="https://t.me/+H-Rpxhc371VhYzU0">انضم إلى المجلس</a></div></div></div></section>
 </main>
 <dialog class="support-dialog" id="supportDialog" aria-labelledby="supportDialogTitle">
 <h2 class="t gold" id="supportDialogTitle">ادعم تطوير المنصة</h2>
@@ -393,5 +395,6 @@ function closeSiteMenu(){
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeSiteMenu();});
 </script>
 
-<script src="app/interactive-identity.js" defer></script>\n</body>
+<script src="app/interactive-identity.js" defer></script>
+</body>
 </html>
