@@ -10,6 +10,7 @@ const root = join(__dirname, '..');
 const appIndex = join(root, 'app', 'index.html');
 const workerEntry = join(root, 'src', 'worker', 'index.js');
 const runtimeConfig = join(root, 'app', 'runtime-config.js');
+const wranglerConfig = join(root, 'wrangler.jsonc');
 
 describe('scripts/build-cloudflare.mjs', () => {
   before(async () => {
