@@ -3,11 +3,11 @@
     <style>
       .shield { fill: #0e7a4d; stroke: #c5a04a; stroke-width: 2; stroke-linejoin: round; }
       .shield-inner { fill: none; stroke: #ffffff; stroke-width: 1; opacity: 0.35; stroke-linejoin: round; }
-      .logo-text { fill: #ffffff; font-family: 'Noto Naskh Arabic', serif; font-size: 15px; font-weight: 700; text-anchor: middle; }
+      .logo-text { fill: #ffffff; font-family: 'Noto Naskh Arabic', serif; font-size: 12px; font-weight: 700; text-anchor: middle; }
     </style>
   </defs>
-  <!-- درع أخضر بإطار ذهبي رفيع — نص "حرس حدود" فقط، بدون نجوم أو سنابل أو أشخاص -->
+  <!-- درع أخضر بإطار ذهبي رفيع — النص المعتمد: حرس الحدود فقط، بلا رموز إضافية -->
   <path class="shield" d="M60 14 C44 14 30 30 30 48 C30 76 60 108 60 108 S90 76 90 48 C90 30 76 14 60 14 Z"/>
   <path class="shield-inner" d="M60 22 C52 22 44 34 44 48 C44 68 60 96 60 96 S76 68 76 48 C76 34 68 22 60 22 Z"/>
-  <text class="logo-text" x="60" y="84" direction="rtl">حرس حدود</text>
+  <text class="logo-text" x="60" y="84" direction="rtl">حرس الحدود</text>
 </svg>
