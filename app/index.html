@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#2a140e">
+<meta name="theme-color" content="#f7faf7">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
@@ -23,8 +23,8 @@ button,textarea{font:inherit}
 button{cursor:pointer}
 .wrap{width:min(100% - 40px,1040px);margin:0 auto;padding:26px 0 56px}
 header{display:grid;grid-template-columns:72px 1fr;grid-template-rows:auto auto;column-gap:18px;align-items:end;padding:8px 0 24px;text-align:right;animation:enter .7s cubic-bezier(.2,.7,.2,1) both}
-.logo{grid-row:1/5;width:68px;height:68px;padding:7px;border-radius:22px;border:1px solid var(--line);background:linear-gradient(145deg,rgba(213,171,100,.16),rgba(153,185,162,.08));box-shadow:0 8px 28px rgba(0,0,0,.24);transition:transform .35s,border-color .35s;animation:logo-aura 5s ease-in-out infinite}
-header:hover .logo{transform:rotate(-5deg) scale(1.04);border-color:rgba(213,171,100,.55)}
+.logo{grid-row:1/5;width:68px;height:68px;padding:7px;border-radius:10px;border:2px solid var(--gold);background:#ffffff;box-shadow:0 8px 28px rgba(14,122,77,.12);transition:transform .35s,border-color .35s,box-shadow .35s;animation:logo-aura 5s ease-in-out infinite}
+header:hover .logo{transform:scale(1.03);border-color:var(--gold2);box-shadow:0 12px 32px rgba(14,122,77,.18)}
 h1{align-self:end;font-family:'Aref Ruqaa','Cairo',serif;font-size:clamp(25px,3vw,33px);letter-spacing:0;margin:0;color:var(--gold2)}
 header p{align-self:start;margin:4px 0 0;color:var(--muted);font-size:14px}
 .doctor{display:inline-flex;align-items:center;gap:8px;align-self:start;margin-top:8px;color:var(--gold2);font-size:13px;font-weight:650;letter-spacing:.01em}
@@ -157,7 +157,7 @@ textarea::placeholder{color:#777e75}
 @keyframes card-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes today-glow{0%,100%{box-shadow:0 0 0 1px rgba(213,171,100,.06),0 12px 38px rgba(0,0,0,.18)}50%{box-shadow:0 0 0 1px rgba(213,171,100,.13),0 16px 42px rgba(213,171,100,.08)}}
 @keyframes gold-sweep{0%,25%{left:-38%;opacity:0}38%{opacity:1}62%{left:118%;opacity:.65}75%,100%{left:118%;opacity:0}}
-@keyframes logo-aura{0%,100%{box-shadow:0 8px 28px rgba(0,0,0,.24),0 0 0 rgba(213,171,100,0)}50%{box-shadow:0 8px 28px rgba(0,0,0,.24),0 0 24px rgba(213,171,100,.13)}}
+@keyframes logo-aura{0%,100%{box-shadow:0 8px 28px rgba(0,0,0,.24),0 0 0 rgba(197,160,74,0)}50%{box-shadow:0 8px 28px rgba(0,0,0,.24),0 0 24px rgba(197,160,74,.13)}}
 @media(max-width:680px){.wrap{width:min(100% - 28px,560px);padding-top:18px}header{grid-template-columns:58px 1fr;column-gap:13px;padding-bottom:18px}.logo{width:56px;height:56px;padding:6px;border-radius:18px}.next{padding:22px 18px;gap:8px 12px;border-radius:22px}.next b{font-size:17px}.count{font-size:clamp(28px,7vw,40px)}#sched{gap:10px}.card{padding:17px;border-radius:18px}.slot{gap:8px}.time{min-width:76px;padding-inline:7px}.tabs{display:flex;gap:5px;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tab{flex:0 0 auto;min-width:86px}.panel-grid,.media-grid{grid-template-columns:1fr}.prayer-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:480px){.wrap{width:min(100% - 24px,420px);padding-top:12px}.tabs{gap:4px;padding:5px;border-radius:17px}.tab{min-height:44px;padding:7px 8px;font-size:12px;border-radius:12px}.next{grid-template-columns:1fr;gap:6px}.count{grid-column:1;grid-row:auto;margin-top:8px;font-size:38px}.next b{line-height:1.65}#sched{grid-template-columns:1fr}.card{padding:15px}.day{font-size:16px}.slot{flex-direction:row;gap:8px}.time{min-width:76px}.btn{margin-inline:0 6px}.settings-grid{grid-template-columns:1fr 1fr}.prayer-time{padding:12px 10px}.prayer-time time{font-size:14px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
@@ -186,7 +186,7 @@ textarea::placeholder{color:#777e75}
 html,body{background:#fff!important;color:#303833!important}
 body::before{background:radial-gradient(ellipse at 12% 2%,rgba(23,63,53,.035),transparent 34%),radial-gradient(ellipse at 88% 18%,rgba(197,162,83,.055),transparent 30%)!important}
 header h1,header .doctor,.section-title,.section-title,.card h2,.section-subtitle strong{color:#173f35!important}
-header .logo{background:#f5f1e8!important;border-color:#e6ddc9!important;box-shadow:0 8px 24px rgba(23,63,53,.07)!important}
+header .logo{background:#ffffff!important;border-color:var(--antique-gold)!important;box-shadow:0 8px 24px rgba(14,122,77,.07)!important}
 header p,.section-subtitle,.status,.empty{color:#68736d!important}
 .next{background:linear-gradient(115deg,#f8f7f2,#fff 65%,#f5f1e8)!important;border-color:#e5dcc7!important;box-shadow:0 12px 38px rgba(23,63,53,.07)!important}
 .next small{color:#47745d!important}.next b,.count{color:#173f35!important;text-shadow:none!important}
@@ -276,7 +276,8 @@ body,.app-shell,button,input,textarea,select{
 @media(max-width:520px){.development-notice{gap:9px;padding:10px 11px}.development-notice-icon{width:32px;height:32px;flex-basis:32px}.development-notice-copy strong{font-size:12px}.development-notice-copy span{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.development-notice-dot{animation:none}}
 </style>
-<link href="brand-motion.css" rel="stylesheet">\n<link href="interactive-identity.css" rel="stylesheet">
+<link href="brand-motion.css" rel="stylesheet">
+<link href="interactive-identity.css" rel="stylesheet">
 </head>
 <body>
 <div class="wrap">
@@ -540,5 +541,6 @@ window.copySupportNumber = async function(button) {
 <script src="auth-client.js"></script>
 <script src="brand-intro.js"></script>
 <script src="app.js"></script>
-<script src="interactive-identity.js" defer></script>\n</body>
+<script src="interactive-identity.js" defer></script>
+</body>
 </html>

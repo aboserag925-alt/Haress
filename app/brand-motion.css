@@ -1,16 +1,17 @@
-/* Haress brand identity — light emerald, white and restrained gold. */
+/* Haress brand identity — unified light identity: white, calm green, restrained gold. */
+/* شعار: درع أخضر بإطار ذهبي رفيع، نص "حرس الحدود" فقط، بدون نجوم أو سنابل أو أشخاص. */
 :root{
   color-scheme:light;
-  --bg:#f6faf6;
+  --bg:#f7faf7;
   --surface:#ffffff;
   --surface-raised:#edf5ef;
   --wood:#f4f7f2;
   --gold:#c5a04a;
   --gold2:#d9bd76;
-  --text:#20372b;
+  --text:#18352d;
   --muted:#64786b;
-  --line:rgba(11,94,60,.16);
-  --green:#0b5e3c;
+  --line:rgba(14,122,77,.16);
+  --green:#0e7a4d;
 }
 html,body{background:var(--bg)!important;color:var(--text)!important}
 body{background-image:radial-gradient(ellipse at 12% 0%,rgba(22,128,82,.08),transparent 36%),radial-gradient(ellipse at 88% 12%,rgba(212,175,55,.10),transparent 30%)!important}

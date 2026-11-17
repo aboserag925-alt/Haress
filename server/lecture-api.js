@@ -3,6 +3,12 @@
 const MAX_TITLE = 180;
 const MAX_DESCRIPTION = 4000;
 
+// Remove a leading UTF-8 BOM and surrounding whitespace before using secrets
+// as HTTP header values. A BOM in a Railway variable makes Fetch reject it.
+function headerSecret(value) {
+  return typeof value === 'string' ? value.replace(/^\uFEFF/, '').trim() : '';
+}
+
 function sendJson(response, status, body) {
   response.writeHead(status, {
     'Cache-Control': 'no-store',
@@ -44,13 +50,15 @@ function validateLecture(body, partial) {
 function createAdminApi(options) {
   const env = options.env || process.env;
   const fetchImpl = options.fetch || global.fetch;
+  const anonKey = headerSecret(env.SUPABASE_ANON_KEY);
+  const serviceRoleKey = headerSecret(env.SUPABASE_SERVICE_ROLE_KEY);
 
   async function supabase(path, init) {
     const response = await fetchImpl(env.SUPABASE_URL.replace(/\/$/, '') + path, {
       ...init,
       headers: {
-        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-        Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY,
+        apikey: serviceRoleKey,
+        Authorization: 'Bearer ' + serviceRoleKey,
         'Content-Type': 'application/json',
         ...(init && init.headers || {})
       },
@@ -63,9 +71,9 @@ function createAdminApi(options) {
 
   async function authenticate(request) {
     const match = (request.headers.authorization || '').match(/^Bearer\s+([A-Za-z0-9._~-]+)$/i);
-    if (!match || !env.SUPABASE_URL || !env.SUPABASE_ANON_KEY || !env.SUPABASE_SERVICE_ROLE_KEY) return null;
+    if (!match || !env.SUPABASE_URL || !anonKey || !serviceRoleKey) return null;
     const response = await fetchImpl(env.SUPABASE_URL.replace(/\/$/, '') + '/auth/v1/user', {
-      headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + match[1] },
+      headers: { apikey: anonKey, Authorization: 'Bearer ' + match[1] },
       signal: AbortSignal.timeout(10000)
     });
     if (!response.ok) return null;
@@ -85,7 +93,7 @@ function createAdminApi(options) {
       sendJson(response, 405, { error: 'طريقة الطلب غير مدعومة.' });
       return true;
     }
-    if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+    if (!env.SUPABASE_URL || !anonKey) {
       sendJson(response, 503, { error: 'خدمة المحاضرات غير مهيأة بعد.' });
       return true;
     }
@@ -98,8 +106,8 @@ function createAdminApi(options) {
           env.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/lectures?select=id,title,description,starts_at,category,stream_url,recording_url,status,created_at,updated_at&status=eq.published&order=starts_at.asc.nullslast',
           {
             headers: {
-              apikey: env.SUPABASE_ANON_KEY,
-              Authorization: 'Bearer ' + env.SUPABASE_ANON_KEY,
+              apikey: anonKey,
+              Authorization: 'Bearer ' + anonKey,
               Accept: 'application/json'
             },
             signal: AbortSignal.timeout(12000)
@@ -114,7 +122,7 @@ function createAdminApi(options) {
       return true;
     }
 
-    if (!env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (!serviceRoleKey) {
       sendJson(response, 503, { error: 'خدمة إدارة المحاضرات غير مهيأة بعد.' });
       return true;
     }
