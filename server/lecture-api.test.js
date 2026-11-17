@@ -42,7 +42,7 @@ test('strips a leading UTF-8 BOM from the public Supabase key before sending hea
   const api = createAdminApi({
     env: {
       SUPABASE_URL: 'https://project.supabase.co',
-      SUPABASE_ANON_KEY: '\\uFEFF anon-key-without-bom '
+      SUPABASE_ANON_KEY: '\uFEFF anon-key-without-bom '
     },
     fetch: async (url, options) => {
       capturedHeaders = options.headers;
