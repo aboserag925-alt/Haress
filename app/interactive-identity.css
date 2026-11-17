@@ -1,5 +1,5 @@
 /* Hares interactive identity — unified light identity: white, calm green, restrained gold. */
-/* شعار: درع أخضر بإطار ذهبي رفيع، نص "حرس حدود" فقط، بدون رموز إضافية. دعم RTL لكل الواجهات. */
+/* شعار: درع أخضر بإطار ذهبي رفيع، نص "حرس الحدود" فقط، بدون رموز إضافية. دعم RTL لكل الواجهات. */
 :root{
  color-scheme:light;
  --id-bg:#f7faf7;--id-surface:#ffffff;--id-surface-2:#edf5ef;--id-text:#18352d;
