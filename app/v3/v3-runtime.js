@@ -8,7 +8,7 @@
   var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   var state = { location: null, prayerTimes: null, compass: null, period: 'morning',
     media: [], mediaCategory: 'all', turnstileId: null, turnstilePromise: null,
-    installPrompt: null, account: null, syncTimer: null, nextPrayer: null,
+    installPrompt: null, account: null, adminCheck: 0, syncTimer: null, nextPrayer: null,
     nextPrayerName: '', radioTimer: null, radioMuted: false };
 
   function status(id, message, error) {
@@ -433,10 +433,31 @@
     if(!state.account||!window.ahlAuth||!window.ahlAuth.configured)return;
     clearTimeout(state.syncTimer);state.syncTimer=setTimeout(function(){syncAccount(state.account,false);},600);
   }
+  function refreshAdminNavigation(user) {
+    var button = $('t9');
+    if (!button) return;
+    var check = ++state.adminCheck;
+    button.hidden = true;
+    if (!user || !window.ahlAuth || !window.ahlAuth.getAccessToken) return;
+    window.ahlAuth.getAccessToken().then(function (token) {
+      if (!token) return null;
+      return fetch(api('/api/admin/session'), {
+        method: 'GET',
+        headers: { Authorization: 'Bearer ' + token },
+        cache: 'no-store'
+      });
+    }).then(function (response) {
+      if (check !== state.adminCheck || !state.account || state.account.id !== user.id) return;
+      button.hidden = !(response && response.ok);
+    }).catch(function () {
+      if (check === state.adminCheck) button.hidden = true;
+    });
+  }
+
   function accountState(info) {
     var form=$('authForm'), signed=$('accountSignedIn');
-    if(!info.configured){state.account=null;$('authConfigMissing').hidden=false;form.hidden=true;signed.hidden=true;status('authMessage','أضف إعدادات Supabase لتفعيل الحسابات.');return;}
-    $('authConfigMissing').hidden=true;state.account=info.user;
+    if(!info.configured){state.account=null;refreshAdminNavigation(null);$('authConfigMissing').hidden=false;form.hidden=true;signed.hidden=true;status('authMessage','أضف إعدادات Supabase لتفعيل الحسابات.');return;}
+    $('authConfigMissing').hidden=true;state.account=info.user;refreshAdminNavigation(info.user);
     if(!info.user){form.hidden=false;signed.hidden=true;status('authMessage','سجّل الدخول أو أنشئ حسابًا بالبريد الإلكتروني.');return;}
     form.hidden=true;signed.hidden=false;$('accountEmail').textContent=info.user.email||'';
     status('authMessage','تسجيل الدخول محفوظ تلقائيًا على هذا الجهاز.');

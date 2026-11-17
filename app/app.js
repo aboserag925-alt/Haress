@@ -29,6 +29,7 @@ var compassHeading = null;
 var currentDhikrPeriod = 'morning';
 var deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 var accountUser = null;
+var adminNavigationCheck = 0;
 var accountSyncTimer = null;
 var activeSyncUserId = null;
 var mediaItems = [];
@@ -737,6 +738,27 @@ async function syncAccountData(user, mergeRemote) {
   }
 }
 
+function refreshAdminNavigation(user) {
+  var button = document.getElementById('t9');
+  if (!button) return;
+  var check = ++adminNavigationCheck;
+  button.hidden = true;
+  if (!user || !window.ahlAuth || !window.ahlAuth.getAccessToken) return;
+  window.ahlAuth.getAccessToken().then(function (token) {
+    if (!token) return null;
+    return fetch(apiUrl('/api/admin/session'), {
+      method: 'GET',
+      headers: { Authorization: 'Bearer ' + token },
+      cache: 'no-store'
+    });
+  }).then(function (response) {
+    if (check !== adminNavigationCheck || !accountUser || accountUser.id !== user.id) return;
+    button.hidden = !response || !response.ok;
+  }).catch(function () {
+    if (check === adminNavigationCheck) button.hidden = true;
+  });
+}
+
 function setAccountState(state) {
   var configMissing = document.getElementById('authConfigMissing');
   var form = document.getElementById('authForm');
@@ -745,6 +767,7 @@ function setAccountState(state) {
   if (!state.configured) {
     accountUser = null;
     activeSyncUserId = null;
+    refreshAdminNavigation(null);
     configMissing.hidden = false;
     form.hidden = true;
     signedIn.hidden = true;
@@ -753,6 +776,7 @@ function setAccountState(state) {
   }
   configMissing.hidden = true;
   accountUser = state.user;
+  refreshAdminNavigation(state.user);
   if (!state.user) {
     activeSyncUserId = null;
     form.hidden = false;
