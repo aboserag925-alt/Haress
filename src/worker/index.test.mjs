@@ -61,6 +61,23 @@ describe('Haress Worker: توجيه /api/*', () => {
     assert.equal(body.ok, true);
   });
 
+  it('يحافظ على معاملات الاستعلام عند توجيه طلبات API', async () => {
+    let capturedUrl = null;
+    const fetchImpl = async (url) => {
+      capturedUrl = String(url);
+      return new Response(JSON.stringify({ items: [] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' }
+      });
+    };
+
+    const req = makeRequest('https://worker.example/api/library?category=lectures&page=2');
+    const res = await handleRequest(req, env, fetchImpl);
+
+    assert.equal(res.status, 200);
+    assert.equal(capturedUrl, 'https://backend.example.com/api/library?category=lectures&page=2');
+  });
+
   it('يحيل رأس Authorization وجسم الطلب POST كما هما', async () => {
     let captured = null;
     const fetchImpl = async (url, init) => {
