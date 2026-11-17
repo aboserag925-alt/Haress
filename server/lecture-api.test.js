@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { validateLecture } = require('./lecture-api');
+const { createAdminApi, validateLecture } = require('./lecture-api');
 
 const valid = {
   title: 'شرح صحيح الإمام مسلم',
@@ -35,4 +35,31 @@ test('rejects invalid publication states and unknown fields', () => {
 
 test('supports partial updates without requiring a title', () => {
   assert.equal(validateLecture({ status: 'archived' }, true), null);
+});
+
+test('strips a leading UTF-8 BOM from the public Supabase key before sending headers', async () => {
+  let capturedHeaders;
+  const api = createAdminApi({
+    env: {
+      SUPABASE_URL: 'https://project.supabase.co',
+      SUPABASE_ANON_KEY: '\\uFEFF anon-key-without-bom '
+    },
+    fetch: async (url, options) => {
+      capturedHeaders = options.headers;
+      return { ok: true, json: async () => [] };
+    }
+  });
+  const response = {
+    headers: {},
+    status: null,
+    body: null,
+    setHeader(name, value) { this.headers[name] = value; },
+    writeHead(status, headers) { this.status = status; this.headers = { ...this.headers, ...headers }; },
+    end(body) { this.body = body; }
+  };
+
+  assert.equal(await api({ method: 'GET', headers: {} }, response, '/api/lectures'), true);
+  assert.equal(response.status, 200);
+  assert.equal(capturedHeaders.apikey, 'anon-key-without-bom');
+  assert.equal(capturedHeaders.Authorization, 'Bearer anon-key-without-bom');
 });
