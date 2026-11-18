@@ -126,7 +126,7 @@
     },
     {
       "file": "app/interactive-identity.css",
-      "important": 280,
+      "important": 281,
       "hexColors": 58,
       "uniqueColors": 35,
       "colorCounts": {
@@ -261,7 +261,7 @@
     }
   ],
   "totals": {
-    "important": 614,
+    "important": 615,
     "hexColors": 460
   }
 }

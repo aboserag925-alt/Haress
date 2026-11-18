@@ -158,7 +158,7 @@ body .wrap>header h1{
   font:700 clamp(25px,3vw,34px)/1.35 var(--font-display)!important;
 }
 body .wrap>header .brand-athar{color:var(--antique-gold)}
-body .wrap>header .brand-ahl{color:var(--parchment)}
+body .wrap>header .brand-ahl{color:var(--brand-charcoal)!important}
 body .wrap>header p,
 body .wrap>header .methodology,
 body .wrap>header .doctor{color:var(--brand-green-deep)!important}
@@ -168,13 +168,13 @@ body .wrap>header .social-link{
   min-width:44px;min-height:44px;height:auto;
   border:1px solid rgba(201,162,75,.65)!important;
   border-radius:4px;background:transparent!important;
-  color:var(--parchment)!important;font-size:14px;padding:7px 12px;
+  color:var(--brand-charcoal)!important;font-size:14px;padding:7px 12px;
 }
 body .wrap>header .social-link:hover{background:var(--brown)!important}
 body .wrap>header .theme-toggle{
   position:absolute;inset-inline-start:18px;top:14px;
   min-height:44px;border:1px solid var(--antique-gold);
-  border-radius:4px;background:transparent;color:var(--parchment);
+  border-radius:4px;background:transparent;color:var(--brand-charcoal);
 }
 body .wrap>header .theme-toggle span{color:inherit}
 .development-notice{
@@ -197,9 +197,9 @@ body .wrap>header .theme-toggle span{color:inherit}
   background-repeat:repeat!important;background-size:112px 112px!important;
   opacity:.3;
 }
-.hero-kicker,.hero-foot{color:#E8D9B9!important}
+.hero-kicker,.hero-foot{color:var(--brand-green-deep)!important}
 .hero-copy h2{color:var(--brand-gold)!important;font-family:var(--font-display)!important}
-.hero-copy p{color:var(--parchment)!important;font-size:18px;line-height:1.9}
+.hero-copy p{color:var(--brand-charcoal)!important;font-size:18px;line-height:1.9}
 .hero-emblem{background:var(--brown)!important;border:1px solid var(--antique-gold)!important;color:var(--parchment)!important;box-shadow:none!important;transform:none}
 .hero-emblem:before,.hero-emblem:after{border-color:rgba(201,162,75,.55)!important}
 .hero-emblem i{background:var(--antique-gold)!important}
@@ -217,7 +217,7 @@ body .wrap>header .theme-toggle span{color:inherit}
 .hero-secondary{
   min-height:48px!important;padding:9px 18px!important;
   border:1px solid var(--antique-gold)!important;border-radius:4px!important;
-  background:transparent!important;color:var(--parchment)!important;font-size:16px!important;
+  background:transparent!important;color:var(--brand-charcoal)!important;font-size:16px!important;
 }
 .quick-item{
   min-height:70px;border:1px solid var(--paper-border)!important;border-radius:4px!important;
