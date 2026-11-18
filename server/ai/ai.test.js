@@ -40,7 +40,11 @@ test('database approval fields are accepted only when backed by approval IDs',()
  assert.equal(canTransition('WAITING_APPROVAL','APPROVED',{approved:true,approval_id:'db-approval'}),true);
  assert.equal(canTransition('READY_FOR_REVIEW','HUMAN_APPROVED',{human_approved:true,human_approval_id:'db-merge-approval'}),true);
 });
-test('approval gate accepts persisted snake-case records only in their approved states',()=>{\n assert.equal(assertApproval({status:'APPROVED',approved:true,approval_id:'db-approval',risk:'critical'},'implement'),true);\n assert.throws(()=>assertApproval({status:'READY_FOR_REVIEW',human_approved:true,human_approval_id:'db-merge-approval'},'merge'),/HUMAN_APPROVED state/);\n assert.equal(assertApproval({status:'HUMAN_APPROVED',human_approved:true,human_approval_id:'db-merge-approval'},'merge'),true);\n});
+test('approval gate accepts persisted snake-case records only in their approved states',()=>{
+ assert.equal(assertApproval({status:'APPROVED',approved:true,approval_id:'db-approval',risk:'critical'},'implement'),true);
+ assert.throws(()=>assertApproval({status:'READY_FOR_REVIEW',human_approved:true,human_approval_id:'db-merge-approval'},'merge'),/HUMAN_APPROVED state/);
+ assert.equal(assertApproval({status:'HUMAN_APPROVED',human_approved:true,human_approval_id:'db-merge-approval'},'merge'),true);
+});
 
 test('supervisor fails closed when required verifier agent is missing',async()=>{const pass={run:async()=>({status:'PASS',data:{}})};const supervisor=new HaresAISupervisor({security:pass,developer:pass,test:pass});const r=await supervisor.analyze({id:'task-verifier-missing',type:'implementation'});assert.equal(r.task.status,'FAILED');assert.equal(r.task.tainted,true);assert.equal(r.reports.at(-1).agent,'verifier');assert.equal(r.reports.at(-1).status,'BLOCKED');});
 test('supervisor fails closed when the verifier cannot produce a passing result',async()=>{const pass={run:async()=>({status:'PASS',data:{}})};const supervisor=new HaresAISupervisor({security:pass,developer:pass,test:pass,verifier:{run:async()=>({status:'NEEDS_REVIEW',data:{}})}});const r=await supervisor.analyze({id:'task-verifier-review',type:'implementation'});assert.equal(r.task.status,'FAILED');assert.equal(r.task.tainted,true);});
