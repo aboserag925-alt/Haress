@@ -199,6 +199,40 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
     assert.match(captured.body, /اختبار/);
   });
 
+  it('routes administrator suggestion reads to the admin-operations Function', async () => {
+    let captured = null;
+    const fetchImpl = async (url, init) => {
+      captured = { url: String(url), headers: Object.fromEntries(init.headers.entries()), method: init.method };
+      return new Response(JSON.stringify({ items: [] }), { status: 200 });
+    };
+    const req = makeRequest('https://preview.example/api/admin/suggestions', {
+      headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only', authorization: 'Bearer signed-user-jwt' }
+    });
+    const res = await handleRequest(req, env, fetchImpl);
+    assert.equal(res.status, 200);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/admin-operations/admin/suggestions');
+    assert.equal(captured.headers.authorization, 'Bearer signed-user-jwt');
+    assert.equal(captured.headers.apikey, 'sb_publishable_test_only');
+  });
+
+  it('routes AI approval requests to admin-operations without changing the signed JWT', async () => {
+    let captured = null;
+    const fetchImpl = async (url, init) => {
+      captured = { url: String(url), headers: Object.fromEntries(init.headers.entries()), method: init.method };
+      return new Response(JSON.stringify({ approvalId: 'approval-test' }), { status: 200 });
+    };
+    const req = makeRequest('https://preview.example/api/admin/ai/tasks/123e4567-e89b-42d3-a456-426614174000/approval', {
+      method: 'POST',
+      headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only', authorization: 'Bearer signed-user-jwt', 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'IMPLEMENT', decision: 'APPROVED' })
+    });
+    const res = await handleRequest(req, env, fetchImpl);
+    assert.equal(res.status, 200);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/admin-operations/admin/ai/tasks/123e4567-e89b-42d3-a456-426614174000/approval');
+    assert.equal(captured.method, 'POST');
+    assert.equal(captured.headers.authorization, 'Bearer signed-user-jwt');
+  });
+
   it('fails closed when preview Supabase configuration is incomplete', async () => {
     const req = makeRequest('https://preview.example/api/admin/session');
     const res = await handleRequest(req, { DEPLOYMENT_ENV: 'preview' }, async () => {
