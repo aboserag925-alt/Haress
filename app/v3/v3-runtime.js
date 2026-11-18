@@ -462,6 +462,22 @@
       catch(e){status('authMessage','تعذر إنشاء الحساب: '+e.message,true);}
       finally{$('signInBtn').disabled=false;$('signUpBtn').disabled=false;}
     });
+    $('resetPasswordBtn').addEventListener('click',async function(){
+      var email=$('authEmail').value.trim();
+      if(!email||!$('authEmail').checkValidity()){status('authMessage','أدخل بريدك الإلكتروني الصحيح أولًا.',true);$('authEmail').focus();return;}
+      $('resetPasswordBtn').disabled=true;
+      try{var result=await window.ahlAuth.requestPasswordReset(email);if(result.error)throw result.error;status('authMessage','إذا كان البريد مسجلًا، فستصلك رسالة استعادة كلمة المرور.');}
+      catch(e){status('authMessage','تعذر إرسال رابط الاستعادة: '+e.message,true);}
+      finally{$('resetPasswordBtn').disabled=false;}
+    });
+    $('updatePasswordBtn').addEventListener('click',async function(){
+      var password=$('newAuthPassword').value;
+      if(password.length<8){status('authMessage','كلمة المرور يجب ألا تقل عن 8 أحرف.',true);$('newAuthPassword').focus();return;}
+      $('updatePasswordBtn').disabled=true;
+      try{var result=await window.ahlAuth.updatePassword(password);if(result.error)throw result.error;$('passwordResetPanel').hidden=true;$('newAuthPassword').value='';status('authMessage','تم تحديث كلمة المرور بنجاح.');}
+      catch(e){status('authMessage','تعذر تحديث كلمة المرور: '+e.message,true);}
+      finally{$('updatePasswordBtn').disabled=false;}
+    });
     $('signOutBtn').addEventListener('click',async function(){
       status('authMessage','جارٍ تسجيل الخروج…');try{var result=await window.ahlAuth.signOut();if(result.error)throw result.error;status('authMessage','تم تسجيل الخروج.');}
       catch(e){status('authMessage','تعذر تسجيل الخروج: '+e.message,true);}
