@@ -91,8 +91,15 @@ async function proxyToSupabaseFunction(request, env, fetchImpl) {
 
   const supabaseUrl = typeof env.SUPABASE_URL === 'string' ? env.SUPABASE_URL.trim() : '';
   const publishableKey = typeof env.SUPABASE_PUBLISHABLE_KEY === 'string' ? env.SUPABASE_PUBLISHABLE_KEY.trim() : '';
-  if (!isSecureBackendUrl(supabaseUrl) || !publishableKey) {
-    return new Response(JSON.stringify({ error: 'إعداد خدمة Supabase للمعاينة غير مكتمل.' }), {
+  let approvedPreviewProject = false;
+  try {
+    approvedPreviewProject = env.DEPLOYMENT_ENV === 'preview' &&
+      new URL(supabaseUrl).hostname === 'bevyztwoijjzfngutnys.supabase.co';
+  } catch {
+    approvedPreviewProject = false;
+  }
+  if (!isSecureBackendUrl(supabaseUrl) || !publishableKey || !approvedPreviewProject) {
+    return new Response(JSON.stringify({ error: 'إعداد خدمة Supabase للمعاينة غير مكتمل أو لا يطابق مشروع الاختبار المعتمد.' }), {
       status: 503,
       headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }
     });
