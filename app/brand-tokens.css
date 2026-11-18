@@ -1,4 +1,4 @@
-/* Central brand tokens. Definitions only; no visual rules. */
+/* المصدر الوحيد لألوان الهوية. لا تكتب لونًا ثابتًا خارج هذا الملف. */
 :root {
   --brand-green-deep: #0F4C3A;
   --brand-green: #1E7A5A;
@@ -8,7 +8,7 @@
   --brand-charcoal: #1F2A2E;
   --brand-alert: #B3261E;
 
-  --font-display: system-ui, sans-serif;
-  --font-body: system-ui, sans-serif;
-  --font-quote: system-ui, sans-serif;
+  --font-display: 'Cairo', sans-serif;
+  --font-body: 'IBM Plex Sans Arabic', sans-serif;
+  --font-quote: 'Amiri', serif;
 }

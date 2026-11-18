@@ -2,14 +2,14 @@
 /* شعار: درع أخضر بإطار ذهبي رفيع، نص "حرس الحدود" فقط، بدون رموز إضافية. دعم RTL لكل الواجهات. */
 :root{
  color-scheme:light;
- --id-bg:#f7faf7;--id-surface:#ffffff;--id-surface-2:#edf5ef;--id-text:#18352d;
- --id-muted:#63756d;--id-green:#0e7a4d;--id-green-2:#248665;--id-gold:#c5a04a;
- --id-line:rgba(14,122,77,.14);--id-shadow:0 18px 48px rgba(25,65,48,.09);
+ --id-bg:var(--brand-cream);--id-surface:#ffffff;--id-surface-2:var(--brand-cream);--id-text:var(--brand-charcoal);
+ --id-muted:var(--brand-green-deep);--id-green:var(--brand-green);--id-green-2:var(--brand-gold);--id-gold:var(--brand-gold);
+ --id-line:rgba(15, 76, 58, 0.14);--id-shadow:0 18px 48px rgba(15, 76, 58, 0.09);
 }
 html[data-theme="dark"]{
  color-scheme:dark;
- --id-bg:#0d1713;--id-surface:#14231c;--id-surface-2:#1a3026;--id-text:#eef5ef;
- --id-muted:#afc1b5;--id-green:#9bd1b1;--id-green-2:#65b88e;--id-gold:#dfbd79;
+ --id-bg:var(--brand-charcoal);--id-surface:#14231c;--id-surface-2:#1a3026;--id-text:#eef5ef;
+ --id-muted:#afc1b5;--id-green:var(--brand-gold-light);--id-green-2:#65b88e;--id-gold:#dfbd79;
  --id-line:rgba(196,224,203,.16);--id-shadow:0 18px 48px rgba(0,0,0,.28);
 }
 html,body{background:var(--id-bg);color:var(--id-text);transition:background-color .35s ease,color .35s ease}
