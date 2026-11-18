@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/supabase-js@2.95.0";
+import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 
 const ALLOWED_ORIGINS = new Set([
   "https://hares-preview.aboserag925.workers.dev",
