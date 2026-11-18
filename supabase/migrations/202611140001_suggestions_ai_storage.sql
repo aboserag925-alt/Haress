@@ -117,7 +117,7 @@ alter table public.ai_tasks alter column source set default 'suggestion';
 -- Fail closed for any such task; do not silently preserve an unverified trust bit.
 update public.ai_tasks set tainted = true where approved = false and tainted = false;
 
-do $
+do $reconcile$
 begin
   if not exists (select 1 from pg_catalog.pg_constraint where conname='ai_tasks_approval_id_fkey' and conrelid='public.ai_tasks'::regclass) then
     alter table public.ai_tasks add constraint ai_tasks_approval_id_fkey foreign key (approval_id) references public.ai_approvals(id) on delete restrict;
@@ -126,7 +126,7 @@ begin
     alter table public.ai_tasks add constraint ai_tasks_human_approval_id_fkey foreign key (human_approval_id) references public.ai_approvals(id) on delete restrict;
   end if;
 end
-$;
+$reconcile$;
 
 create index if not exists suggestions_created_at_idx on public.suggestions(created_at desc);
 create index if not exists suggestions_status_created_idx on public.suggestions(status,created_at desc);
