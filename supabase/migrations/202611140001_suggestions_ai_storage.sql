@@ -17,7 +17,6 @@ create table if not exists public.suggestions (
   updated_at timestamptz not null default now()
 );
 
-
 -- Existing Haress databases may already have the original suggestions table.
 -- Add AI metadata without replacing its status model, rows, or RLS policies.
 alter table public.suggestions add column if not exists risk text;
