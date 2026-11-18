@@ -16,7 +16,7 @@ create or replace function public.consume_question_daily_cap(
 ) returns boolean
 language plpgsql
 security definer
-set search_path = public, pg_temp
+set search_path = ''
 as $$
 declare
   v_allowed boolean;

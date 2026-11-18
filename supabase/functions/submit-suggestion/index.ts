@@ -116,20 +116,25 @@ Deno.serve(async (req: Request) => {
   if (!verified) return json({ error: "فشل التحقق الأمني أو انتهت صلاحيته. أعد المحاولة." }, 403, origin);
 
   const admin = createClient(supabaseUrl, secretKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const day = new Date().toISOString().slice(0, 10);
-  const { data: allowed, error: limitError } = await admin.rpc("consume_suggestion_daily_cap", {
+  const dateParts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Cairo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const part = (type: string) => dateParts.find((item) => item.type === type)?.value || "";
+  const day = `${part("year")}-${part("month")}-${part("day")}`;
+  const { data, error } = await admin.rpc("submit_suggestion_with_daily_cap", {
     p_day: day,
     p_cap: dailyCap(),
+    p_category: checked.value.category,
+    p_title: checked.value.title,
+    p_description: checked.value.description,
   });
-  if (limitError) return json({ error: "تعذر التحقق من حد الإرسال اليومي." }, 503, origin);
-  if (allowed !== true) return json({ error: "وصلنا إلى الحد اليومي لاستقبال الاقتراحات. حاول غدًا." }, 429, origin, { "Retry-After": "3600" });
-
-  const { data, error } = await admin.from("suggestions").insert({
-    category: checked.value.category,
-    title: checked.value.title,
-    description: checked.value.description,
-    user_id: null,
-  }).select("id,category,title,description,status,created_at").single();
-  if (error || !data) return json({ error: "تعذر حفظ الاقتراح الآن." }, 502, origin);
-  return json({ item: data }, 201, origin);
+  if (error) return json({ error: "تعذر حفظ الاقتراح والتحقق من الحد اليومي." }, 503, origin);
+  if (data?.allowed === false) {
+    return json({ error: "وصلنا إلى الحد اليومي لاستقبال الاقتراحات. حاول غدًا." }, 429, origin, { "Retry-After": "3600" });
+  }
+  if (data?.allowed !== true || !data.item) return json({ error: "تعذر حفظ الاقتراح الآن." }, 502, origin);
+  return json({ item: data.item }, 201, origin);
 });

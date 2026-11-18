@@ -159,13 +159,6 @@ Deno.serve(async (req: Request) => {
       p_reason: reason,
     });
     if (error || !approvalId) return json({ error: "تعذر تسجيل القرار. تحقق من حالة المهمة وصلاحيات المشرف." }, 409, cors);
-    try {
-      await adminClient.from("ai_audit_events").insert({
-        event_type: "ai.approval.recorded",
-        actor_user_id: user.id,
-        metadata: { task_id: approvalMatch[1], approval_id: approvalId, action: input.action, decision: input.decision },
-      });
-    } catch { /* Keep the approval result even if the audit insert is temporarily unavailable. */ }
     return json({ approvalId }, 200, cors);
   }
 
