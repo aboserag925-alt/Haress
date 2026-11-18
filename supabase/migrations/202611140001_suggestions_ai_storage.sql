@@ -70,7 +70,7 @@ create table if not exists public.ai_audit_events (
 
 -- Older Haress production schema has the audit sequence but no column default.
 -- Restore automatic IDs without altering identity-backed installations.
-do $
+do $sequence_repair$
 begin
   if exists (
     select 1 from pg_catalog.pg_class seq
@@ -93,7 +93,7 @@ begin
     );
   end if;
 end
-$;
+$sequence_repair$;
 
 -- Reconcile databases that already contain an earlier, partial AI schema.
 -- Keep existing rows and table identities; only add missing columns and objects.
@@ -173,7 +173,7 @@ create or replace function public.record_ai_approval(
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $approval_fn$
 declare
   v_task public.ai_tasks%rowtype;
   v_approval_id uuid;
@@ -233,7 +233,7 @@ begin
   );
   return v_approval_id;
 end;
-$;
+$approval_fn$;
 
 revoke all on function public.record_ai_approval(uuid,uuid,text,text,text) from public, anon, authenticated;
 grant execute on function public.record_ai_approval(uuid,uuid,text,text,text) to service_role;
