@@ -1,0 +1,51 @@
+{
+  "generatedAt": "2026-11-18T15:30:04.321Z",
+  "files": [
+    {
+      "file": "app/admin.html",
+      "important": 20,
+      "hexColors": 43,
+      "uniqueColors": 29
+    },
+    {
+      "file": "app/brand-motion.css",
+      "important": 22,
+      "hexColors": 27,
+      "uniqueColors": 15
+    },
+    {
+      "file": "app/index.html",
+      "important": 101,
+      "hexColors": 130,
+      "uniqueColors": 55
+    },
+    {
+      "file": "app/interactive-identity.css",
+      "important": 280,
+      "hexColors": 67,
+      "uniqueColors": 38
+    },
+    {
+      "file": "app/v3/index.html",
+      "important": 0,
+      "hexColors": 1,
+      "uniqueColors": 1
+    },
+    {
+      "file": "app/v3/v3.css",
+      "important": 8,
+      "hexColors": 32,
+      "uniqueColors": 29
+    },
+    {
+      "file": "index.html",
+      "important": 100,
+      "hexColors": 184,
+      "uniqueColors": 47
+    }
+  ],
+  "totals": {
+    "important": 531,
+    "hexColors": 484
+  }
+}
