@@ -12,6 +12,8 @@ ENV NODE_ENV=production
 ENV PORT=8080
 ENV HOST=0.0.0.0
 WORKDIR /srv/ahl-athar
+COPY --from=build --chown=node:node /build/package.json ./package.json
+COPY --from=build --chown=node:node /build/node_modules ./node_modules
 COPY --from=build --chown=node:node /build/index.html ./index.html
 COPY --from=build --chown=node:node /build/runtime-config.js ./runtime-config.js
 COPY --from=build --chown=node:node /build/app/ ./app/
