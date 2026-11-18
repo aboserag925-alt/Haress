@@ -89,6 +89,31 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+
+  deploy-preview:
+    name: Deploy isolated PR 105 preview Worker
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 105
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: Main
+    steps:
+      - name: Check out pull request
+        uses: actions/checkout@v4
+
+      - name: Download tested application assets
+        uses: actions/download-artifact@v4
+        with:
+          name: hares-app-assets
+          path: app/
+
+      - name: Deploy isolated preview Worker
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --name hares-pr-105-preview
+
   deploy:
     name: Deploy production Worker
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
