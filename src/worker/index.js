@@ -90,7 +90,7 @@ async function proxyToSupabaseFunction(request, env, fetchImpl) {
   if (!functionPath) return null;
 
   const supabaseUrl = typeof env.SUPABASE_URL === 'string' ? env.SUPABASE_URL.trim() : '';
-  const publishableKey = typeof env.SUPABASE_PUBLISHABLE_KEY === 'string' ? env.SUPABASE_PUBLISHABLE_KEY.trim() : '';
+  const publishableKey = (request.headers.get('apikey') || '').trim();
   let approvedPreviewProject = false;
   try {
     approvedPreviewProject = env.DEPLOYMENT_ENV === 'preview' &&
@@ -108,7 +108,6 @@ async function proxyToSupabaseFunction(request, env, fetchImpl) {
   const targetUrl = new URL('/functions/v1/lectures-admin' + functionPath, supabaseUrl);
   targetUrl.search = requestUrl.search;
   const headers = copyHeaders(request.headers);
-  headers.set('apikey', publishableKey);
 
   try {
     const response = await fetchImpl(targetUrl.href, {
