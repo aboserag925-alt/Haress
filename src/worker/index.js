@@ -84,7 +84,7 @@ function supabaseFunctionPath(pathname) {
 }
 
 async function proxyToSupabaseFunction(request, env, fetchImpl) {
-  if (!env || env.SUPABASE_FUNCTIONS_ENABLED !== 'true') return null;
+  if (!env || env.DEPLOYMENT_ENV !== 'preview') return null;
   const requestUrl = new URL(request.url);
   const functionPath = supabaseFunctionPath(requestUrl.pathname);
   if (!functionPath) return null;
