@@ -1,0 +1,193 @@
+/* Haress brand application layer — applies app/brand-tokens.css tokens to the live interface. */
+/* Source of truth for colours: app/brand-tokens.css. No hardcoded brand colours here. */
+:root {
+  /* UI semantic roles mapped to brand tokens */
+  --app-bg: var(--brand-cream);
+  --app-surface: #ffffff;
+  --app-surface-raised: var(--brand-cream);
+  --app-text: var(--brand-charcoal);
+  --app-muted: var(--brand-green-deep);
+  --app-green: var(--brand-green);
+  --app-green-deep: var(--brand-green-deep);
+  --app-gold: var(--brand-gold);
+  --app-gold-light: var(--brand-gold-light);
+  --app-line: rgba(15, 76, 58, 0.14);
+  --app-shadow: 0 18px 48px rgba(15, 76, 58, 0.09);
+}
+
+/* Base document */
+html, body {
+  background: var(--app-bg) !important;
+  color: var(--app-text) !important;
+  font-family: var(--font-body) !important;
+}
+body::before {
+  background:
+    radial-gradient(ellipse at 12% 2%, rgba(15, 76, 58, 0.09), transparent 38%),
+    radial-gradient(ellipse at 88% 18%, rgba(201, 162, 75, 0.06), transparent 32%) !important;
+}
+
+/* Header */
+.wrap > header,
+header {
+  background: var(--app-bg) !important;
+  color: var(--app-text) !important;
+  border-color: var(--app-gold) !important;
+}
+header h1, header h2, header h3 {
+  color: var(--app-gold) !important;
+  font-family: var(--font-display) !important;
+}
+header p, .methodology, .doctor, .section-subtitle, .status {
+  color: var(--app-muted) !important;
+}
+
+/* Logo — shield with gold frame, text only */
+.logo {
+  border: 2px solid var(--app-gold) !important;
+  background: var(--app-surface) !important;
+  box-shadow: 0 8px 28px rgba(15, 76, 58, 0.12) !important;
+  filter: drop-shadow(0 8px 16px rgba(15, 76, 58, 0.16)) !important;
+  animation: haress-shield-glow 5s ease-in-out infinite !important;
+}
+header:hover .logo {
+  border-color: var(--app-gold-light) !important;
+  box-shadow: 0 12px 32px rgba(15, 76, 58, 0.18) !important;
+  transform: scale(1.03) !important;
+}
+
+/* Headings & titles */
+h1, h2, h3, .section-title, .card h2, .hero-copy h2, .section-heading h2 {
+  color: var(--app-gold) !important;
+  font-family: var(--font-display) !important;
+}
+
+/* Body text */
+p, .text, .section-subtitle, .slot > span:last-child, .day, .media-card h3, .dhikr p, .question-draft p {
+  color: var(--app-text) !important;
+  font-family: var(--font-body) !important;
+}
+
+/* Buttons */
+.btn, .hero-primary, .hero-secondary, .support-button, .gold-action, .outline-action {
+  border-color: var(--app-gold) !important;
+  background: var(--app-gold) !important;
+  color: var(--brand-charcoal) !important;
+  font-family: var(--font-display) !important;
+}
+.btn:hover, .hero-primary:hover, .hero-secondary:hover, .support-button:hover {
+  background: var(--app-gold-light) !important;
+  transform: translateY(-2px) !important;
+}
+.hero-secondary, .outline-action {
+  background: transparent !important;
+  border-color: var(--app-gold) !important;
+  color: var(--app-gold) !important;
+}
+.hero-secondary:hover, .outline-action:hover {
+  background: var(--app-gold-light) !important;
+  color: var(--brand-charcoal) !important;
+}
+
+/* Tabs */
+.tab {
+  border-color: var(--app-gold) !important;
+  color: var(--app-muted) !important;
+  background: transparent !important;
+}
+.tab:hover {
+  color: var(--app-text) !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+}
+.tab.on {
+  border-color: rgba(201, 162, 75, 0.23) !important;
+  background: linear-gradient(135deg, rgba(201, 162, 75, 0.18), rgba(201, 162, 75, 0.07)) !important;
+  color: var(--app-gold) !important;
+}
+
+/* Cards */
+.card, .media-card, .dhikr {
+  background: var(--app-surface) !important;
+  color: var(--app-text) !important;
+  border-color: var(--app-line) !important;
+  box-shadow: var(--app-shadow) !important;
+}
+.card:hover {
+  border-color: rgba(201, 162, 75, 0.28) !important;
+  box-shadow: 0 18px 42px rgba(15, 76, 58, 0.23) !important;
+}
+
+/* Form inputs */
+input, textarea, select {
+  background: #ffffff !important;
+  color: var(--app-text) !important;
+  border-color: rgba(15, 76, 58, 0.2) !important;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--app-gold) !important;
+  outline: 2px solid rgba(201, 162, 75, 0.12) !important;
+}
+
+/* Notice & note */
+.note, .notice {
+  background: rgba(201, 162, 75, 0.07) !important;
+  border-color: var(--app-gold) !important;
+  color: var(--app-muted) !important;
+}
+
+/* Welcome hero */
+.welcome-hero {
+  background: var(--app-surface) !important;
+  border: 1px solid var(--app-line) !important;
+  color: var(--app-text) !important;
+  box-shadow: var(--app-shadow) !important;
+}
+.hero-kicker { color: var(--app-green) !important; }
+.hero-copy p { color: #c4c9bf !important; }
+.hero-emblem {
+  border: 1px solid rgba(201, 162, 75, 0.42) !important;
+  background: radial-gradient(circle, rgba(201, 162, 75, 0.13), rgba(11, 14, 13, 0.1) 68%) !important;
+  color: var(--app-gold) !important;
+}
+
+/* Quick strip */
+.quick-item {
+  background: var(--app-surface) !important;
+  border: 1px solid var(--app-line) !important;
+  color: var(--app-text) !important;
+  box-shadow: var(--app-shadow) !important;
+}
+.quick-item:hover { border-color: rgba(201, 162, 75, 0.32) !important; }
+.quick-icon {
+  border: 1px solid rgba(201, 162, 75, 0.23) !important;
+  background: rgba(201, 162, 75, 0.08) !important;
+  color: var(--app-gold) !important;
+}
+
+/* Section heading */
+.section-heading {
+  border-inline-start: 4px solid var(--app-gold) !important;
+  background: rgba(201, 162, 75, 0.11) !important;
+}
+.section-heading span { color: var(--app-green) !important; }
+
+/* Motion & animations — respect prefers-reduced-motion */
+@keyframes haress-shield-glow {
+  0%, 100% { filter: drop-shadow(0 6px 12px rgba(15, 76, 58, 0.12)); }
+  50% { filter: drop-shadow(0 9px 20px rgba(201, 162, 75, 0.25)); }
+}
+@keyframes haress-soft-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.card { animation: haress-soft-rise 0.55s ease both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .card, .logo { animation: none !important; }
+}

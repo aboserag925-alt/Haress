@@ -1,0 +1,14 @@
+/* المصدر الوحيد لألوان الهوية. لا تكتب لونًا ثابتًا خارج هذا الملف. */
+:root {
+  --brand-green-deep: #0F4C3A;
+  --brand-green: #1E7A5A;
+  --brand-gold: #C9A24B;
+  --brand-gold-light: #E3C77E;
+  --brand-cream: #F7F1E3;
+  --brand-charcoal: #1F2A2E;
+  --brand-alert: #B3261E;
+
+  --font-display: 'Cairo', sans-serif;
+  --font-body: 'IBM Plex Sans Arabic', sans-serif;
+  --font-quote: 'Amiri', serif;
+}

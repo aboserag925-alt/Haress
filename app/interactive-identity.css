@@ -2,14 +2,14 @@
 /* شعار: درع أخضر بإطار ذهبي رفيع، نص "حرس الحدود" فقط، بدون رموز إضافية. دعم RTL لكل الواجهات. */
 :root{
  color-scheme:light;
- --id-bg:#f7faf7;--id-surface:#ffffff;--id-surface-2:#edf5ef;--id-text:#18352d;
- --id-muted:#63756d;--id-green:#0e7a4d;--id-green-2:#248665;--id-gold:#c5a04a;
- --id-line:rgba(14,122,77,.14);--id-shadow:0 18px 48px rgba(25,65,48,.09);
+ --id-bg:var(--brand-cream);--id-surface:#ffffff;--id-surface-2:var(--brand-cream);--id-text:var(--brand-charcoal);
+ --id-muted:var(--brand-green-deep);--id-green:var(--brand-green);--id-green-2:var(--brand-gold);--id-gold:var(--brand-gold);
+ --id-line:rgba(15, 76, 58, 0.14);--id-shadow:0 18px 48px rgba(15, 76, 58, 0.09);
 }
 html[data-theme="dark"]{
  color-scheme:dark;
- --id-bg:#0d1713;--id-surface:#14231c;--id-surface-2:#1a3026;--id-text:#eef5ef;
- --id-muted:#afc1b5;--id-green:#9bd1b1;--id-green-2:#65b88e;--id-gold:#dfbd79;
+ --id-bg:var(--brand-charcoal);--id-surface:#14231c;--id-surface-2:#1a3026;--id-text:#eef5ef;
+ --id-muted:#afc1b5;--id-green:var(--brand-gold-light);--id-green-2:#65b88e;--id-gold:#dfbd79;
  --id-line:rgba(196,224,203,.16);--id-shadow:0 18px 48px rgba(0,0,0,.28);
 }
 html,body{background:var(--id-bg);color:var(--id-text);transition:background-color .35s ease,color .35s ease}
@@ -24,7 +24,8 @@ body::before{background:radial-gradient(ellipse at 12% 2%,color-mix(in srgb,var(
 .theme-toggle:focus-visible{outline:3px solid color-mix(in srgb,var(--id-green) 45%,transparent);outline-offset:3px}
 .theme-toggle svg{width:17px;height:17px;flex:none}
 .nav .theme-toggle{flex:none}
-body .wrap>header{position:relative}\nbody .wrap>header .theme-toggle{position:absolute;inset-inline-start:0;top:8px;z-index:8}
+body .wrap>header{position:relative}
+body .wrap>header .theme-toggle{position:absolute;inset-inline-start:0;top:8px;z-index:8}
 html[data-theme="dark"] .site,
 html[data-theme="dark"] .site .nav{background-color:var(--id-bg)!important;color:var(--id-text)!important}
 html[data-theme="dark"] .site .nav{background:rgba(13,23,19,.88)!important;border-color:var(--id-line)!important}
@@ -72,7 +73,7 @@ body .wrap textarea,body .wrap .field input,body .wrap .field select{background:
 body .wrap textarea::placeholder{color:#83948a}
 body .wrap .note,body .wrap .notice{background:#f1f6f0;border-color:var(--id-line);color:#52685c}
 body .wrap .btn{border-color:rgba(23,107,80,.18)}
-\n/* Soft motion language: reveal, lift, and ambient movement without blocking interaction. */
+/* Soft motion language: reveal, lift, and ambient movement without blocking interaction. */
 .motion-ready .motion-reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
 .motion-ready .motion-reveal.is-visible{opacity:1;transform:translateY(0)}
 .motion-card{transform-style:preserve-3d;will-change:transform;transition:transform .28s ease,border-color .28s,box-shadow .28s}
@@ -114,17 +115,17 @@ body .wrap .btn{border-color:rgba(23,107,80,.18)}
 }
 html,body{background:var(--parchment)!important;color:var(--reading)!important}
 body{
-  font-family:'Noto Naskh Arabic',serif!important;
+  font-family:var(--font-body)!important;
   font-size:18px;
   line-height:1.9;
   background-image:none!important;
 }
 body::before{display:none!important}
-button,input,textarea,select{font-family:'Noto Naskh Arabic',serif!important}
+button,input,textarea,select{font-family:var(--font-body)!important}
 a{color:var(--dark-gold)}
 a:hover{color:var(--olive)}
 h1,h2,h3,.section-heading h2,.hero-copy h2,.section-title,.btn,.hero-primary,.hero-secondary,.tab,.support-button,.theme-toggle{
-  font-family:'Reem Kufi','Noto Naskh Arabic',sans-serif!important;
+  font-family:var(--font-display)!important;
 }
 .wrap{width:min(100% - 32px,1080px);padding-top:0}
 body .wrap>header{
@@ -132,11 +133,11 @@ body .wrap>header{
   margin-inline:calc(50% - 50vw);
   padding:18px max(18px,calc((100vw - 1080px)/2)) 20px;
   box-sizing:border-box;
-  background:var(--ink)!important;
-  color:var(--parchment)!important;
+  background:var(--brand-cream)!important;
+  color:var(--brand-charcoal)!important;
   border:0!important;
-  border-bottom:1px solid var(--antique-gold)!important;
-  box-shadow:0 8px 24px rgba(42,20,14,.16);
+  border-bottom:1px solid var(--brand-gold)!important;
+  box-shadow:0 8px 24px rgba(15,76,58,.08);
   grid-template-columns:72px minmax(0,1fr);
   column-gap:16px;
   border-radius:0;
@@ -153,27 +154,27 @@ body .wrap>header .logo{
 }
 body .wrap>header h1{
   margin:0;
-  color:var(--parchment)!important;
-  font:700 clamp(25px,3vw,34px)/1.35 'Reem Kufi',sans-serif!important;
+  color:var(--brand-charcoal)!important;
+  font:700 clamp(25px,3vw,34px)/1.35 var(--font-display)!important;
 }
 body .wrap>header .brand-athar{color:var(--antique-gold)}
-body .wrap>header .brand-ahl{color:var(--parchment)}
+body .wrap>header .brand-ahl{color:var(--brand-charcoal)!important}
 body .wrap>header p,
 body .wrap>header .methodology,
-body .wrap>header .doctor{color:#E8D9B9!important}
+body .wrap>header .doctor{color:var(--brand-green-deep)!important}
 body .wrap>header .doctor::before{background:var(--antique-gold)}
 body .wrap>header .social-links{grid-column:2;gap:8px;flex-wrap:wrap;margin-top:8px}
 body .wrap>header .social-link{
   min-width:44px;min-height:44px;height:auto;
   border:1px solid rgba(201,162,75,.65)!important;
   border-radius:4px;background:transparent!important;
-  color:var(--parchment)!important;font-size:14px;padding:7px 12px;
+  color:var(--brand-charcoal)!important;font-size:14px;padding:7px 12px;
 }
 body .wrap>header .social-link:hover{background:var(--brown)!important}
 body .wrap>header .theme-toggle{
   position:absolute;inset-inline-start:18px;top:14px;
   min-height:44px;border:1px solid var(--antique-gold);
-  border-radius:4px;background:transparent;color:var(--parchment);
+  border-radius:4px;background:transparent;color:var(--brand-charcoal);
 }
 body .wrap>header .theme-toggle span{color:inherit}
 .development-notice{
@@ -196,9 +197,9 @@ body .wrap>header .theme-toggle span{color:inherit}
   background-repeat:repeat!important;background-size:112px 112px!important;
   opacity:.3;
 }
-.hero-kicker,.hero-foot{color:#E8D9B9!important}
-.hero-copy h2{color:var(--antique-gold)!important;font-family:'Reem Kufi',sans-serif!important}
-.hero-copy p{color:var(--parchment)!important;font-size:18px;line-height:1.9}
+.hero-kicker,.hero-foot{color:var(--brand-green-deep)!important}
+.hero-copy h2{color:var(--brand-gold)!important;font-family:var(--font-display)!important}
+.hero-copy p{color:var(--brand-charcoal)!important;font-size:18px;line-height:1.9}
 .hero-emblem{background:var(--brown)!important;border:1px solid var(--antique-gold)!important;color:var(--parchment)!important;box-shadow:none!important;transform:none}
 .hero-emblem:before,.hero-emblem:after{border-color:rgba(201,162,75,.55)!important}
 .hero-emblem i{background:var(--antique-gold)!important}
@@ -216,7 +217,7 @@ body .wrap>header .theme-toggle span{color:inherit}
 .hero-secondary{
   min-height:48px!important;padding:9px 18px!important;
   border:1px solid var(--antique-gold)!important;border-radius:4px!important;
-  background:transparent!important;color:var(--parchment)!important;font-size:16px!important;
+  background:transparent!important;color:var(--brand-charcoal)!important;font-size:16px!important;
 }
 .quick-item{
   min-height:70px;border:1px solid var(--paper-border)!important;border-radius:4px!important;
@@ -408,8 +409,8 @@ html[data-theme="dark"] .development-notice{background:var(--brown)!important;co
 /* Match the one-time brand introduction to the same ink-and-parchment palette. */
 .haress-intro{background:rgba(42,20,14,.98)!important}
 .haress-intro__logo{filter:drop-shadow(0 12px 20px rgba(201,162,75,.18))!important}
-.haress-intro__name{color:#F4EAD5!important;font-family:'Reem Kufi','Noto Naskh Arabic',sans-serif!important}
-.haress-intro__tag{color:#C9A24B!important;font-family:'Noto Naskh Arabic',serif!important}
+.haress-intro__name{color:var(--app-text)!important;font-family:var(--font-display)!important}
+.haress-intro__tag{color:var(--brand-gold)!important;font-family:var(--font-body)!important}
 
 
 /* Keep the Vodafone Cash number and copy action visible in the support panel. */
