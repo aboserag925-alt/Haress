@@ -429,3 +429,43 @@ html[data-theme="dark"] .development-notice{background:var(--brown)!important;co
 .time,.media-date,.dhikr-ref,.radio-panel-head span,.section-heading>small{font-size:14px!important}
 .media-card h3,.prayer-time span,.prayer-time time{font-size:16px!important}
 .quick-item small,.development-notice-copy span{font-size:14px!important}
+
+/* Premium interactive visual layer */
+.welcome-hero{
+ position:relative;
+ isolation:isolate;
+ overflow:hidden;
+ transform-style:preserve-3d;
+ box-shadow:0 12px 34px rgba(24,65,45,.10);
+}
+.welcome-hero::after{
+ content:"";
+ position:absolute;
+ inset:0;
+ z-index:-1;
+ pointer-events:none;
+ background:radial-gradient(circle at 85% 15%,rgba(201,162,75,.16),transparent 38%);
+}
+.hero-emblem{animation:haress-float 5s ease-in-out infinite}
+@keyframes haress-float{
+ 0%,100%{transform:translateY(0) rotateY(0)}
+ 50%{transform:translateY(-7px) rotateY(5deg)}
+}
+.quick-item,.card,.media-card{
+ position:relative;
+ overflow:hidden;
+ transition:transform .28s ease,box-shadow .28s ease;
+}
+@media(hover:hover) and (pointer:fine){
+ .quick-item:hover,.card:hover,.media-card:hover{
+  transform:perspective(900px) translateY(-5px) rotateX(1deg);
+  box-shadow:0 14px 30px rgba(30,65,45,.13);
+ }
+}
+.quick-item:active,.card:active,.media-card:active{transform:scale(.985)}
+:focus-visible{outline:2px solid var(--antique-gold,#C9A24B);outline-offset:3px}
+@media(prefers-reduced-motion:reduce){
+ .hero-emblem{animation:none!important}
+ .quick-item,.card,.media-card{transition:none!important}
+}
+
