@@ -60,6 +60,13 @@ window.ahlAuth = {
     if (result.error) throw result.error;
     return result.data.session ? result.data.session.access_token : null;
   },
+  requestPasswordReset: function (email) {
+    const redirectTo = new URL(window.location.pathname, window.location.origin).toString();
+    return requireClient().auth.resetPasswordForEmail(email, { redirectTo: redirectTo });
+  },
+  updatePassword: function (password) {
+    return requireClient().auth.updateUser({ password: password });
+  },
   signOut: function () {
     return requireClient().auth.signOut();
   },
