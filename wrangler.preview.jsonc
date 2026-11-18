@@ -1,0 +1,15 @@
+{
+  "name": "hares-preview",
+  "main": "src/worker/index.js",
+  "compatibility_date": "2026-11-05",
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": "./app",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": {
+    "DEPLOYMENT_ENV": "preview"
+  }
+}
