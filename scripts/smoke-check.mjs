@@ -106,7 +106,78 @@ export async function runSmokeCheck(options = {}) {
   }
 }
 
+// Checks a deployed backend: health, public lectures, and CORS for the real frontend origin.
+// Usage: node scripts/smoke-check.mjs --backend https://api.example.com --origin https://site.example
+export async function runRemoteSmokeCheck(options = {}) {
+  const fetchImpl = options.fetchImpl || fetch;
+  const base = String(options.backendUrl || '').trim().replace(/\/+$/, '');
+  const origin = String(options.origin || '').trim().replace(/\/+$/, '');
+
+  let parsed;
+  try { parsed = new URL(base); } catch { throw new Error('backend URL is not a valid URL'); }
+  if (parsed.protocol !== 'https:' && parsed.hostname !== 'localhost') {
+    throw new Error('backend URL must use https');
+  }
+  if (!origin) throw new Error('the frontend origin (--origin) is required');
+
+  async function call(pathname, init) {
+    return fetchImpl(base + pathname, { ...init, signal: AbortSignal.timeout(10000) });
+  }
+
+  const passed = [];
+
+  const health = await call('/api/health');
+  const healthBody = await health.json().catch(() => null);
+  if (health.status !== 200 || !healthBody || healthBody.ok !== true) {
+    throw new Error('/api/health did not return {"ok":true} (status ' + health.status + ')');
+  }
+  passed.push('/api/health');
+
+  const lectures = await call('/api/lectures', { headers: { Origin: origin } });
+  const lecturesBody = await lectures.json().catch(() => null);
+  if (lectures.status !== 200 || !lecturesBody || !Array.isArray(lecturesBody.items)) {
+    throw new Error('/api/lectures did not return {"items":[...]} (status ' + lectures.status + ')');
+  }
+  passed.push('/api/lectures');
+
+  const allowed = await call('/api/lectures', {
+    method: 'OPTIONS',
+    headers: { Origin: origin, 'Access-Control-Request-Method': 'GET' }
+  });
+  if (allowed.status !== 204 || allowed.headers.get('access-control-allow-origin') !== origin) {
+    throw new Error('CORS does not allow ' + origin + ' (add it to ALLOWED_ORIGINS on the server)');
+  }
+  passed.push('CORS allows ' + origin);
+
+  const blocked = await call('/api/lectures', {
+    method: 'OPTIONS',
+    headers: { Origin: 'https://not-allowed.invalid', 'Access-Control-Request-Method': 'GET' }
+  });
+  if (blocked.status !== 403) {
+    throw new Error('CORS accepted an unknown origin (status ' + blocked.status + ')');
+  }
+  passed.push('CORS rejects unknown origins');
+
+  return passed;
+}
+
+function argValue(name) {
+  const index = process.argv.indexOf(name);
+  return index !== -1 ? process.argv[index + 1] : undefined;
+}
+
 async function main() {
+  const backendUrl = argValue('--backend');
+  if (backendUrl) {
+    try {
+      const passed = await runRemoteSmokeCheck({ backendUrl: backendUrl, origin: argValue('--origin') });
+      console.log('SMOKE OK (remote): ' + passed.join(', '));
+    } catch (e) {
+      console.error('SMOKE FAIL: ' + (e && e.message ? e.message : String(e)));
+      process.exit(1);
+    }
+    return;
+  }
   let result;
   try {
     result = await runSmokeCheck();

@@ -1,3 +1,4 @@
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const http = require('node:http');
 const net = require('node:net');
@@ -8,6 +9,7 @@ const { createSuggestionsApi } = require('./suggestions/suggestion-api');
 const { createSuggestionService } = require('./suggestions/suggestion-service');
 const { createApprovalApi } = require('./ai/approval-api');
 const { createTaskService } = require('./ai/task-service');
+const { staticSecurityHeaders } = require('./security-headers');
 
 const PUBLIC_ROOT = path.resolve(__dirname, '..');
 const MAX_BODY_BYTES = 16 * 1024;
@@ -15,6 +17,7 @@ const MAX_QUESTION_LENGTH = 1600;
 const MAX_DRAFT_LENGTH = 1800;
 const RATE_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT = 5;
+const DEFAULT_QUESTIONS_DAILY_CAP = 200;
 const MIME_TYPES = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
@@ -143,9 +146,33 @@ async function readUtf8Json(response) {
   return JSON.parse(text);
 }
 
+// Compare secrets in constant time. Hashing first gives both buffers the same length,
+// which timingSafeEqual requires, without leaking the secret's length.
+function secretsMatch(provided, expected) {
+  const a = crypto.createHash('sha256').update(String(provided)).digest();
+  const b = crypto.createHash('sha256').update(String(expected)).digest();
+  return crypto.timingSafeEqual(a, b);
+}
+
 function clientAddress(request, env) {
   const remoteAddress = request.socket.remoteAddress || 'unknown';
-  // Only trust Cloudflare's client-IP header when the origin is explicitly configured behind Cloudflare.
+  // Preferred: the Cloudflare Worker sends the real visitor IP in x-client-ip together with
+  // a shared secret. Trust the IP only when the secret matches; otherwise use the socket
+  // address, so a visitor can never choose their own rate-limit identity.
+  const sharedSecret = env && typeof env.PROXY_SHARED_SECRET === 'string'
+    ? env.PROXY_SHARED_SECRET.trim()
+    : '';
+  if (sharedSecret) {
+    const providedSecret = request.headers['x-proxy-secret'];
+    const forwardedIp = request.headers['x-client-ip'];
+    if (typeof providedSecret === 'string' && typeof forwardedIp === 'string' &&
+        secretsMatch(providedSecret, sharedSecret)) {
+      const candidate = forwardedIp.trim();
+      if (net.isIP(candidate)) return candidate;
+    }
+    return remoteAddress;
+  }
+  // Legacy: only trust Cloudflare's client-IP header when the origin is explicitly configured behind Cloudflare.
   if (!env || env.TRUST_PROXY !== 'true') return remoteAddress;
   const forwardedAddress = request.headers['cf-connecting-ip'];
   if (typeof forwardedAddress !== 'string') return remoteAddress;
@@ -168,6 +195,32 @@ function consumeRateLimit(limits, address, now) {
   if (entry.count >= RATE_LIMIT) return false;
   entry.count += 1;
   return true;
+}
+
+// Global (all visitors) daily budget for the questions form, so a botnet that rotates IP
+// addresses still cannot exhaust the Gemini quota or flood the Telegram group.
+function questionsDailyCap(env) {
+  const parsed = Number.parseInt(env && env.QUESTIONS_DAILY_CAP, 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_QUESTIONS_DAILY_CAP;
+}
+
+function consumeDailyCap(state, cap, now) {
+  const day = new Date(now).toISOString().slice(0, 10);
+  if (state.day !== day) {
+    state.day = day;
+    state.count = 0;
+  }
+  if (state.count >= cap) return false;
+  state.count += 1;
+  return true;
+}
+
+// In production the questions form must be protected by Turnstile.
+function assertProductionConfig(env) {
+  const questionsConfigured = Boolean(env.GEMINI_API_KEY && env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID);
+  if (env.NODE_ENV === 'production' && questionsConfigured && !env.TURNSTILE_SECRET_KEY) {
+    throw new Error('TURNSTILE_SECRET_KEY is required in production when the questions form is enabled.');
+  }
 }
 
 async function verifyTurnstile(token, request, env, fetchImpl) {
@@ -326,6 +379,7 @@ function createServer(options) {
   const env = options.env || process.env;
   const fetchImpl = options.fetch || global.fetch;
   const limits = new Map();
+  const dailyCapState = { day: '', count: 0 };
   const adminApi = createAdminApi({ env: env, fetch: fetchImpl });
   const rateLimit = function (request) {
     return consumeRateLimit(limits, clientAddress(request, env), Date.now());
@@ -476,7 +530,8 @@ function createServer(options) {
       }
 
 
-      const turnstileEnabled = env.TURNSTILE_ENABLED === 'true' || Boolean(env.TURNSTILE_SECRET_KEY);
+      const turnstileEnabled = env.NODE_ENV === 'production' ||
+        env.TURNSTILE_ENABLED === 'true' || Boolean(env.TURNSTILE_SECRET_KEY);
       if (turnstileEnabled) {
         if (!env.TURNSTILE_SECRET_KEY) {
           sendJson(response, 503, { error: 'التحقق الأمني غير متاح حاليًا. حاول لاحقًا.' });
@@ -491,6 +546,12 @@ function createServer(options) {
           });
           return;
         }
+      }
+
+      // Counted only after Turnstile passes, so failed bot attempts cannot burn the budget.
+      if (!consumeDailyCap(dailyCapState, questionsDailyCap(env), Date.now())) {
+        sendJson(response, 429, { error: 'بلغ الموقع حد الأسئلة اليومي. حاول غدًا.' });
+        return;
       }
 
       try {
@@ -533,11 +594,11 @@ function createServer(options) {
     }
     try {
       const file = await fs.promises.readFile(filePath);
-      response.writeHead(200, {
+      response.writeHead(200, Object.assign({
         'Cache-Control': 'no-cache',
         'Content-Length': file.length,
         'Content-Type': MIME_TYPES[path.extname(filePath).toLowerCase()] || 'application/octet-stream'
-      });
+      }, staticSecurityHeaders(env)));
       response.end(request.method === 'HEAD' ? undefined : file);
     } catch (error) {
       if (error.code === 'ENOENT' || error.code === 'EISDIR') {
@@ -552,6 +613,7 @@ function createServer(options) {
 
 if (require.main === module) {
   loadEnvFile(path.join(PUBLIC_ROOT, '.env'));
+  assertProductionConfig(process.env);
   const port = Number(process.env.PORT || 8080);
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new Error('PORT must be a valid TCP port.');
@@ -568,4 +630,10 @@ if (require.main === module) {
   });
 }
 
-module.exports = { createServer: createServer, loadEnvFile: loadEnvFile };
+module.exports = {
+  createServer: createServer,
+  loadEnvFile: loadEnvFile,
+  clientAddress: clientAddress,
+  consumeDailyCap: consumeDailyCap,
+  assertProductionConfig: assertProductionConfig
+};
