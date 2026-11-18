@@ -138,8 +138,22 @@ test('production refuses to start the questions form without a Turnstile secret'
     function () { assertProductionConfig(Object.assign({ NODE_ENV: 'production' }, questionsEnv)); },
     /TURNSTILE_SECRET_KEY/
   );
+  assert.throws(
+    function () {
+      assertProductionConfig(Object.assign({
+        NODE_ENV: 'production',
+        TURNSTILE_SECRET_KEY: 'x'
+      }, questionsEnv));
+    },
+    /SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY/
+  );
   assert.doesNotThrow(function () {
-    assertProductionConfig(Object.assign({ NODE_ENV: 'production', TURNSTILE_SECRET_KEY: 'x' }, questionsEnv));
+    assertProductionConfig(Object.assign({
+      NODE_ENV: 'production',
+      TURNSTILE_SECRET_KEY: 'x',
+      SUPABASE_URL: 'https://project.example',
+      SUPABASE_SERVICE_ROLE_KEY: 'server-only-test-key'
+    }, questionsEnv));
   });
   assert.doesNotThrow(function () { assertProductionConfig({ NODE_ENV: 'production' }); });
   assert.doesNotThrow(function () { assertProductionConfig(questionsEnv); });
