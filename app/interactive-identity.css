@@ -429,3 +429,10 @@ html[data-theme="dark"] .development-notice{background:var(--brown)!important;co
 .time,.media-date,.dhikr-ref,.radio-panel-head span,.section-heading>small{font-size:14px!important}
 .media-card h3,.prayer-time span,.prayer-time time{font-size:16px!important}
 .quick-item small,.development-notice-copy span{font-size:14px!important}
+
+
+/* Final typography alignment for the approved light identity. */
+body,button,input,select,textarea{font-family:'Noto Naskh Arabic',Tahoma,Arial,sans-serif}
+body .wrap>header h1,body .wrap .section-title,body .wrap h2,body .wrap h3{font-family:'Noto Naskh Arabic',Tahoma,Arial,sans-serif;font-weight:700}
+body .wrap>header .logo{object-fit:contain;background:#fff;border:1.5px solid #c5a04a;border-radius:14px;padding:5px;box-shadow:0 8px 24px rgba(14,94,60,.12)}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
