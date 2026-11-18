@@ -10,6 +10,9 @@
     "run_worker_first": true
   },
   "vars": {
-    "DEPLOYMENT_ENV": "preview"
+    "DEPLOYMENT_ENV": "preview",
+    "SUPABASE_FUNCTIONS_ENABLED": "true",
+    "SUPABASE_URL": "https://bevyztwoijjzfngutnys.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_5GpifW0KcFuA_kEupjoByg_mMOdhrRH"
   }
 }
