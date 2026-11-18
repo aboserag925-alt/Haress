@@ -1,0 +1,69 @@
+name: Docker Image Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "package.json"
+      - "package-lock.json"
+      - "server/**"
+      - "scripts/**"
+      - ".github/workflows/docker-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docker-build-and-smoke:
+    name: Docker build, runtime, and health check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build runtime image
+        run: docker build --progress=plain --tag haress-docker-validation .
+
+      - name: Start container
+        run: |
+          docker run --detach --name haress-docker-smoke \
+            --publish 127.0.0.1:18080:8080 \
+            haress-docker-validation
+
+      - name: Verify health endpoint and web root
+        shell: bash
+        run: |
+          set -euo pipefail
+          healthy=false
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error http://127.0.0.1:18080/api/health --output /tmp/haress-health.json; then
+              healthy=true
+              break
+            fi
+            sleep 2
+          done
+          if [ "$healthy" != "true" ]; then
+            echo "Health endpoint did not become ready."
+            docker logs haress-docker-smoke
+            exit 1
+          fi
+          node -e "const fs=require('node:fs'); const data=JSON.parse(fs.readFileSync('/tmp/haress-health.json','utf8')); if(data.ok!==true) process.exit(1); console.log('API health: PASS', data);"
+          curl --fail --silent --show-error http://127.0.0.1:18080/ --output /dev/null
+          echo "Web root HTTP check: PASS"
+
+      - name: Container logs on failure
+        if: failure()
+        run: docker logs haress-docker-smoke || true
+
+      - name: Remove test container
+        if: always()
+        run: docker rm --force haress-docker-smoke || true
