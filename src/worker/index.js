@@ -75,19 +75,22 @@ function copyHeaders(source) {
   return headers;
 }
 
-function supabaseFunctionPath(pathname) {
-  if (pathname === '/api/lectures') return '/lectures';
-  if (/^\/api\/lectures\/[0-9a-f-]{36}$/i.test(pathname)) return pathname.slice(4);
-  if (pathname === '/api/admin/session') return '/admin/session';
-  if (pathname === '/api/admin/lectures') return '/admin/lectures';
+function supabaseFunctionRoute(pathname) {
+  if (pathname === '/api/lectures') return { name: 'lectures-admin', path: '/lectures' };
+  if (/^\\/api\\/lectures\\/[0-9a-f-]{36}$/i.test(pathname)) return { name: 'lectures-admin', path: pathname.slice(4) };
+  if (pathname === '/api/admin/session') return { name: 'lectures-admin', path: '/admin/session' };
+  if (pathname === '/api/admin/lectures') return { name: 'lectures-admin', path: '/admin/lectures' };
+  if (pathname === '/api/admin/suggestions') return { name: 'admin-operations', path: '/admin/suggestions' };
+  if (/^\\/api\\/admin\\/suggestions\\/[0-9a-f-]{36}$/i.test(pathname)) return { name: 'admin-operations', path: pathname.slice(4) };
+  if (/^\\/api\\/admin\\/ai\\/tasks\\/[0-9a-f-]{36}\\/approval$/i.test(pathname)) return { name: 'admin-operations', path: pathname.slice(4) };
   return null;
 }
 
 async function proxyToSupabaseFunction(request, env, fetchImpl) {
   if (!env || env.DEPLOYMENT_ENV !== 'preview') return null;
   const requestUrl = new URL(request.url);
-  const functionPath = supabaseFunctionPath(requestUrl.pathname);
-  if (!functionPath) return null;
+  const functionRoute = supabaseFunctionRoute(requestUrl.pathname);
+  if (!functionRoute) return null;
 
   const supabaseUrl = typeof env.SUPABASE_URL === 'string' ? env.SUPABASE_URL.trim() : '';
   const publishableKey = (request.headers.get('apikey') || '').trim();
@@ -105,7 +108,7 @@ async function proxyToSupabaseFunction(request, env, fetchImpl) {
     });
   }
 
-  const targetUrl = new URL('/functions/v1/lectures-admin' + functionPath, supabaseUrl);
+  const targetUrl = new URL('/functions/v1/' + functionRoute.name + functionRoute.path, supabaseUrl);
   targetUrl.search = requestUrl.search;
   const headers = copyHeaders(request.headers);
 
