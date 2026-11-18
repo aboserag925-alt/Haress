@@ -109,7 +109,7 @@ begin
   if not exists (select 1 from pg_catalog.pg_constraint where conname='ai_tasks_approval_id_fkey' and conrelid='public.ai_tasks'::regclass) then
     alter table public.ai_tasks add constraint ai_tasks_approval_id_fkey foreign key (approval_id) references public.ai_approvals(id) on delete restrict;
   end if;
-  if not exists (select 1 from pg_catalog.pg_constraint where conname='ai_tasks_human_approval_id_fkey' and conrelid='public.ai_tasks'::regclass) then
+  if not exists (select 1 from pg_catalog.pg_constraint where conname in ('ai_tasks_human_approval_id_fkey','ai_tasks_human_approval_fk') and conrelid='public.ai_tasks'::regclass) then
     alter table public.ai_tasks add constraint ai_tasks_human_approval_id_fkey foreign key (human_approval_id) references public.ai_approvals(id) on delete restrict;
   end if;
 end
