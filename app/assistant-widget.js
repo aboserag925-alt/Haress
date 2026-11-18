@@ -30,7 +30,8 @@
     var target=document.getElementById(id);
     if(id==='sched') { if(typeof window.show==='function') window.show('sched'); }
     else {
-      var tabId={sched:'t1',prayers:'t2',qibla:'t3',adhkar:'t4',media:'t5',q:'t6',about:'t7',account:'t8'}[id];\n      var tab=tabId && document.getElementById(tabId);
+      var tabId={sched:'t1',prayers:'t2',qibla:'t3',adhkar:'t4',media:'t5',q:'t6',about:'t7',account:'t8'}[id];
+      var tab=tabId && document.getElementById(tabId);
       if(tab) tab.click();
       else if(typeof window.show==='function') window.show(id);
     }
