@@ -163,7 +163,7 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
   const env = {
     DEPLOYMENT_ENV: 'preview',
     SUPABASE_FUNCTIONS_ENABLED: 'true',
-    SUPABASE_URL: 'https://test-project.supabase.co'
+    SUPABASE_URL: 'https://bevyztwoijjzfngutnys.supabase.co'
   };
 
   it('routes public lecture reads to the test Supabase Function and injects only the publishable key', async () => {
@@ -175,7 +175,7 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
     const req = makeRequest('https://preview.example/api/lectures?limit=10', { headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only' } });
     const res = await handleRequest(req, env, fetchImpl);
     assert.equal(res.status, 200);
-    assert.equal(captured.url, 'https://test-project.supabase.co/functions/v1/lectures-admin/lectures?limit=10');
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/lectures-admin/lectures?limit=10');
     assert.equal(captured.headers.apikey, 'sb_publishable_test_only');
     assert.equal(captured.headers.authorization, undefined);
     assert.equal(captured.method, 'GET');
