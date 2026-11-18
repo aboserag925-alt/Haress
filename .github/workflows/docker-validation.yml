@@ -1,6 +1,9 @@
 name: Docker Image Validation
 
 on:
+  push:
+    branches:
+      - fix/docker-runtime-dependencies
   pull_request:
     branches:
       - main
