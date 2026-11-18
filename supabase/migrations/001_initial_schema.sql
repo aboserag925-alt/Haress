@@ -62,6 +62,7 @@ create or replace function public.record_ai_approval(
 ) returns uuid
 language plpgsql
 security definer
+set search_path = public, pg_temp
 as $$
 declare
   v_approval_id uuid;
@@ -80,6 +81,14 @@ begin
   return v_approval_id;
 end;
 $$;
+
+-- SECURITY: functions in the public schema are callable through the Supabase REST API by
+-- default (EXECUTE is granted to PUBLIC). The actor id is caller-supplied, so without this
+-- revoke any visitor could submit an admin's UUID and record an approval in their name.
+revoke execute on function public.record_ai_approval(uuid, uuid, text, text, text)
+  from public, anon, authenticated;
+grant execute on function public.record_ai_approval(uuid, uuid, text, text, text)
+  to service_role;
 
 -- 6. RLS: revoke all from anon/authenticated, grant to service_role
 alter table public.suggestions enable row level security;
@@ -103,9 +112,21 @@ create index if not exists idx_suggestions_status on public.suggestions (status)
 create index if not exists idx_suggestions_created on public.suggestions (created_at desc);
 
 -- 8. user_data.data size limit (1MB)
-alter table public.user_data
-  add constraint if not exists user_data_size_check
-  check (pg_column_size(data) <= 1048576);
+-- "ADD CONSTRAINT IF NOT EXISTS" is not valid PostgreSQL, so guard with a DO block.
+-- NOT VALID enforces the limit on new writes without failing on rows that already exist.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'user_data_size_check
+      and conrelcid = 'public.user_data'::regclass
+  ) then
+    alter table public.user_data
+      add constraint user_data_size_check
+      check (octet_length(data::text) <= 1048576) not valid;
+  end if;
+end
+$$;
 
 -- 9. updated_at trigger function
 create or replace function public.set_updated_at()
@@ -129,5 +150,5 @@ create trigger trg_ai_tasks_updated_at
 
 drop trigger if exists trg_lectures_updated_at on public.lectures;
 create trigger trg_lectures_updated_at
-  before update on public.lectures 
+  before update on public.lectures
   for each row execute function public.set_updated_at();
