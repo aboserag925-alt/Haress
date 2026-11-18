@@ -209,6 +209,15 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
     assert.equal(res.status, 503);
   });
 
+  it('rejects a production Supabase URL in preview without making a network request', async () => {
+    const unsafeEnv = { ...env, SUPABASE_URL: 'https://uzepglfimareggswjzlf.supabase.co' };
+    const req = makeRequest('https://preview.example/api/lectures');
+    const res = await handleRequest(req, unsafeEnv, async () => {
+      throw new Error('production project must never be contacted from preview');
+    });
+    assert.equal(res.status, 503);
+  });
+
   it('does not route unrelated APIs to the lectures Function', async () => {
     const req = makeRequest('https://preview.example/api/library');
     const res = await handleRequest(req, env, async () => new Response('unused'));
