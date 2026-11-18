@@ -63,3 +63,118 @@ input,select,textarea{background:#fff!important;color:#18352d!important;border-c
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* Complete component restyle: replace legacy card geometry and dark brown surfaces. */
+html[data-theme="light"] body,
+html:not([data-theme="dark"]) body{background:#f7faf7!important;color:#18352d!important}
+html[data-theme="light"] body .wrap .card,
+html:not([data-theme="dark"]) body .wrap .card,
+html[data-theme="light"] body .wrap .media-card,
+html:not([data-theme="dark"]) body .wrap .media-card,
+html[data-theme="light"] body .wrap .dhikr,
+html:not([data-theme="dark"]) body .wrap .dhikr,
+html[data-theme="light"] body .wrap .next,
+html:not([data-theme="dark"]) body .wrap .next{
+  background:linear-gradient(155deg,#fff 0%,#f8fbf8 100%)!important;
+  color:#18352d!important;border:1px solid rgba(14,122,77,.16)!important;
+  border-top:1px solid rgba(14,122,77,.16)!important;border-radius:22px!important;
+  box-shadow:0 12px 32px rgba(25,65,48,.075)!important;
+}
+html[data-theme="light"] body .wrap .card:hover,
+html:not([data-theme="dark"]) body .wrap .card:hover,
+html[data-theme="light"] body .wrap .media-card:hover,
+html:not([data-theme="dark"]) body .wrap .media-card:hover{
+  transform:translateY(-3px);border-color:rgba(197,160,74,.55)!important;
+  box-shadow:0 18px 38px rgba(25,65,48,.11)!important;
+}
+html[data-theme="light"] body .wrap .card h2,
+html:not([data-theme="dark"]) body .wrap .card h2,
+html[data-theme="light"] body .wrap .card h3,
+html:not([data-theme="dark"]) body .wrap .card h3,
+html[data-theme="light"] body .wrap .media-card h3,
+html:not([data-theme="dark"]) body .wrap .media-card h3{color:#176b50!important}
+html[data-theme="light"] body .wrap .card p,
+html:not([data-theme="dark"]) body .wrap .card p,
+html[data-theme="light"] body .wrap .card label,
+html:not([data-theme="dark"]) body .wrap .card label,
+html[data-theme="light"] body .wrap .media-card p,
+html:not([data-theme="dark"]) body .wrap .media-card p{color:#52685b!important}
+html[data-theme="light"] body .wrap .tabs,
+html:not([data-theme="dark"]) body .wrap .tabs{
+  background:rgba(255,255,255,.94)!important;border:1px solid rgba(14,122,77,.15)!important;
+  border-radius:18px!important;box-shadow:0 8px 24px rgba(25,65,48,.07)!important;
+}
+html[data-theme="light"] body .wrap .tab,
+html:not([data-theme="dark"]) body .wrap .tab{border-radius:13px!important;color:#52685b!important}
+html[data-theme="light"] body .wrap .tab.on,
+html:not([data-theme="dark"]) body .wrap .tab.on{background:#e8f3eb!important;color:#176b50!important;border:1px solid rgba(14,122,77,.22)!important}
+html[data-theme="light"] body .wrap .quick-item,
+html:not([data-theme="dark"]) body .wrap .quick-item{
+  background:#fff!important;color:#18352d!important;border:1px solid rgba(14,122,77,.15)!important;
+  border-radius:18px!important;box-shadow:0 8px 24px rgba(25,65,48,.06)!important;
+}
+html[data-theme="light"] body .wrap .section-heading,
+html:not([data-theme="dark"]) body .wrap .section-heading{
+  background:linear-gradient(100deg,#edf5ef,#fff)!important;border:1px solid rgba(14,122,77,.12)!important;
+  border-inline-start:4px solid #c5a04a!important;border-radius:16px!important;
+}
+html[data-theme="light"] body .wrap .welcome-hero,
+html:not([data-theme="dark"]) body .wrap .welcome-hero{
+  background:linear-gradient(125deg,#fff 0%,#edf5ef 100%)!important;
+  background-image:linear-gradient(125deg,#fff 0%,#edf5ef 100%)!important;
+  border:1px solid rgba(197,160,74,.48)!important;border-radius:26px!important;
+  box-shadow:0 16px 42px rgba(25,65,48,.09)!important;
+}
+html[data-theme="light"] body .wrap .welcome-hero::before,
+html:not([data-theme="dark"]) body .wrap .welcome-hero::before{display:none!important;background:none!important}
+html[data-theme="light"] body .wrap .hero-copy h2,
+html:not([data-theme="dark"]) body .wrap .hero-copy h2{color:#176b50!important}
+html[data-theme="light"] body .wrap .hero-copy p,
+html:not([data-theme="dark"]) body .wrap .hero-copy p{color:#405b4d!important}
+html[data-theme="light"] body .wrap .hero-secondary,
+html:not([data-theme="dark"]) body .wrap .hero-secondary{background:#fff!important;color:#176b50!important;border:1px solid rgba(14,122,77,.22)!important;border-radius:13px!important}
+html[data-theme="light"] body .wrap .hero-emblem,
+html:not([data-theme="dark"]) body .wrap .hero-emblem{background:#0e7a4d!important;border:2px solid #c5a04a!important;color:#fff!important;border-radius:22px!important}
+html[data-theme="light"] body .wrap .support-button,
+html:not([data-theme="dark"]) body .wrap .support-button{background:#fff!important;color:#176b50!important;border:1px solid #c5a04a!important;border-radius:15px!important;box-shadow:0 8px 22px rgba(25,65,48,.07)!important}
+html[data-theme="light"] body .wrap .note,
+html:not([data-theme="dark"]) body .wrap .note,
+html[data-theme="light"] body .wrap .notice,
+html:not([data-theme="dark"]) body .wrap .notice{background:#f0f6f1!important;color:#52685b!important;border:1px solid rgba(14,122,77,.15)!important;border-radius:15px!important}
+html[data-theme="light"] body .wrap .prayer-time,
+html:not([data-theme="dark"]) body .wrap .prayer-time{background:#fff!important;border:1px solid rgba(14,122,77,.14)!important;border-radius:15px!important}
+html[data-theme="light"] body .wrap .prayer-time.next-prayer,
+html:not([data-theme="dark"]) body .wrap .prayer-time.next-prayer{background:#edf5ef!important;border-color:#c5a04a!important}
+html[data-theme="light"] body .wrap .compass,
+html:not([data-theme="dark"]) body .wrap .compass{background:radial-gradient(circle,#fff,#edf5ef 72%)!important;border-color:rgba(197,160,74,.55)!important;box-shadow:inset 0 0 30px rgba(14,122,77,.05),0 8px 28px rgba(25,65,48,.07)!important}
+html[data-theme="light"] body .wrap .media-card img,
+html:not([data-theme="dark"]) body .wrap .media-card img{background:#f4f8f4!important}
+html[data-theme="light"] body .wrap .support-dialog,
+html:not([data-theme="dark"]) body .wrap .support-dialog{background:#fff!important;color:#18352d!important;border:1px solid rgba(197,160,74,.5)!important}
+html[data-theme="light"] body .wrap .wallet-detail,
+html:not([data-theme="dark"]) body .wrap .wallet-detail{background:#f7faf7!important;border-color:rgba(14,122,77,.15)!important}
+html[data-theme="dark"] body .wrap .card,
+html[data-theme="dark"] body .wrap .media-card,
+html[data-theme="dark"] body .wrap .dhikr,
+html[data-theme="dark"] body .wrap .next{
+  background:linear-gradient(155deg,#193328,#14251e)!important;color:#eef5ef!important;
+  border:1px solid rgba(197,160,74,.22)!important;border-top:1px solid rgba(197,160,74,.22)!important;
+  border-radius:22px!important;box-shadow:0 14px 34px rgba(0,0,0,.2)!important;
+}
+html[data-theme="dark"] body .wrap .card h2,
+html[data-theme="dark"] body .wrap .card h3,
+html[data-theme="dark"] body .wrap .media-card h3{color:#dfbd79!important}
+html[data-theme="dark"] body .wrap .card p,
+html[data-theme="dark"] body .wrap .media-card p{color:#c5d6ca!important}
+html[data-theme="dark"] body .wrap .tabs{background:rgba(20,35,28,.94)!important;border:1px solid rgba(197,160,74,.2)!important;border-radius:18px!important}
+html[data-theme="dark"] body .wrap .tab{border-radius:13px!important}
+html[data-theme="dark"] body .wrap .tab.on{background:#254b39!important;color:#f0d99e!important}
+html[data-theme="dark"] body .wrap .welcome-hero{background:linear-gradient(125deg,#193328,#14251e)!important;border-radius:26px!important}
+html[data-theme="dark"] body .wrap .welcome-hero::before{display:none!important}
+html[data-theme="dark"] body .wrap .section-heading{background:#1b382b!important;border:1px solid rgba(197,160,74,.2)!important;border-inline-start:4px solid #c5a04a!important;border-radius:16px!important}
+html[data-theme="dark"] body .wrap .support-dialog{background:#14251e!important;color:#eef5ef!important}
+@media(max-width:600px){
+ html[data-theme="light"] body .wrap .card,html:not([data-theme="dark"]) body .wrap .card,
+ html[data-theme="light"] body .wrap .media-card,html:not([data-theme="dark"]) body .wrap .media-card{border-radius:18px!important}
+ html[data-theme="light"] body .wrap .welcome-hero,html:not([data-theme="dark"]) body .wrap .welcome-hero{border-radius:20px!important}
+}
