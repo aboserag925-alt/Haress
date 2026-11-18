@@ -95,15 +95,19 @@ async function proxyToSupabaseFunction(request, env, fetchImpl) {
 
   const supabaseUrl = typeof env.SUPABASE_URL === 'string' ? env.SUPABASE_URL.trim() : '';
   const publishableKey = (request.headers.get('apikey') || '').trim();
-  let approvedPreviewProject = false;
+  const approvedProjects = {
+    preview: 'bevyztwoijjzfngutnys.supabase.co',
+    production: 'uzepglfimareggswjzlf.supabase.co'
+  };
+  let approvedProject = false;
   try {
-    approvedPreviewProject = env.DEPLOYMENT_ENV === 'preview' &&
-      new URL(supabaseUrl).hostname === 'bevyztwoijjzfngutnys.supabase.co';
+    const expectedHost = approvedProjects[env.DEPLOYMENT_ENV];
+    approvedProject = Boolean(expectedHost) && new URL(supabaseUrl).hostname === expectedHost;
   } catch {
-    approvedPreviewProject = false;
+    approvedProject = false;
   }
-  if (!isSecureBackendUrl(supabaseUrl) || !publishableKey || !approvedPreviewProject) {
-    return new Response(JSON.stringify({ error: 'إعداد خدمة Supabase للمعاينة غير مكتمل أو لا يطابق مشروع الاختبار المعتمد.' }), {
+  if (!isSecureBackendUrl(supabaseUrl) || !publishableKey || !approvedProject) {
+    return new Response(JSON.stringify({ error: 'إعداد خدمة Supabase غير مكتمل أو لا يطابق مشروع البيئة المعتمد.' }), {
       status: 503,
       headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }
     });
