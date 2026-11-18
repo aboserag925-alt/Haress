@@ -175,3 +175,31 @@ html[data-theme="dark"] .tab{color:#afc1b5!important}
 html[data-theme="dark"] .tab.on{background:#294638!important;color:#dfbd79!important}
 html[data-theme="dark"] .note,html[data-theme="dark"] .notice{background:#1a3026!important;color:#c4d4c8!important}
 html[data-theme="dark"] textarea,html[data-theme="dark"] .field input,html[data-theme="dark"] .field select{background:#14231c!important;color:#eef5ef!important}
+
+/* Preview layout conflict fix: override the legacy fixed-bottom navigation. */
+.tabs{
+  position:sticky!important;
+  top:8px!important;
+  right:auto!important;
+  bottom:auto!important;
+  left:auto!important;
+  width:100%!important;
+  height:auto!important;
+  max-height:none!important;
+}
+@media(max-width:760px){
+  .tabs{
+    position:sticky!important;
+    top:8px!important;
+    right:auto!important;
+    bottom:auto!important;
+    left:auto!important;
+    width:100%!important;
+    height:auto!important;
+    max-height:none!important;
+    display:flex!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    overscroll-behavior-inline:contain!important;
+  }
+}
