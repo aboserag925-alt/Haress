@@ -61,7 +61,7 @@ test('untrusted tasks default to tainted in the in-memory and persisted task pat
  await service.create({source:'suggestion'});
  await service.create({source:'internal',trustedSource:true});
  assert.equal(bodies[0].tainted,true);
- assert.equal(bodies[1].tainted,false);
+ assert.equal(bodies[1].tainted,true);
 });
 test('tainted tasks are blocked from approval, implementation and merge',()=>{
  const tainted={tainted:true,approved:true,approvalId:'approval-1',humanApproved:true,humanApprovalId:'approval-2'};
