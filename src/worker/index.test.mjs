@@ -199,6 +199,32 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
     assert.match(captured.body, /اختبار/);
   });
 
+  it('routes public suggestion submissions to the Turnstile-protected test Function', async () => {
+    let captured = null;
+    const fetchImpl = async (url, init) => {
+      captured = {
+        url: String(url),
+        method: init.method,
+        headers: Object.fromEntries(init.headers.entries()),
+        body: await new Response(init.body).text()
+      };
+      return new Response(JSON.stringify({ item: { id: 'suggestion-test' } }), { status: 201 });
+    };
+    const payload = { category: 'bug', title: 'مشكلة في البحث', description: 'البحث لا يعرض النتائج المطلوبة', turnstileToken: 'one-time-turnstile-token' };
+    const req = makeRequest('https://preview.example/api/suggestions', {
+      method: 'POST',
+      headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only', 'content-type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const res = await handleRequest(req, env, fetchImpl);
+    assert.equal(res.status, 201);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/submit-suggestion');
+    assert.equal(captured.method, 'POST');
+    assert.equal(captured.headers.apikey, 'sb_publishable_test_only');
+    assert.equal(captured.headers.origin, 'https://preview.example');
+    assert.deepEqual(JSON.parse(captured.body), payload);
+  });
+
   it('routes administrator suggestion reads to the admin-operations Function', async () => {
     let captured = null;
     const fetchImpl = async (url, init) => {
