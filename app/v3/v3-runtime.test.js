@@ -96,3 +96,17 @@ test('V3.1 runtime and page remain independent from /app.js', () => {
   const runtime = fs.readFileSync(path.join(root, 'v3-runtime.js'), 'utf8');
   assert.equal((html + runtime).includes('/app.js'), false);
 });
+
+test('account recovery exposes reset and update actions and handles the recovery event', () => {
+  const runtime = fs.readFileSync(path.join(root, 'v3-runtime.js'), 'utf8');
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const authClient = fs.readFileSync(path.join(root, '..', '..', 'src', 'auth-client.js'), 'utf8');
+  for (const id of ['resetPasswordBtn', 'passwordResetPanel', 'newAuthPassword', 'updatePasswordBtn']) {
+    assert.match(html, new RegExp('id=["\\\\']' + id + '["\\\\']'));
+  }
+  assert.match(runtime, /info\.event===['"]PASSWORD_RECOVERY['"]/);
+  assert.match(runtime, /\$\(['"]resetPasswordBtn['"]\)\.addEventListener/);
+  assert.match(runtime, /\$\(['"]updatePasswordBtn['"]\)\.addEventListener/);
+  assert.match(authClient, /auth\.resetPasswordForEmail\(email,\s*\{\s*redirectTo:\s*redirectTo\s*\}\)/);
+  assert.match(authClient, /auth\.updateUser\(\{\s*password:\s*password\s*\}\)/);
+});
