@@ -183,6 +183,8 @@ jobs:
           lectures_status=$(curl --silent --show-error --output /tmp/preview-lectures.json --write-out '%{http_code}' -H "apikey: $publishable_key" "$PREVIEW_URL/api/lectures")
           test "$lectures_status" = "200" || { echo "Supabase-backed public lectures route returned HTTP $lectures_status"; cat /tmp/preview-lectures.json; exit 1; }
           jq -e '.items | type == "array"' /tmp/preview-lectures.json >/dev/null || { echo "Public lectures response shape is invalid"; exit 1; }
+          suggestion_status=$(curl --silent --show-error --output /tmp/preview-suggestion-submit.json --write-out '%{http_code}' -H "apikey: $publishable_key" -H 'content-type: application/json' --data '{"category":"bug","title":"اختبار توجيه","description":"طلب اختبار يجب رفضه لغياب رمز Turnstile"}' "$PREVIEW_URL/api/suggestions")
+          test "$suggestion_status" = "400" || { echo "Public suggestion route must reach Edge Function and reject missing Turnstile token with HTTP 400; got $suggestion_status"; cat /tmp/preview-suggestion-submit.json; exit 1; }
           admin_status=$(curl --silent --show-error --output /tmp/preview-admin.json --write-out '%{http_code}' -H "apikey: $publishable_key" "$PREVIEW_URL/api/admin/session")
           test "$admin_status" = "401" || { echo "Unauthenticated lecture-admin route must return HTTP 401; got $admin_status"; exit 1; }
           suggestions_status=$(curl --silent --show-error --output /tmp/preview-suggestions.json --write-out '%{http_code}' -H "apikey: $publishable_key" "$PREVIEW_URL/api/admin/suggestions")
