@@ -38,6 +38,17 @@ test('migration is transactional and does not destructively drop existing data',
   assert.doesNotMatch(migration,/\b(drop table|truncate|delete from)\b/i);
 });
 
+const previewHardening = fs.readFileSync(path.join(__dirname,'migrations','20261119000100_preview_ai_fk_index_and_rpc_hardening.sql'),'utf8');
+
+test('Preview follow-up hardens legacy quota RPC and removes duplicate index safely',()=>{
+  assert.match(previewHardening,/create index if not exists ai_tasks_approval_id_idx/i);
+  assert.match(previewHardening,/create index if not exists ai_tasks_human_approval_id_idx/i);
+  assert.match(previewHardening,/drop index if exists public\\.suggestions_created_at_idx/i);
+  assert.match(previewHardening,/alter function public\\.consume_suggestion_daily_cap\\(date, integer\\)\\s+set search_path = ''/i);
+  assert.match(previewHardening,/revoke all on function public\\.consume_suggestion_daily_cap\\(date, integer\\)\\s+from public, anon, authenticated/i);
+  assert.match(previewHardening,/grant execute on function public\\.consume_suggestion_daily_cap\\(date, integer\\)\\s+to service_role/i);
+});
+
 const questionCap = fs.readFileSync(path.join(__dirname,'migrations','002_question_daily_cap.sql'),'utf8');
 const suggestionCap = fs.readFileSync(path.join(__dirname,'migrations','20261118204702_suggestion_daily_cap.sql'),'utf8');
 const triggerMigration = fs.readFileSync(path.join(__dirname,'migrations','20261118203913_set_updated_at_search_path.sql'),'utf8');
