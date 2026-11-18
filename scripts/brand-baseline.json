@@ -40,7 +40,7 @@
     },
     {
       "file": "app/brand-apply.css",
-      "important": 78,
+      "important": 80,
       "hexColors": 3,
       "uniqueColors": 2,
       "colorCounts": {
@@ -261,7 +261,7 @@
     }
   ],
   "totals": {
-    "important": 612,
+    "important": 614,
     "hexColors": 460
   }
 }

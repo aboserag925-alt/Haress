@@ -24,7 +24,8 @@ body::before{background:radial-gradient(ellipse at 12% 2%,color-mix(in srgb,var(
 .theme-toggle:focus-visible{outline:3px solid color-mix(in srgb,var(--id-green) 45%,transparent);outline-offset:3px}
 .theme-toggle svg{width:17px;height:17px;flex:none}
 .nav .theme-toggle{flex:none}
-body .wrap>header{position:relative}\nbody .wrap>header .theme-toggle{position:absolute;inset-inline-start:0;top:8px;z-index:8}
+body .wrap>header{position:relative}
+body .wrap>header .theme-toggle{position:absolute;inset-inline-start:0;top:8px;z-index:8}
 html[data-theme="dark"] .site,
 html[data-theme="dark"] .site .nav{background-color:var(--id-bg)!important;color:var(--id-text)!important}
 html[data-theme="dark"] .site .nav{background:rgba(13,23,19,.88)!important;border-color:var(--id-line)!important}
@@ -72,7 +73,7 @@ body .wrap textarea,body .wrap .field input,body .wrap .field select{background:
 body .wrap textarea::placeholder{color:#83948a}
 body .wrap .note,body .wrap .notice{background:#f1f6f0;border-color:var(--id-line);color:#52685c}
 body .wrap .btn{border-color:rgba(23,107,80,.18)}
-\n/* Soft motion language: reveal, lift, and ambient movement without blocking interaction. */
+/* Soft motion language: reveal, lift, and ambient movement without blocking interaction. */
 .motion-ready .motion-reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
 .motion-ready .motion-reveal.is-visible{opacity:1;transform:translateY(0)}
 .motion-card{transform-style:preserve-3d;will-change:transform;transition:transform .28s ease,border-color .28s,box-shadow .28s}
@@ -114,17 +115,17 @@ body .wrap .btn{border-color:rgba(23,107,80,.18)}
 }
 html,body{background:var(--parchment)!important;color:var(--reading)!important}
 body{
-  font-family:'Noto Naskh Arabic',serif!important;
+  font-family:var(--font-body)!important;
   font-size:18px;
   line-height:1.9;
   background-image:none!important;
 }
 body::before{display:none!important}
-button,input,textarea,select{font-family:'Noto Naskh Arabic',serif!important}
+button,input,textarea,select{font-family:var(--font-body)!important}
 a{color:var(--dark-gold)}
 a:hover{color:var(--olive)}
 h1,h2,h3,.section-heading h2,.hero-copy h2,.section-title,.btn,.hero-primary,.hero-secondary,.tab,.support-button,.theme-toggle{
-  font-family:'Reem Kufi','Noto Naskh Arabic',sans-serif!important;
+  font-family:var(--font-display)!important;
 }
 .wrap{width:min(100% - 32px,1080px);padding-top:0}
 body .wrap>header{
@@ -132,11 +133,11 @@ body .wrap>header{
   margin-inline:calc(50% - 50vw);
   padding:18px max(18px,calc((100vw - 1080px)/2)) 20px;
   box-sizing:border-box;
-  background:var(--ink)!important;
-  color:var(--parchment)!important;
+  background:var(--brand-cream)!important;
+  color:var(--brand-charcoal)!important;
   border:0!important;
-  border-bottom:1px solid var(--antique-gold)!important;
-  box-shadow:0 8px 24px rgba(42,20,14,.16);
+  border-bottom:1px solid var(--brand-gold)!important;
+  box-shadow:0 8px 24px rgba(15,76,58,.08);
   grid-template-columns:72px minmax(0,1fr);
   column-gap:16px;
   border-radius:0;
@@ -153,14 +154,14 @@ body .wrap>header .logo{
 }
 body .wrap>header h1{
   margin:0;
-  color:var(--parchment)!important;
-  font:700 clamp(25px,3vw,34px)/1.35 'Reem Kufi',sans-serif!important;
+  color:var(--brand-charcoal)!important;
+  font:700 clamp(25px,3vw,34px)/1.35 var(--font-display)!important;
 }
 body .wrap>header .brand-athar{color:var(--antique-gold)}
 body .wrap>header .brand-ahl{color:var(--parchment)}
 body .wrap>header p,
 body .wrap>header .methodology,
-body .wrap>header .doctor{color:#E8D9B9!important}
+body .wrap>header .doctor{color:var(--brand-green-deep)!important}
 body .wrap>header .doctor::before{background:var(--antique-gold)}
 body .wrap>header .social-links{grid-column:2;gap:8px;flex-wrap:wrap;margin-top:8px}
 body .wrap>header .social-link{
@@ -197,7 +198,7 @@ body .wrap>header .theme-toggle span{color:inherit}
   opacity:.3;
 }
 .hero-kicker,.hero-foot{color:#E8D9B9!important}
-.hero-copy h2{color:var(--antique-gold)!important;font-family:'Reem Kufi',sans-serif!important}
+.hero-copy h2{color:var(--brand-gold)!important;font-family:var(--font-display)!important}
 .hero-copy p{color:var(--parchment)!important;font-size:18px;line-height:1.9}
 .hero-emblem{background:var(--brown)!important;border:1px solid var(--antique-gold)!important;color:var(--parchment)!important;box-shadow:none!important;transform:none}
 .hero-emblem:before,.hero-emblem:after{border-color:rgba(201,162,75,.55)!important}
@@ -408,8 +409,8 @@ html[data-theme="dark"] .development-notice{background:var(--brown)!important;co
 /* Match the one-time brand introduction to the same ink-and-parchment palette. */
 .haress-intro{background:rgba(42,20,14,.98)!important}
 .haress-intro__logo{filter:drop-shadow(0 12px 20px rgba(201,162,75,.18))!important}
-.haress-intro__name{color:#F4EAD5!important;font-family:'Reem Kufi','Noto Naskh Arabic',sans-serif!important}
-.haress-intro__tag{color:#C9A24B!important;font-family:'Noto Naskh Arabic',serif!important}
+.haress-intro__name{color:var(--app-text)!important;font-family:var(--font-display)!important}
+.haress-intro__tag{color:var(--brand-gold)!important;font-family:var(--font-body)!important}
 
 
 /* Keep the Vodafone Cash number and copy action visible in the support panel. */

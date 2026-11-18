@@ -137,9 +137,10 @@ input:focus, textarea:focus, select:focus {
 
 /* Welcome hero */
 .welcome-hero {
-  background: linear-gradient(115deg, rgba(25, 32, 29, 0.97), rgba(18, 23, 21, 0.94) 56%, rgba(37, 34, 25, 0.92)) !important;
-  border: 1px solid rgba(201, 162, 75, 0.27) !important;
+  background: var(--app-surface) !important;
+  border: 1px solid var(--app-line) !important;
   color: var(--app-text) !important;
+  box-shadow: var(--app-shadow) !important;
 }
 .hero-kicker { color: var(--app-green) !important; }
 .hero-copy p { color: #c4c9bf !important; }
@@ -151,9 +152,10 @@ input:focus, textarea:focus, select:focus {
 
 /* Quick strip */
 .quick-item {
-  background: linear-gradient(145deg, rgba(25, 32, 29, 0.9), rgba(18, 23, 21, 0.92)) !important;
-  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  background: var(--app-surface) !important;
+  border: 1px solid var(--app-line) !important;
   color: var(--app-text) !important;
+  box-shadow: var(--app-shadow) !important;
 }
 .quick-item:hover { border-color: rgba(201, 162, 75, 0.32) !important; }
 .quick-icon {
