@@ -75,6 +75,57 @@ function copyHeaders(source) {
   return headers;
 }
 
+function supabaseFunctionPath(pathname) {
+  if (pathname === '/api/lectures') return '/lectures';
+  if (/^\\/api\\/lectures\\/[0-9a-f-]{36}$/i.test(pathname)) return pathname.slice(4);
+  if (pathname === '/api/admin/session') return '/admin/session';
+  if (pathname === '/api/admin/lectures') return '/admin/lectures';
+  return null;
+}
+
+async function proxyToSupabaseFunction(request, env, fetchImpl) {
+  if (!env || env.SUPABASE_FUNCTIONS_ENABLED !== 'true') return null;
+  const requestUrl = new URL(request.url);
+  const functionPath = supabaseFunctionPath(requestUrl.pathname);
+  if (!functionPath) return null;
+
+  const supabaseUrl = typeof env.SUPABASE_URL === 'string' ? env.SUPABASE_URL.trim() : '';
+  const publishableKey = typeof env.SUPABASE_PUBLISHABLE_KEY === 'string' ? env.SUPABASE_PUBLISHABLE_KEY.trim() : '';
+  if (!isSecureBackendUrl(supabaseUrl) || !publishableKey) {
+    return new Response(JSON.stringify({ error: 'إعداد خدمة Supabase للمعاينة غير مكتمل.' }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }
+    });
+  }
+
+  const targetUrl = new URL('/functions/v1/lectures-admin' + functionPath, supabaseUrl);
+  targetUrl.search = requestUrl.search;
+  const headers = copyHeaders(request.headers);
+  headers.set('apikey', publishableKey);
+
+  try {
+    const response = await fetchImpl(targetUrl.href, {
+      method: request.method,
+      headers,
+      body: request.body,
+      signal: request.signal
+    });
+    const outHeaders = {};
+    for (const [key, value] of response.headers.entries()) {
+      if (HOP_BY_HOP_HEADERS.has(key.toLowerCase())) continue;
+      outHeaders[key] = value;
+    }
+    outHeaders['Cache-Control'] = 'no-store';
+    outHeaders['X-Content-Type-Options'] = 'nosniff';
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers: outHeaders });
+  } catch {
+    return new Response(JSON.stringify({ error: 'تعذر الاتصال بخدمة Supabase.' }), {
+      status: 502,
+      headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }
+    });
+  }
+}
+
 async function proxyToBackend(request, backendUrl, fetchImpl, env) {
   const requestUrl = new URL(request.url);
   const apiPath = apiPathFrom(requestUrl.pathname);
@@ -145,8 +196,10 @@ async function proxyToBackend(request, backendUrl, fetchImpl, env) {
 }
 
 export async function handleRequest(request, env, fetchImpl = globalThis.fetch) {
-  const backendUrl = env && env.API_BACKEND_URL ? String(env.API_BACKEND_URL) : '';
+  const supabaseProxied = await proxyToSupabaseFunction(request, env, fetchImpl);
+  if (supabaseProxied) return supabaseProxied;
 
+  const backendUrl = env && env.API_BACKEND_URL ? String(env.API_BACKEND_URL) : '';
   const proxied = await proxyToBackend(request, backendUrl, fetchImpl, env);
   if (proxied) return proxied;
 
