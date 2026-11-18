@@ -68,3 +68,13 @@ jobs:
           PROXY_SHARED_SECRET: ${{ secrets.PROXY_SHARED_SECRET }}
         run: |
           printf '%s' "$PROXY_SHARED_SECRET" | npx wrangler@4 secret put PROXY_SHARED_SECRET --config wrangler.preview.jsonc
+
+      - name: Smoke test deployed preview and Railway CORS
+        env:
+          PREVIEW_URL: https://hares-pr-103-preview.aboserag925.workers.dev
+        run: |
+          set -eu
+          BACKEND_URL="$(node -e 'const fs = require("node:fs"); const config = JSON.parse(fs.readFileSync("wrangler.preview.jsonc", "utf8")); process.stdout.write(String(config.vars && config.vars.API_BACKEND_URL || ""));')"
+          node scripts/smoke-check.mjs --backend "$BACKEND_URL" --origin "$PREVIEW_URL"
+          curl --fail --silent --show-error --retry 4 --retry-delay 3 --retry-all-errors --max-time 10 "$PREVIEW_URL/" >/dev/null
+          curl --fail --silent --show-error --retry 4 --retry-delay 3 --retry-all-errors --max-time 10 "$PREVIEW_URL/api/health" | node -e 'let data = ""; process.stdin.setEncoding("utf8"); process.stdin.on("data", chunk => data += chunk); process.stdin.on("end", () => { if (JSON.parse(data).ok !== true) process.exit(1); });'
