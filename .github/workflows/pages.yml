@@ -50,8 +50,8 @@ jobs:
 
       - name: Build application assets
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_URL: ${{ github.event_name == 'pull_request' && 'https://bevyztwoijjzfngutnys.supabase.co' || secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && 'sb_publishable_5GpifW0KcFuA_kEupjoByg_mMOdhrRH' || secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: |
           npm ci
           npm test
