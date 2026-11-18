@@ -17,6 +17,12 @@ create table if not exists public.suggestions (
   updated_at timestamptz not null default now()
 );
 
+
+-- Existing Haress databases may already have the original suggestions table.
+-- Add AI metadata without replacing its status model, rows, or RLS policies.
+alter table public.suggestions add column if not exists risk text;
+alter table public.suggestions add column if not exists confidence numeric(4,3);
+alter table public.suggestions add column if not exists ai_analysis jsonb;
 create table if not exists public.ai_tasks (
   id uuid primary key default gen_random_uuid(),
   suggestion_id uuid references public.suggestions(id) on delete set null,
@@ -47,7 +53,7 @@ create table if not exists public.ai_reviews (
 create table if not exists public.ai_approvals (
   id uuid primary key default gen_random_uuid(),
   task_id uuid not null references public.ai_tasks(id) on delete cascade,
-  approved_by uuid not null references auth.users(id),
+  actor_user_id uuid not null references auth.users(id),
   action text not null check (action in ('IMPLEMENT','MERGE')),
   decision text not null check (decision in ('APPROVED','REJECTED')),
   reason text,
@@ -134,7 +140,7 @@ begin
     raise exception 'Task is not ready for human review';
   end if;
 
-  insert into public.ai_approvals(task_id,approved_by,action,decision,reason)
+  insert into public.ai_approvals(task_id,actor_user_id,action,decision,reason)
   values (p_task_id,p_actor_user_id,p_action,p_decision,pg_catalog.left(coalesce(p_reason,''),1000))
   returning id into v_approval_id;
 
