@@ -1,0 +1,4 @@
+# False positives only: these findings are Supabase publishable keys (public client identifiers),
+# not secret/service_role keys. The literals have been removed from current preview configuration.
+6db6acbbde3071b3cd5f5ff79eea165a7846fe7d:.github/workflows/cloudflare-worker.yml:generic-api-key:92
+61868c85b1cefaa97b67bb5048a8baffbc2ceba4:wrangler.preview.jsonc:generic-api-key:16
