@@ -1,4 +1,4 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 
 const ALLOWED_ORIGINS = new Set([
   "https://hares-preview.aboserag925.workers.dev",
@@ -9,10 +9,10 @@ const LECTURE_FIELDS = "id,title,description,starts_at,category,stream_url,recor
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_BODY_BYTES = 16 * 1024;
 
-function json(data: unknown, status = 200, headers: HeadersInit = {}) {
+function json(data: unknown, status = 200, headers: HeadersInit = {}, extraHeaders: HeadersInit = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...headers },
+    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...headers, ...extraHeaders },
   });
 }
 
