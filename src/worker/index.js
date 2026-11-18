@@ -77,12 +77,12 @@ function copyHeaders(source) {
 
 function supabaseFunctionRoute(pathname) {
   if (pathname === '/api/lectures') return { name: 'lectures-admin', path: '/lectures' };
-  if (/^\\/api\\/lectures\\/[0-9a-f-]{36}$/i.test(pathname)) return { name: 'lectures-admin', path: pathname.slice(4) };
+  if (/^\/api\/lectures\/[0-9a-f-]{36}$/i.test(pathname)) return { name: 'lectures-admin', path: pathname.slice(4) };
   if (pathname === '/api/admin/session') return { name: 'lectures-admin', path: '/admin/session' };
   if (pathname === '/api/admin/lectures') return { name: 'lectures-admin', path: '/admin/lectures' };
   if (pathname === '/api/admin/suggestions') return { name: 'admin-operations', path: '/admin/suggestions' };
-  if (/^\\/api\\/admin\\/suggestions\\/[0-9a-f-]{36}$/i.test(pathname)) return { name: 'admin-operations', path: pathname.slice(4) };
-  if (/^\\/api\\/admin\\/ai\\/tasks\\/[0-9a-f-]{36}\\/approval$/i.test(pathname)) return { name: 'admin-operations', path: pathname.slice(4) };
+  if (/^\/api\/admin\/suggestions\/[0-9a-f-]{36}$/i.test(pathname)) return { name: 'admin-operations', path: pathname.slice(4) };
+  if (/^\/api\/admin\/ai\/tasks\/[0-9a-f-]{36}\/approval$/i.test(pathname)) return { name: 'admin-operations', path: pathname.slice(4) };
   return null;
 }
 
