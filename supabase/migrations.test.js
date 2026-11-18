@@ -80,14 +80,14 @@ test('suggestion Edge Function uses the atomic RPC and Cairo calendar day',()=>{
 
 
 test('AI migration reconciles an existing partial Preview schema without dropping data',()=>{
-  assert.match(migration,/create table if not exists public\\.ai_reviews/i);
+  assert.match(migration,/create table if not exists public\.ai_reviews/i);
   assert.match(migration,/add column if not exists approval_id uuid/i);
   assert.match(migration,/add column if not exists human_approved boolean/i);
   assert.match(migration,/add column if not exists human_approval_id uuid/i);
   assert.match(migration,/alter column tainted set default true/i);
   assert.match(migration,/alter column requires_approval set default true/i);
   assert.match(migration,/alter column source set default 'suggestion'/i);
-  assert.match(migration,/update public\\.ai_tasks set tainted = true where approved = false and tainted = false/i);
+  assert.match(migration,/update public\.ai_tasks set tainted = true where approved = false and tainted = false/i);
   assert.match(migration,/set search_path = ''/i);
   assert.match(migration,/for update/i);
 });
