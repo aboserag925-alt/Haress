@@ -437,6 +437,8 @@
     var form=$('authForm'), signed=$('accountSignedIn');
     if(!info.configured){state.account=null;$('authConfigMissing').hidden=false;form.hidden=true;signed.hidden=true;status('authMessage','أضف إعدادات Supabase لتفعيل الحسابات.');return;}
     $('authConfigMissing').hidden=true;state.account=info.user;
+    if(info.event==='PASSWORD_RECOVERY'){$('passwordResetPanel').hidden=false;form.hidden=true;signed.hidden=true;status('authMessage','أدخل كلمة المرور الجديدة لإكمال الاستعادة.');return;}
+    $('passwordResetPanel').hidden=true;
     if(!info.user){form.hidden=false;signed.hidden=true;status('authMessage','سجّل الدخول أو أنشئ حسابًا بالبريد الإلكتروني.');return;}
     form.hidden=true;signed.hidden=false;$('accountEmail').textContent=info.user.email||'';
     status('authMessage','تسجيل الدخول محفوظ تلقائيًا على هذا الجهاز.');
