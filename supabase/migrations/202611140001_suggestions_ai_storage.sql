@@ -95,6 +95,39 @@ begin
 end
 $;
 
+-- Reconcile databases that already contain an earlier, partial AI schema.
+-- Keep existing rows and table identities; only add missing columns and objects.
+create table if not exists public.ai_reviews (
+  id uuid primary key default gen_random_uuid(),
+  task_id uuid not null references public.ai_tasks(id) on delete cascade,
+  agent text not null,
+  result text not null check (result in ('PASS','FAIL','NEEDS_REVIEW','BLOCKED')),
+  report jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+alter table public.ai_tasks add column if not exists approval_id uuid;
+alter table public.ai_tasks add column if not exists human_approved boolean not null default false;
+alter table public.ai_tasks add column if not exists human_approval_id uuid;
+alter table public.ai_tasks alter column tainted set default true;
+alter table public.ai_tasks alter column requires_approval set default true;
+alter table public.ai_tasks alter column source set default 'suggestion';
+
+-- Previously-created tasks have no trustworthy approval provenance.
+-- Fail closed for any such task; do not silently preserve an unverified trust bit.
+update public.ai_tasks set tainted = true where approved = false and tainted = false;
+
+do $
+begin
+  if not exists (select 1 from pg_catalog.pg_constraint where conname='ai_tasks_approval_id_fkey' and conrelid='public.ai_tasks'::regclass) then
+    alter table public.ai_tasks add constraint ai_tasks_approval_id_fkey foreign key (approval_id) references public.ai_approvals(id) on delete restrict;
+  end if;
+  if not exists (select 1 from pg_catalog.pg_constraint where conname='ai_tasks_human_approval_id_fkey' and conrelid='public.ai_tasks'::regclass) then
+    alter table public.ai_tasks add constraint ai_tasks_human_approval_id_fkey foreign key (human_approval_id) references public.ai_approvals(id) on delete restrict;
+  end if;
+end
+$;
+
 create index if not exists suggestions_created_at_idx on public.suggestions(created_at desc);
 create index if not exists suggestions_status_created_idx on public.suggestions(status,created_at desc);
 create index if not exists ai_tasks_status_created_idx on public.ai_tasks(status,created_at desc);
@@ -134,7 +167,7 @@ create or replace function public.record_ai_approval(
 language plpgsql
 security definer
 set search_path = ''
-as $$
+as $
 declare
   v_task public.ai_tasks%rowtype;
   v_approval_id uuid;
@@ -194,7 +227,7 @@ begin
   );
   return v_approval_id;
 end;
-$$;
+$;
 
 revoke all on function public.record_ai_approval(uuid,uuid,text,text,text) from public, anon, authenticated;
 grant execute on function public.record_ai_approval(uuid,uuid,text,text,text) to service_role;
