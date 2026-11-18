@@ -17,7 +17,8 @@ concurrency:
 jobs:
   build-and-test:
     name: Build and test application
-    environment: Main
+    environment:
+      name: ${{ github.event_name == 'pull_request' && 'Preview' || 'Main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -36,7 +37,6 @@ jobs:
       - name: Validate Wrangler configuration and Worker bundle (dry run)
         run: npx --yes wrangler@4 deploy --dry-run
 
-
       - name: Run test suite
         run: npm test
 
@@ -44,14 +44,15 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          EXPECTED_SUPABASE_URL: ${{ github.event_name == 'pull_request' && 'https://bevyztwoijjzfngutnys.supabase.co' || 'https://uzepglfimareggswjzlf.supabase.co' }}
         run: |
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
-            echo "Missing SUPABASE_URL or SUPABASE_ANON_KEY in GitHub Actions secrets."
-            echo "Configure both secrets for the repository before building the production frontend."
+            echo "Missing Supabase URL or publishable key in the selected GitHub Actions environment."
+            echo "Pull requests require Preview environment secrets; main requires Main environment secrets."
             exit 1
           fi
-          if [ "$SUPABASE_URL" != "https://uzepglfimareggswjzlf.supabase.co" ]; then
-            echo "SUPABASE_URL does not match the approved doc project."
+          if [ "$SUPABASE_URL" != "$EXPECTED_SUPABASE_URL" ]; then
+            echo "SUPABASE_URL does not match the Supabase project approved for this deployment context."
             exit 1
           fi
 
@@ -62,6 +63,8 @@ jobs:
         run: npm run build:app
 
       - name: Verify generated Supabase configuration without exposing key
+        env:
+          EXPECTED_SUPABASE_URL: ${{ github.event_name == 'pull_request' && 'https://bevyztwoijjzfngutnys.supabase.co' || 'https://uzepglfimareggswjzlf.supabase.co' }}
         run: |
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
@@ -74,11 +77,11 @@ jobs:
             console.error('Supabase build configuration is missing.');
             process.exit(1);
           }
-          if (config.url !== 'https://uzepglfimareggswjzlf.supabase.co') {
-            console.error('Supabase URL does not match the approved doc project.');
+          if (config.url !== process.env.EXPECTED_SUPABASE_URL) {
+            console.error('Supabase URL does not match the approved project for this context.');
             process.exit(1);
           }
-          console.log('Supabase URL and anon/publishable key are present; values withheld.');
+          console.log('Supabase URL and publishable key are present; values withheld.');
           NODE
 
       - name: Upload built application assets
