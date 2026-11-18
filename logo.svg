@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 80" fill="none" role="img" aria-label="استراحة أهل الأثر">
+  <!-- قوس محراب -->
+  <path d="M28 64V52C28 36 48 28 60 10C72 28 92 36 92 52V64" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- كتاب مفتوح (صفحتان) -->
+  <path d="M40 64 L60 58 L80 64 L80 72 L60 66 L40 72 Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+  <line x1="60" y1="58" x2="60" y2="66" stroke="currentColor" stroke-width="2"/>
+  <!-- جوهرة -->
+  <path d="M60 38L66 48L60 58L54 48Z" fill="currentColor"/>
+</svg>
