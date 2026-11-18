@@ -215,11 +215,37 @@ function consumeDailyCap(state, cap, now) {
   return true;
 }
 
+async function consumeSharedDailyCap(env, cap, now, fetchImpl) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('Shared daily question budget storage is not configured');
+  }
+  const base = env.SUPABASE_URL.replace(/\/$/, '');
+  const response = await fetchImpl(base + '/rest/v1/rpc/consume_question_daily_cap', {
+    method: 'POST',
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      p_day: new Date(now).toISOString().slice(0, 10),
+      p_cap: cap
+    }),
+    signal: AbortSignal.timeout(10000)
+  });
+  if (!response.ok) throw new Error('Shared daily question budget request failed');
+  return await response.json() === true;
+}
+
 // In production the questions form must be protected by Turnstile.
 function assertProductionConfig(env) {
   const questionsConfigured = Boolean(env.GEMINI_API_KEY && env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID);
   if (env.NODE_ENV === 'production' && questionsConfigured && !env.TURNSTILE_SECRET_KEY) {
     throw new Error('TURNSTILE_SECRET_KEY is required in production when the questions form is enabled.');
+  }
+  if (env.NODE_ENV === 'production' && questionsConfigured &&
+      (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY)) {
+    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for the shared daily question budget.');
   }
 }
 
@@ -548,8 +574,21 @@ function createServer(options) {
         }
       }
 
-      // Counted only after Turnstile passes, so failed bot attempts cannot burn the budget.
-      if (!consumeDailyCap(dailyCapState, questionsDailyCap(env), Date.now())) {
+      // Counted only after Turnstile passes. Production uses an atomic shared Supabase RPC;
+      // local memory is retained only for non-production development and tests.
+      let withinDailyBudget = false;
+      if (env.NODE_ENV === 'production') {
+        try {
+          withinDailyBudget = await consumeSharedDailyCap(env, questionsDailyCap(env), Date.now(), fetchImpl);
+        } catch {
+          console.error('Shared daily question budget is unavailable');
+          sendJson(response, 503, { error: 'تعذر التحقق من الحد اليومي للأسئلة الآن. حاول لاحقًا.' });
+          return;
+        }
+      } else {
+        withinDailyBudget = consumeDailyCap(dailyCapState, questionsDailyCap(env), Date.now());
+      }
+      if (!withinDailyBudget) {
         sendJson(response, 429, { error: 'بلغ الموقع حد الأسئلة اليومي. حاول غدًا.' });
         return;
       }
@@ -635,5 +674,6 @@ module.exports = {
   loadEnvFile: loadEnvFile,
   clientAddress: clientAddress,
   consumeDailyCap: consumeDailyCap,
+  consumeSharedDailyCap: consumeSharedDailyCap,
   assertProductionConfig: assertProductionConfig
 };
