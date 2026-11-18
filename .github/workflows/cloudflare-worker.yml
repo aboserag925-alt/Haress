@@ -18,7 +18,9 @@ jobs:
   build-and-test:
     name: Build and test application
     environment:
-      name: ${{ github.event_name == 'pull_request' && 'Preview' || 'Main' }}
+      # PR builds must not receive Cloudflare deployment secrets from the Preview environment.
+      # Production builds use Main only to read the public Supabase build inputs.
+      name: ${{ github.event_name == 'pull_request' && 'Preview-Build-CI' || 'Main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -125,6 +127,19 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy --config wrangler.preview.jsonc
+
+      - name: Verify preview HTTP response and fail-closed API
+        env:
+          PREVIEW_URL: https://hares-preview.aboserag925.workers.dev
+        run: |
+          page_status=$(curl --silent --show-error --output /tmp/preview.html --dump-header /tmp/preview.headers --write-out '%{http_code}' "$PREVIEW_URL/")
+          test "$page_status" = "200" || { echo "Preview page returned HTTP $page_status"; exit 1; }
+          grep -Eiq '^content-type: text/html' /tmp/preview.headers || { echo "Preview did not return HTML"; exit 1; }
+          grep -Eiq "^x-content-type-options: nosniff" /tmp/preview.headers || { echo "Missing nosniff header"; exit 1; }
+          grep -Eiq "content-security-policy:.*object-src 'none'" /tmp/preview.headers || { echo "Missing expected CSP directive"; exit 1; }
+          api_status=$(curl --silent --show-error --output /tmp/preview-api.json --write-out '%{http_code}' "$PREVIEW_URL/api/health")
+          test "$api_status" = "503" || { echo "Preview API should fail closed with HTTP 503 when no test backend is configured; got $api_status"; exit 1; }
+          echo "Preview HTML, security headers, and fail-closed API behavior verified."
 
   deploy:
     name: Deploy production Worker
