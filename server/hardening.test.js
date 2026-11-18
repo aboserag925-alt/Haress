@@ -196,3 +196,22 @@ test('the CSP still allows what the pages need', function () {
   assert.match(policy, /fonts\.googleapis\.com/);
   assert.match(policy, /\*\.supabase\.co/);
 });
+
+test('allows an explicitly configured extra preview origin without replacing the primary allowlist', async function () {
+  const env = {
+    ALLOWED_ORIGINS: 'https://app.example',
+    ALLOWED_ORIGINS_EXTRA: 'https://preview.example'
+  };
+  await withServer({ env: env, fetch: okFetch() }, async function (baseUrl) {
+    const allowed = await fetch(baseUrl + '/api/health', {
+      headers: { Origin: 'https://preview.example' }
+    });
+    assert.equal(allowed.status, 200);
+    assert.equal(allowed.headers.get('access-control-allow-origin'), 'https://preview.example');
+
+    const blocked = await fetch(baseUrl + '/api/health', {
+      headers: { Origin: 'https://unknown.example' }
+    });
+    assert.equal(blocked.status, 403);
+  });
+});

@@ -56,7 +56,8 @@ STORAGE_DIRECTORY=/srv/ahl-athar/storage
 - لا تعرض قيم المتغيرات السرية في السجلات أو مخرجات CI.
 - لا تضع `SUPABASE_SERVICE_ROLE_KEY` أو `PROXY_SHARED_SECRET` في الواجهة أو المستودع.
 - يجب أن تتطابق قيمة `PROXY_SHARED_SECRET` بين Worker والخادم المقابل **داخل البيئة نفسها فقط**. استخدم سرًا مستقلًا للاختبار وآخر للإنتاج.
-- أضف أصل واجهة Cloudflare الصحيح إلى `ALLOWED_ORIGINS`، ولا تستخدم wildcard.
+- أضف الأصول الأساسية إلى `ALLOWED_ORIGINS`، ولا تستخدم wildcard.
+- يمكن إضافة أصول معاينات مؤقتة في `ALLOWED_ORIGINS_EXTRA`؛ تُدمج هذه القائمة مع الأساسية ولا تستبدلها.
 - عند تفعيل نموذج الأسئلة في الإنتاج، يلزم إعداد `TURNSTILE_SECRET_KEY` مع مفاتيح Telegram وGemini وإعدادات Supabase اللازمة.
 - يستخدم تخزين الوسائط الخاص في Supabase bucket باسم `haress-media` عند توافر إعدادات Supabase. وحدة Railway المركبة على `/srv/ahl-athar/storage` تبقى متاحة للتخزين المحلي الاحتياطي/ملفات الفهرسة حسب مسار التنفيذ.
 

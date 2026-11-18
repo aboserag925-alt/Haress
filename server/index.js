@@ -79,7 +79,9 @@ function isAllowedOrigin(request, env) {
   }
   if (parsedOrigin.protocol !== 'http:' && parsedOrigin.protocol !== 'https:') return false;
 
-  const configuredOrigins = (env.ALLOWED_ORIGINS || '')
+  const configuredOrigins = [env.ALLOWED_ORIGINS, env.ALLOWED_ORIGINS_EXTRA]
+    .filter(Boolean)
+    .join(',')
     .split(',')
     .map(function (value) { return value.trim(); })
     .filter(Boolean);
