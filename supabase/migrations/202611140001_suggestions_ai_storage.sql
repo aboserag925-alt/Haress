@@ -155,7 +155,13 @@ alter table public.ai_audit_events enable row level security;
 
 revoke all on public.suggestions, public.ai_tasks, public.ai_reviews, public.ai_approvals, public.ai_audit_events from public, anon, authenticated;
 grant all on public.suggestions, public.ai_tasks, public.ai_reviews, public.ai_approvals, public.ai_audit_events to service_role;
-grant usage, select on sequence public.ai_audit_events_id_seq to service_role;
+do $sequence_grant$
+begin
+  if pg_catalog.to_regclass('public.ai_audit_events_id_seq') is not null then
+    execute 'grant usage, select on sequence public.ai_audit_events_id_seq to service_role';
+  end if;
+end
+$sequence_grant$;
 
 create or replace function public.record_ai_approval(
   p_task_id uuid,
