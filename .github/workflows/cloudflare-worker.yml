@@ -88,20 +88,38 @@ jobs:
       - name: Smoke test Supabase test Edge Function authorization and RLS
         if: github.event_name == 'pull_request'
         env:
-          TEST_SUPABASE_URL: https://bevyztwoijjzfngutnys.supabase.co
-          TEST_SUPABASE_PUBLISHABLE_KEY: sb_publishable_5GpifW0KcFuA_kEupjoByg_mMOdhrRH
+          EXPECTED_SUPABASE_URL: https://bevyztwoijjzfngutnys.supabase.co
           PREVIEW_ORIGIN: https://hares-preview.aboserag925.workers.dev
         run: |
-          set -euo pipefail
-          base="$TEST_SUPABASE_URL/functions/v1/lectures-admin"
-          public_status=$(curl --silent --show-error --output /tmp/lectures-public.json --write-out '%{http_code}' \
-            -H "apikey: $TEST_SUPABASE_PUBLISHABLE_KEY" -H "Origin: $PREVIEW_ORIGIN" "$base/lectures")
-          test "$public_status" = "200" || { echo "Public lectures Edge Function returned HTTP $public_status"; cat /tmp/lectures-public.json; exit 1; }
-          jq -e '.items | type == "array"' /tmp/lectures-public.json >/dev/null
-          admin_status=$(curl --silent --show-error --output /tmp/lectures-admin.json --write-out '%{http_code}' \
-            -H "apikey: $TEST_SUPABASE_PUBLISHABLE_KEY" -H "Origin: $PREVIEW_ORIGIN" "$base/admin/session")
-          test "$admin_status" = "401" || { echo "Unauthenticated admin request must return 401, got $admin_status"; exit 1; }
-          echo "Supabase test Function: public RLS read passed; unauthenticated admin request correctly rejected."
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import vm from 'node:vm';
+          const sandbox = { window: {} };
+          vm.runInNewContext(fs.readFileSync('app/supabase-config.js', 'utf8'), sandbox, { timeout: 1000 });
+          const config = sandbox.window.AHL_SUPABASE_CONFIG;
+          if (!config?.url || config.url !== process.env.EXPECTED_SUPABASE_URL || !config.anonKey) {
+            console.error('Test Supabase build configuration is missing or does not match the approved test project.');
+            process.exit(1);
+          }
+          const base = config.url + '/functions/v1/lectures-admin';
+          const headers = { apikey: config.anonKey, Origin: process.env.PREVIEW_ORIGIN };
+          const publicResponse = await fetch(base + '/lectures', { headers });
+          if (publicResponse.status !== 200) {
+            console.error('Public lectures Edge Function returned HTTP ' + publicResponse.status);
+            process.exit(1);
+          }
+          const publicBody = await publicResponse.json();
+          if (!Array.isArray(publicBody.items)) {
+            console.error('Public lectures Edge Function returned an invalid response shape.');
+            process.exit(1);
+          }
+          const adminResponse = await fetch(base + '/admin/session', { headers });
+          if (adminResponse.status !== 401) {
+            console.error('Unauthenticated admin request must return HTTP 401; got ' + adminResponse.status);
+            process.exit(1);
+          }
+          console.log('Supabase test Function: public RLS read passed; unauthenticated admin request correctly rejected.');
+          NODE
 
       - name: Upload built application assets
         uses: actions/upload-artifact@v4
