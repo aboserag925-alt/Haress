@@ -9,7 +9,8 @@
   var state = { location: null, prayerTimes: null, compass: null, period: 'morning',
     media: [], mediaCategory: 'all', turnstileId: null, turnstilePromise: null,
     installPrompt: null, account: null, syncTimer: null, nextPrayer: null,
-    nextPrayerName: '', radioTimer: null, radioMuted: false };
+    nextPrayerName: '', radioTimer: null, radioMuted: false,
+    passwordRecoveryMode: new URLSearchParams(window.location.search).get('auth') === 'recovery' };
 
   function status(id, message, error) {
     var el = $(id); if (!el) return;
@@ -434,11 +435,15 @@
     clearTimeout(state.syncTimer);state.syncTimer=setTimeout(function(){syncAccount(state.account,false);},600);
   }
   function accountState(info) {
-    var form=$('authForm'), signed=$('accountSignedIn');
+    var form=$('authForm'), signed=$('accountSignedIn'), recovery=$('passwordRecoveryForm');
     if(!info.configured){state.account=null;$('authConfigMissing').hidden=false;form.hidden=true;signed.hidden=true;status('authMessage','أضف إعدادات Supabase لتفعيل الحسابات.');return;}
     $('authConfigMissing').hidden=true;state.account=info.user;
-    if(!info.user){form.hidden=false;signed.hidden=true;status('authMessage','سجّل الدخول أو أنشئ حسابًا بالبريد الإلكتروني.');return;}
-    form.hidden=true;signed.hidden=false;$('accountEmail').textContent=info.user.email||'';
+    if(info.event==='PASSWORD_RECOVERY')state.passwordRecoveryMode=true;
+    if(info.event==='USER_UPDATED')state.passwordRecoveryMode=false;
+    if(!info.user){state.passwordRecoveryMode=false;form.hidden=false;signed.hidden=true;recovery.hidden=true;status('authMessage','سجّل الدخول أو أنشئ حسابًا بالبريد الإلكتروني.');return;}
+    form.hidden=true;
+    if(state.passwordRecoveryMode){signed.hidden=true;recovery.hidden=false;status('authMessage','أدخل كلمة مرور جديدة لحسابك.');return;}
+    recovery.hidden=true;signed.hidden=false;$('accountEmail').textContent=info.user.email||'';
     status('authMessage','تسجيل الدخول محفوظ تلقائيًا على هذا الجهاز.');
     syncAccount(info.user,true);
   }
@@ -459,6 +464,24 @@
         status('authMessage',result.data.session?'تم إنشاء الحساب وتسجيل الدخول.':'تم إنشاء الحساب. افتح رسالة البريد لتأكيد العنوان ثم سجّل الدخول.');}
       catch(e){status('authMessage','تعذر إنشاء الحساب: '+e.message,true);}
       finally{$('signInBtn').disabled=false;$('signUpBtn').disabled=false;}
+    });
+    $('resetPasswordBtn').addEventListener('click',async function(){
+      if(!$('authEmail').reportValidity())return;
+      $('resetPasswordBtn').disabled=true;status('authMessage','جارٍ إرسال رابط الاستعادة…');
+      try{var result=await window.ahlAuth.resetPassword($('authEmail').value.trim());if(result.error)throw result.error;
+        status('authMessage','إذا كان البريد مسجلًا، فستصلك رسالة آمنة لتعيين كلمة مرور جديدة.');}
+      catch(e){status('authMessage','تعذر إرسال رابط الاستعادة: '+e.message,true);}
+      finally{$('resetPasswordBtn').disabled=false;}
+    });
+    $('passwordRecoveryForm').addEventListener('submit',async function(event){
+      event.preventDefault();if(!$('passwordRecoveryForm').reportValidity())return;
+      $('saveNewPasswordBtn').disabled=true;status('authMessage','جارٍ تحديث كلمة المرور…');
+      try{var result=await window.ahlAuth.updatePassword($('newPassword').value);if(result.error)throw result.error;
+        state.passwordRecoveryMode=false;$('passwordRecoveryForm').reset();accountState({configured:true,user:state.account,event:'USER_UPDATED'});
+        var url=new URL(window.location.href);url.searchParams.delete('auth');window.history.replaceState({},'',url);
+        status('authMessage','تم تحديث كلمة المرور بنجاح.');}
+      catch(e){status('authMessage','تعذر تحديث كلمة المرور: '+e.message,true);}
+      finally{$('saveNewPasswordBtn').disabled=false;}
     });
     $('signOutBtn').addEventListener('click',async function(){
       status('authMessage','جارٍ تسجيل الخروج…');try{var result=await window.ahlAuth.signOut();if(result.error)throw result.error;status('authMessage','تم تسجيل الخروج.');}
