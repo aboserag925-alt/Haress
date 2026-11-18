@@ -1,58 +1,95 @@
-# نشر الخادم الخلفي (Haress Backend)
+# بنية ونشر الخادم الخلفي لمنصة حرس الحدود
 
-## نظرة عامة
-- الخادم: Node.js 22 (Docker).
-- المنفذ: 8080.
-- المتغيرات: `.env` (انسخ `.env.example`).
-- الخادم لا يعمل على GitHub Pages؛ يحتاج استضافة منفصلة.
+## البنية المعتمدة
 
-## المتغيرات المطلوبة
+- **Cloudflare:** استضافة واجهة الموقع وملفاتها الثابتة، وتمرير طلبات `/api/*` عبر Worker.
+- **Railway:** تشغيل خادم Node.js الخلفي على المنفذ `8080`، بما في ذلك بيئات الاختبار ومعاينات الفروع.
+- **Supabase:** قاعدة البيانات والمصادقة والتخزين. يستخدم الخادم مفتاح `service_role` من جهة الخادم فقط، ولا يجوز تضمينه في ملفات الواجهة أو Git.
+
+مسار الطلبات:
+
+1. يحمّل الزائر الواجهة من Cloudflare.
+2. يمرر Worker طلبات `/api/*` إلى عنوان `API_BACKEND_URL` على Railway.
+3. يتصل خادم Railway بـ Supabase للبيانات وRPC وStorage، وبالخدمات الخارجية المفعّلة مثل Telegram وGemini.
+
+لا تستخدم GitHub Pages أو Netlify أو Vercel أو Fly.io أو VPS كوجهات نشر لهذا المشروع.
+
+## بيئة الاختبار الحالية
+
+- Railway project: `haress-backend-test`.
+- Environment: `testing`.
+- Service: `haress-backend-test`.
+- فرع المصدر: `fix/pre-launch-hardening-v2`.
+- المنفذ: `8080`.
+- Health check: `/api/health`.
+- عنوان الخدمة الحالي: `https://haress-backend-test-testing.up.railway.app`.
+- Worker preview config: `wrangler.preview.jsonc`.
+
+يجب أن تبقى بيئة الاختبار منفصلة عن الإنتاج، وألا يشير Worker المعاينة إلى خادم Railway الإنتاجي أو مشروع Supabase الإنتاجي.
+
+## إعداد Railway
+
+اضبط الخدمة لتستمع على:
+
+```env
+HOST=0.0.0.0
+PORT=8080
+NODE_ENV=production
 ```
-SUPABASE_URL=...
-SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
-ALLOWED_ORIGINS=https://<your-site>.github.io,https://<your-domain>
-TURNSTILE_ENABLED=true
-TURNSTILE_SECRET_KEY=...
-PROXY_SHARED_SECRET=...   # openssl rand -hex 32
+
+المتغيرات التي يحتاجها الخادم بحسب الوظائف المفعّلة:
+
+```env
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_STORAGE_BUCKET=haress-media
+PROXY_SHARED_SECRET=
+ALLOWED_ORIGINS=
 QUESTIONS_DAILY_CAP=200
-TRUST_PROXY=false        # true فقط خلف Cloudflare proxy
-TELEGRAM_BOT_TOKEN=...
-TELEGRAM_CHAT_ID=...
-GEMINI_API_KEY=...
+TURNSTILE_SECRET_KEY=
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+GEMINI_API_KEY=
 STORAGE_DIRECTORY=/srv/ahl-athar/storage
 ```
 
-## الخيارات
+- لا تعرض قيم المتغيرات السرية في السجلات أو مخرجات CI.
+- لا تضع `SUPABASE_SERVICE_ROLE_KEY` أو `PROXY_SHARED_SECRET` في الواجهة أو المستودع.
+- يجب أن تتطابق قيمة `PROXY_SHARED_SECRET` بين Worker والخادم المقابل **داخل البيئة نفسها فقط**. استخدم سرًا مستقلًا للاختبار وآخر للإنتاج.
+- أضف أصل واجهة Cloudflare الصحيح إلى `ALLOWED_ORIGINS`، ولا تستخدم wildcard.
+- عند تفعيل نموذج الأسئلة في الإنتاج، يلزم إعداد `TURNSTILE_SECRET_KEY` مع مفاتيح Telegram وGemini وإعدادات Supabase اللازمة.
+- يستخدم تخزين الوسائط الخاص في Supabase bucket باسم `haress-media` عند توافر إعدادات Supabase. وحدة Railway المركبة على `/srv/ahl-athar/storage` تبقى متاحة للتخزين المحلي الاحتياطي/ملفات الفهرسة حسب مسار التنفيذ.
 
-### 1) Railway
-1. New Project → Deploy from GitHub.
-2. أضف المتغيرات أعلاه (Settings → Variables).
-3. أضف Persistent Volume: `/srv/ahl-athar/storage`.
-4. Public Domain: فعّل على المنفذ 8080.
-5. `HOST=0.0.0.0`، `PORT=8080`.
+## إعداد Cloudflare Worker
 
-### 2) Fly.io
-1. `fly launch --no-deploy --copy-config` (أو Dockerfile).
-2. `fly secrets set KEY=VALUE ...` لكل متغير.
-3. `fly volumes create data --size 1` ثم attach إلى `/srv/ahl-athar/storage`.
-4. `fly deploy`.
+يحدد ملف Wrangler الخاص بكل بيئة عنوان الخادم الخلفي:
 
-### 3) VPS (Docker Compose)
-1. انسخ المشروع + `.env`.
-2. `docker compose up -d --build`.
-3. Nginx/Caddy كـ reverse proxy + HTTPS.
-4. `HOST=0.0.0.0`، `PORT=8080`، `TRUST_PROXY=false` (أو true خلف Cloudflare).
-
-## بعد النشر
-- حدّث `AHL_API_BASE_URL` في GitHub Pages (Settings → Pages → Variables) إلى رابط الخادم.
-- تحقق: `curl https://<your-backend>/api/health` → `{"ok":true}`.
-- تحقق من CORS: أضف أصل الواجهة إلى `ALLOWED_ORIGINS`.
-- Cloudflare Worker: `API_BACKEND_URL=<your-backend>`، `PROXY_SHARED_SECRET=<same>`.
-
-## فحوصات
-```bash
-curl -fsS https://<your-backend>/api/health
-curl -fsS https://<your-backend>/api/lectures?status=published
-node scripts/smoke-check.mjs https://<your-backend> https://<your-site>.github.io
+```json
+{
+  "vars": {
+    "API_BACKEND_URL": "https://<railway-backend-domain>"
+  }
+}
 ```
+
+يُضبط `PROXY_SHARED_SECRET` كـ Worker Secret، وليس ضمن `vars` أو ملف Wrangler. لا تستخدم سر الاختبار في Worker الإنتاج أو العكس.
+
+## فحوص ما قبل المعاينة
+
+من جذر المشروع:
+
+```bash
+curl -fsS https://haress-backend-test-testing.up.railway.app/api/health
+node scripts/smoke-check.mjs --backend https://haress-backend-test-testing.up.railway.app --origin https://<cloudflare-preview-origin>
+npm test
+npm run build:app
+```
+
+يجب استبدال `<cloudflare-preview-origin>` بأصل المعاينة الفعلي. يفحص smoke check صحة الخادم، واستجابة قائمة المحاضرات، والسماح بأصل الواجهة المحدد ورفض الأصول غير المصرح بها.
+
+## ضوابط الإنتاج
+
+- لا تنشر إلى بيئة الإنتاج من سير عمل معاينة PR.
+- لا تدمج إلى `main` ولا تنفذ نشرًا إنتاجيًا دون موافقة صريحة ومراجعة مستقلة.
+- قبل اعتماد إصدار إنتاجي، تحقق من أن Railway وSupabase المستخدمين هما بيئتا الإنتاج المعتمدتان، وأن أسرارهما مستقلة عن الاختبار.
+- لا تعتبر نجاح بناء Worker وحده دليلًا على سلامة اتصال API أو Supabase؛ يجب اجتياز فحوص الخادم والواجهة والاتصال.
