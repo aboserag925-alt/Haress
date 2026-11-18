@@ -77,7 +77,7 @@ function copyHeaders(source) {
 
 function supabaseFunctionPath(pathname) {
   if (pathname === '/api/lectures') return '/lectures';
-  if (/^\\/api\\/lectures\\/[0-9a-f-]{36}$/i.test(pathname)) return pathname.slice(4);
+  if (/^\/api\/lectures\/[0-9a-f-]{36}$/i.test(pathname)) return pathname.slice(4);
   if (pathname === '/api/admin/session') return '/admin/session';
   if (pathname === '/api/admin/lectures') return '/admin/lectures';
   return null;
