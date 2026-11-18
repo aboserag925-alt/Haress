@@ -3,7 +3,7 @@
 .haress-assistant-toggle{display:flex;align-items:center;gap:9px;min-height:52px;padding:10px 17px;border:1px solid #c5a04a;border-radius:999px;background:linear-gradient(135deg,#0e7a4d,#176b50);color:#fff;font:700 15px 'Noto Naskh Arabic',serif;box-shadow:0 10px 30px rgba(14,94,60,.24);cursor:pointer;transition:transform .2s,box-shadow .2s}
 .haress-assistant-toggle:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(14,94,60,.3)}
 .haress-assistant-toggle:before{content:'✧';color:#f2d78d;font-size:22px}
-.haress-assistant-panel{width:min(390px,calc(100vw - 32px));max-height:min( min(620px, calc(100dvh - 100px)));display:flex;flex-direction:column;overflow:hidden;margin-bottom:12px;border:1px solid rgba(197,160,74,.6);border-radius:22px;background:#fff;box-shadow:0 22px 70px rgba(18,48,34,.24);animation:haress-assistant-in .25s ease-out both}
+.haress-assistant-panel{width:min(390px,calc(100vw - 32px));max-height:min(620px, calc(100dvh - 100px));display:flex;flex-direction:column;overflow:hidden;margin-bottom:12px;border:1px solid rgba(197,160,74,.6);border-radius:22px;background:#fff;box-shadow:0 22px 70px rgba(18,48,34,.24);animation:haress-assistant-in .25s ease-out both}
 .haress-assistant-panel[hidden]{display:none}
 .haress-assistant-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 17px;background:linear-gradient(120deg,#eaf4ec,#fff);border-bottom:1px solid #e2ece4}
 .haress-assistant-head strong{display:block;color:#176b50;font-size:17px}
