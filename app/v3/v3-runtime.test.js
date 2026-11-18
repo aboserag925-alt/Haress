@@ -102,7 +102,7 @@ test('account recovery exposes reset and update actions and handles the recovery
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const authClient = fs.readFileSync(path.join(root, '..', '..', 'src', 'auth-client.js'), 'utf8');
   for (const id of ['resetPasswordBtn', 'passwordResetPanel', 'newAuthPassword', 'updatePasswordBtn']) {
-    assert.match(html, new RegExp('id=["\\\\']' + id + '["\\\\']'));
+    assert.ok(html.includes('id="' + id + '"'), 'missing recovery UI element: ' + id);
   }
   assert.match(runtime, /info\.event===['"]PASSWORD_RECOVERY['"]/);
   assert.match(runtime, /\$\(['"]resetPasswordBtn['"]\)\.addEventListener/);
