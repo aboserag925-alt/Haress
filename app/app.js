@@ -114,7 +114,8 @@ function cairo() {
 
 async function loadPublishedLectures() {
   try {
-    var response = await fetch(apiUrl('/api/lectures'), { cache: 'no-store' });
+    var publishableKey = window.AHL_SUPABASE_CONFIG && window.AHL_SUPABASE_CONFIG.anonKey;
+    var response = await fetch(apiUrl('/api/lectures'), { cache: 'no-store', headers: publishableKey ? { apikey: publishableKey } : {} });
     if (!response.ok) throw new Error('Lecture request failed');
     var result = await response.json();
     if (!Array.isArray(result.items) || result.items.length === 0) return;
