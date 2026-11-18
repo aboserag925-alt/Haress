@@ -8,7 +8,7 @@ const ALLOWED_ORIGINS = new Set([
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_BODY_BYTES = 8 * 1024;
 
-function json(data: unknown, status = 200, headers: HeadersInit = {}) {
+function json(data: unknown, status = 200, headers: HeadersInit = {}, extraHeaders: HeadersInit = {}) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
@@ -16,6 +16,7 @@ function json(data: unknown, status = 200, headers: HeadersInit = {}) {
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
       ...headers,
+      ...extraHeaders,
     },
   });
 }
@@ -114,7 +115,8 @@ Deno.serve(async (req: Request) => {
       }
       const checked = parseAdminPatch(input);
       if (checked.error) return json({ error: checked.error }, 400, cors);
-      const { data, error } = await adminClient.from("suggestions").update(checked.value)
+      const patch = checked.value || {};
+      const { data, error } = await adminClient.from("suggestions").update(patch)
         .eq("id", suggestionMatch[1]).select("*").maybeSingle();
       if (error) return json({ error: "تعذر تحديث الاقتراح الآن." }, 502, cors);
       if (!data) return json({ error: "الاقتراح غير موجود." }, 404, cors);
