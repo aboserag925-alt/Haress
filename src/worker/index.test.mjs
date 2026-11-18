@@ -267,6 +267,37 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
     assert.equal(res.status, 503);
   });
 
+  it('routes production requests only to the approved production Supabase project', async () => {
+    let capturedUrl = null;
+    const productionEnv = {
+      DEPLOYMENT_ENV: 'production',
+      SUPABASE_URL: 'https://uzepglfimareggswjzlf.supabase.co'
+    };
+    const req = makeRequest('https://hares.aboserag925.workers.dev/api/lectures', {
+      headers: { apikey: 'sb_publishable_test_only' }
+    });
+    const res = await handleRequest(req, productionEnv, async (url) => {
+      capturedUrl = String(url);
+      return new Response(JSON.stringify({ items: [] }), { status: 200 });
+    });
+    assert.equal(res.status, 200);
+    assert.equal(capturedUrl, 'https://uzepglfimareggswjzlf.supabase.co/functions/v1/lectures-admin/lectures');
+  });
+
+  it('rejects a preview Supabase URL in production without making a network request', async () => {
+    const unsafeEnv = {
+      DEPLOYMENT_ENV: 'production',
+      SUPABASE_URL: 'https://bevyztwoijjzfngutnys.supabase.co'
+    };
+    const req = makeRequest('https://hares.aboserag925.workers.dev/api/lectures', {
+      headers: { apikey: 'sb_publishable_test_only' }
+    });
+    const res = await handleRequest(req, unsafeEnv, async () => {
+      throw new Error('preview project must never be contacted from production');
+    });
+    assert.equal(res.status, 503);
+  });
+
   it('rejects a production Supabase URL in preview without making a network request', async () => {
     const unsafeEnv = { ...env, SUPABASE_URL: 'https://uzepglfimareggswjzlf.supabase.co' };
     const req = makeRequest('https://preview.example/api/lectures', { headers: { apikey: 'sb_publishable_test_only' } });
