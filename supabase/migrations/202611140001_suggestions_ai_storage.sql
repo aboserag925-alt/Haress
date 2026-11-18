@@ -69,6 +69,33 @@ create table if not exists public.ai_audit_events (
   created_at timestamptz not null default now()
 );
 
+-- Older Haress production schema has the audit sequence but no column default.
+-- Restore automatic IDs without altering identity-backed installations.
+do $
+begin
+  if exists (
+    select 1 from pg_catalog.pg_class seq
+    join pg_catalog.pg_namespace ns on ns.oid = seq.relnamespace
+    where ns.nspname = 'public' and seq.relname = 'ai_audit_events_id_seq'
+      and seq.relkind = 'S'
+  ) and exists (
+    select 1 from pg_catalog.pg_attribute a
+    join pg_catalog.pg_class t on t.oid = a.attrelid
+    join pg_catalog.pg_namespace ns on ns.oid = t.relnamespace
+    where ns.nspname = 'public' and t.relname = 'ai_audit_events'
+      and a.attname = 'id' and a.attidentity = ''
+  ) then
+    alter table public.ai_audit_events
+      alter column id set default nextval('public.ai_audit_events_id_seq'::regclass);
+    perform pg_catalog.setval(
+      'public.ai_audit_events_id_seq'::regclass,
+      greatest(coalesce((select max(id) from public.ai_audit_events), 0) + 1, 1),
+      false
+    );
+  end if;
+end
+$;
+
 create index if not exists suggestions_created_at_idx on public.suggestions(created_at desc);
 create index if not exists suggestions_status_created_idx on public.suggestions(status,created_at desc);
 create index if not exists ai_tasks_status_created_idx on public.ai_tasks(status,created_at desc);
