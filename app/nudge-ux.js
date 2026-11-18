@@ -10,10 +10,10 @@
   if (state.disabled) return;
 
   var tips = [
-    { id: 'library', title: 'ابدأ رحلتك من المكتبة العلمية', body: 'يمكنك الوصول إلى المواد والدروس العلمية من قسم المكتبة.', target: '#library, [data-tab="library"], #media' },
-    { id: 'radio', title: 'استمع إلى إذاعة القرآن الكريم', body: 'انتقل إلى قسم الإذاعة للاستماع إلى التلاوة.', target: '#radio, [data-tab="radio"], #quranRadio' },
-    { id: 'dialogue', title: 'شارك في الحوار بأدب العلم', body: 'تعرّف على قسم المناقشات والحوار عندما يكون متاحًا.', target: '#discussions, #forum, [data-tab="discussions"]' },
-    { id: 'account', title: 'احفظ تجربتك بتسجيل الدخول', body: 'يمكنك تسجيل الدخول للوصول إلى المزايا المرتبطة بحسابك.', target: '#account, #auth, [data-tab="account"]' }
+    { id: 'library', title: 'ابدأ رحلتك من المكتبة العلمية', body: 'تصفح المواد والدروس العلمية من قسم المكتبة.', target: '#t5' },
+    { id: 'radio', title: 'استمع إلى إذاعة القرآن الكريم', body: 'افتح مشغل إذاعة القرآن الكريم من الزر المخصص أعلى الأقسام.', target: '#quranRadioButton' },
+    { id: 'prayers', title: 'تابع مواقيت الصلاة', body: 'اعرض مواقيت الصلاة واضبط طريقة الحساب من قسم الصلاة.', target: '#t2' },
+    { id: 'account', title: 'إدارة حسابك', body: 'انتقل إلى حسابي لتسجيل الدخول وإدارة جلستك.', target: '#t8' }
   ];
   var current = 0;
   var root, panel, message, title, body, action, status;
@@ -53,8 +53,7 @@
     action.onclick = function () {
       var target = document.querySelector(tip.target);
       if (target) {
-        var tab = target.matches('[data-tab]') ? target : target.closest('[data-tab]');
-        if (tab) tab.click();
+        target.click();
         target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
         status.textContent = 'تم توجيهك إلى القسم.';
       } else {
