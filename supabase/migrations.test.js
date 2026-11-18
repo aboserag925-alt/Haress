@@ -78,6 +78,30 @@ test('suggestion Edge Function uses the atomic RPC and Cairo calendar day',()=>{
   assert.doesNotMatch(submitFunction,/consume_suggestion_daily_cap/);
 });
 
+
+test('AI migration reconciles legacy production columns without replacing existing tables',()=>{
+  assert.match(migration,/add column if not exists risk text/i);
+  assert.match(migration,/add column if not exists confidence numeric/i);
+  assert.match(migration,/add column if not exists ai_analysis jsonb/i);
+  assert.match(migration,/actor_user_id uuid not null references auth\.users\(id\)/i);
+  assert.match(migration,/insert into public\.ai_approvals\(task_id,actor_user_id,action,decision,reason\)/i);
+  assert.doesNotMatch(migration,/approved_by uuid|ai_approvals\(task_id,approved_by/i);
+  assert.match(migration,/ai_tasks_human_approval_id_fkey','ai_tasks_human_approval_fk/i);
+  assert.match(migration,/ai_audit_events_id_seq/i);
+});
+
+test('all Supabase Edge Functions allow only the approved Preview and Production origins',()=>{
+  for(const file of [
+    path.join(__dirname,'functions','submit-suggestion','index.ts'),
+    path.join(__dirname,'functions','lectures-admin','index.ts'),
+    path.join(__dirname,'functions','admin-operations','index.ts')
+  ]){
+    const source=fs.readFileSync(file,'utf8');
+    assert.match(source,/https:\/\/hares-preview\.aboserag925\.workers\.dev/);
+    assert.match(source,/https:\/\/hares\.aboserag925\.workers\.dev/);
+  }
+});
+
 test('approval audit event is recorded once by the guarded database RPC',()=>{
   assert.doesNotMatch(adminOperations,/ai\.approval\.recorded/);
   assert.match(migration,/ai\.approval\.granted/);
