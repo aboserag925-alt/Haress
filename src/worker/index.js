@@ -1,36 +1,21 @@
 'use strict';
 
-/**
- * Haress Cloudflare Worker.
- *
- * المسارات:
- * - /api/* : يُوجّه إلى الخادم الخلفي عبر متغير الربط API_BACKEND_URL.
- *   إذا لم يكن API_BACKEND_URL مضبوطًا أو كان غير آمن (ليس https، باستثناء localhost
- *   للتطوير)، يرد العامل بخطأ 503 (fail-closed). وهذا يضمن ألا تستخدم معاينة Preview
- *   خادم إنتاج Production عن طريق الخطأ.
- * - المسارات الأخرى: تُخدم من الأصول الثابتة (دليل ./app) عبر ربط ASSETS.
- *
- * يحول العامل الطريقة والرؤوس والجسم كما هي، دون حقن أسرار أو تسجيلها.
- */
-
 const API_PATH_PREFIX = '/api/';
 
-// رؤوس يتم تجاوزها عند التحويل (hend-by-hop ورؤوس Cloudflare الخاصة)
 const HOP_BY_HOP_HEADERS = new Set([
-  'connection',
-  'keep-alive',
-  'proxy-authenticate',
-  'proxy-authorization',
-  'te',
-  'trailers',
-  'transfer-encoding',
-  'upgrade',
-  'cf-connecting-ip',
-  'cf-ray',
-  'cf-visitor',
-  'cf-ipcountry',
-  'cf-worker'
+  'connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization',
+  'te', 'trailers', 'transfer-encoding', 'upgrade',
+  'cf-connecting-ip', 'cf-ray', 'cf-visitor', 'cf-ipcountry', 'cf-worker',
+  'x-client-ip', 'x-proxy-secret'
 ]);
+
+const SECURITY_HEADERS = {
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https:; connect-src 'self' https://*.supabase.co https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'geolocation=(self), camera=(), microphone=(), payment=()'
+};
 
 function apiPathFrom(urlPathname) {
   if (typeof urlPathname !== 'string') return null;
@@ -43,7 +28,6 @@ export function isSecureBackendUrl(value) {
   try {
     const parsed = new URL(value);
     if (parsed.protocol === 'https:') return true;
-    // http مسموح فقط لـ localhost في بيئة التطوير المحلية.
     if (parsed.protocol === 'http:' && parsed.hostname === 'localhost') return true;
     return false;
   } catch {
@@ -61,31 +45,35 @@ function copyHeaders(source) {
   return headers;
 }
 
-async function proxyToBackend(request, backendUrl, fetchImpl) {
+async function proxyToBackend(request, backendUrl, fetchImpl, env) {
   const requestUrl = new URL(request.url);
   const apiPath = apiPathFrom(requestUrl.pathname);
   if (!apiPath) return null;
 
   if (!isSecureBackendUrl(backendUrl)) {
     return new Response(
-      JSON.stringify({ error: 'خادم الواجهة الخلفية غير مضبط بشكل آمن.' }),
-      {
-        status: 503,
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          'X-Content-Type-Options': 'nosniff'
-        }
-      }
+      JSON.stringify({ error: 'الخادم الخلفي غير مُهيّأ.' }),
+      { status: 503, headers: { 'Content-Type': 'application/json; charset=utf-8', 'X-Content-Type-Options': 'nosniff' } }
     );
   }
 
   const targetUrl = new URL(apiPath, backendUrl);
-  // Preserve query parameters used by filtered, paginated, and searched API requests.
   targetUrl.search = requestUrl.search;
   const target = targetUrl.href;
+
+  // Remove any client-supplied x-client-ip, then inject real IP + proxy secret
+  const headers = copyHeaders(request.headers);
+  const realIp = request.headers.get('cf-connecting-ip') || '';
+  if (realIp) {
+    headers.set('x-client-ip', realIp);
+  }
+  if (env && env.PROXY_SHARED_SECRET) {
+    headers.set('x-proxy-secret', env.PROXY_SHARED_SECRET);
+  }
+
   const init = {
     method: request.method,
-    headers: copyHeaders(request.headers),
+    headers: headers,
     body: request.body,
     signal: request.signal
   };
@@ -98,6 +86,8 @@ async function proxyToBackend(request, backendUrl, fetchImpl) {
       if (HOP_BY_HOP_HEADERS.has(lower)) continue;
       outHeaders[key] = value;
     }
+    // Add security headers to API responses too
+    outHeaders['X-Content-Type-Options'] = 'nosniff';
     return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
@@ -106,13 +96,7 @@ async function proxyToBackend(request, backendUrl, fetchImpl) {
   } catch {
     return new Response(
       JSON.stringify({ error: 'تعذر الاتصال بالخادم الخلفي.' }),
-      {
-        status: 502,
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          'X-Content-Type-Options': 'nosniff'
-        }
-      }
+      { status: 502, headers: { 'Content-Type': 'application/json; charset=utf-8', 'X-Content-Type-Options': 'nosniff' } }
     );
   }
 }
@@ -120,18 +104,28 @@ async function proxyToBackend(request, backendUrl, fetchImpl) {
 export async function handleRequest(request, env, fetchImpl = globalThis.fetch) {
   const backendUrl = env && env.API_BACKEND_URL ? String(env.API_BACKEND_URL) : '';
 
-  const proxied = await proxyToBackend(request, backendUrl, fetchImpl);
+  const proxied = await proxyToBackend(request, backendUrl, fetchImpl, env);
   if (proxied) return proxied;
 
-  // خدمة الأصول الثابتة عبر ربط Cloudflare Assets (إن توفر).
+  // Serve static assets via Cloudflare Assets binding
   const assets = env && env.ASSETS;
   if (assets && typeof assets.fetch === 'function') {
-    return assets.fetch(request);
+    const response = await assets.fetch(request);
+    // Add security headers to static responses
+    const newHeaders = new Headers(response.headers);
+    for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+      newHeaders.set(key, value);
+    }
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: newHeaders
+    });
   }
 
   return new Response(JSON.stringify({ error: 'الصفحة غير موجودة.' }), {
     status: 404,
-    headers: { 'Content-Type': 'application/json; charset=utf-8' }
+    headers: { 'Content-Type': 'application/json; charset=utf-8', 'X-Content-Type-Options': 'nosniff' }
   });
 }
 
