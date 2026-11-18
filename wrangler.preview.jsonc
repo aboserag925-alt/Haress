@@ -11,7 +11,6 @@
   },
   "vars": {
     "DEPLOYMENT_ENV": "preview",
-    "SUPABASE_FUNCTIONS_ENABLED": "true",
     "SUPABASE_URL": "https://bevyztwoijjzfngutnys.supabase.co"
   }
 }
