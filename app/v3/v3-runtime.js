@@ -436,7 +436,7 @@
   }
   function accountState(info) {
     var form=$('authForm'), signed=$('accountSignedIn'), recovery=$('passwordRecoveryForm');
-    if(!info.configured){state.account=null;$('authConfigMissing').hidden=false;form.hidden=true;signed.hidden=true;status('authMessage','أضف إعدادات Supabase لتفعيل الحسابات.');return;}
+    if(!info.configured){state.account=null;$('authConfigMissing').hidden=false;form.hidden=true;signed.hidden=true;recovery.hidden=true;status('authMessage','أضف إعدادات Supabase لتفعيل الحسابات.');return;}
     $('authConfigMissing').hidden=true;state.account=info.user;
     if(info.event==='PASSWORD_RECOVERY')state.passwordRecoveryMode=true;
     if(info.event==='USER_UPDATED')state.passwordRecoveryMode=false;
