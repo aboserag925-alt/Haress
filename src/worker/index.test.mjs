@@ -182,7 +182,7 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
     assert.equal(captured.method, 'GET');
   });
 
-  it('forwards the signed-in user's JWT for administrator lecture writes', async () => {
+  it("forwards the signed-in user JWT for administrator lecture writes", async () => {
     let captured = null;
     const fetchImpl = async (url, init) => {
       captured = { url: String(url), headers: Object.fromEntries(init.headers.entries()), method: init.method, body: await new Response(init.body).text() };
