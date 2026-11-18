@@ -9,7 +9,7 @@ const {createTask}=require('./task-store');
 const {createTaskService}=require('./task-service');
 test('high-risk areas always require human approval',()=>{const a=assess({affectedAreas:['supabase_rls']});assert.equal(a.risk,'high');assert.equal(a.requiresApproval,true);});
 test('production secrets and deployment are critical',()=>{assert.equal(classifyRisk(['secrets']),'critical');assert.equal(classifyRisk(['deployment']),'critical');});
-test('approval gate blocks unapproved developer work',()=>{assert.throws(()=>assertApproval({approved:false},'implement'),/Human approval/);});
+test('approval gate blocks unapproved developer work',()=>{assert.throws(()=>assertApproval({status:'APPROVED',approved:false},'implement'),/Human approval/);});
 test('approval gate requires APPROVED state and a recorded approval id',()=>{assert.throws(()=>assertApproval({status:'PLANNED',approved:true,approvalId:'human-approval-1'},'implement'),/APPROVED state/);assert.throws(()=>assertApproval({status:'APPROVED',approved:true},'implement'),/Recorded human approval/);assert.equal(assertApproval({status:'APPROVED',approved:true,approvalId:'human-approval-1'},'implement'),true);});
 test('state machine blocks WAITING_APPROVAL to IMPLEMENTING',()=>{assert.equal(canTransition('WAITING_APPROVAL','IMPLEMENTING',{approved:true,approvalId:'x'}),false);});
 test('state machine blocks READY_FOR_REVIEW to MERGED without human approval',()=>{assert.equal(canTransition('READY_FOR_REVIEW','MERGED',{}),false);assert.equal(canTransition('HUMAN_APPROVED','MERGED',{humanApproved:true,humanApprovalId:'x'}),true);});
