@@ -1,3 +1,4 @@
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const http = require('node:http');
 const net = require('node:net');
@@ -8,6 +9,7 @@ const { createSuggestionsApi } = require('./suggestions/suggestion-api');
 const { createSuggestionService } = require('./suggestions/suggestion-service');
 const { createApprovalApi } = require('./ai/approval-api');
 const { createTaskService } = require('./ai/task-service');
+const { staticSecurityHeaders } = require('./security-headers');
 
 const PUBLIC_ROOT = path.resolve(__dirname, '..');
 const MAX_BODY_BYTES = 16 * 1024;
@@ -15,6 +17,7 @@ const MAX_QUESTION_LENGTH = 1600;
 const MAX_DRAFT_LENGTH = 1800;
 const RATE_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT = 5;
+const DEFAULT_QUESTIONS_DAILY_CAP = 200;
 const MIME_TYPES = {
   '.css': 'text/css; charset=utf-8',
   '.html': 'text/html; charset=utf-8',
@@ -143,429 +146,35 @@ async function readUtf8Json(response) {
   return JSON.parse(text);
 }
 
+// Compare secrets in constant time. Hashing first gives both buffers the same length,
+// which timingSafeEqual requires, without leaking the secret's length.
+function secretsMatch(provided, expected) {
+  const a = crypto.createHash('sha256').update(String(provided)).digest();
+  const b = crypto.createHash('sha256').update(String(expected)).digest();
+  return crypto.timingSafeEqual(a, b);
+}
+
 function clientAddress(request, env) {
   const remoteAddress = request.socket.remoteAddress || 'unknown';
-  // Only trust Cloudflare's client-IP header when the origin is explicitly configured behind Cloudflare.
+  // Preferred: the Cloudflare Worker sends the real visitor IP in x-client-ip together with
+  // a shared secret. Trust the IP only when the secret matches; otherwise use the socket
+  // address, so a visitor can never choose their own rate-limit identity.
+  const sharedSecret = env && typeof env.PROXY_SHARED_SECRET === 'string'
+    ? env.PROXY_SHARED_SECRET.trim()
+    : '';
+  if (sharedSecret) {
+    const providedSecret = request.headers['x-proxy-secret'];
+    const forwardedIp = request.headers['x-client-ip'];
+    if (typeof providedSecret === 'string' && typeof forwardedIp === 'string' &&
+        secretsMatch(providedSecret, sharedSecret)) {
+      const candidate = forwardedIp.trim();
+      if (net.isIP(candidate)) return candidate;
+    }
+    return remoteAddress;
+  }
+  // Legacy: only trust Cloudflare's client-IP header when the origin is explicitly configured behind Cloudflare.
   if (!env || env.TRUST_PROXY !== 'true') return remoteAddress;
   const forwardedAddress = request.headers['cf-connecting-ip'];
   if (typeof forwardedAddress !== 'string') return remoteAddress;
   const candidate = forwardedAddress.trim();
-  return net.isIP(candidate) ? candidate : remoteAddress;
-}
-
-function consumeRateLimit(limits, address, now) {
-  if (limits.size > 10000) {
-    limits.forEach(function (entry, key) {
-      if (entry.resetAt <= now) limits.delete(key);
-    });
-  }
-
-  let entry = limits.get(address);
-  if (!entry || entry.resetAt <= now) {
-    entry = { count: 0, resetAt: now + RATE_WINDOW_MS };
-    limits.set(address, entry);
-  }
-  if (entry.count >= RATE_LIMIT) return false;
-  entry.count += 1;
-  return true;
-}
-
-async function verifyTurnstile(token, request, env, fetchImpl) {
-  if (!env.TURNSTILE_SECRET_KEY) return { ok: false, unavailable: true };
-  if (typeof token !== 'string' || token.length < 1 || token.length > 2048) {
-    return { ok: false, unavailable: false };
-  }
-
-  const form = new URLSearchParams();
-  form.set('secret', env.TURNSTILE_SECRET_KEY);
-  form.set('response', token);
-  const remoteAddress = clientAddress(request, env);
-  if (remoteAddress !== 'unknown' && net.isIP(remoteAddress)) form.set('remoteip', remoteAddress);
-
-  try {
-    const result = await fetchImpl(
-      'https://challenges.cloudflare.com/turnstile/v0/siteverify',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: form.toString(),
-        signal: AbortSignal.timeout(10000)
-      }
-    );
-    if (!result.ok) return { ok: false, unavailable: true };
-    const payload = await readUtf8Json(result);
-    let expectedHostname = '';
-    try {
-      expectedHostname = new URL(request.headers.origin).hostname.toLowerCase();
-    } catch {
-      return { ok: false, unavailable: false };
-    }
-    const hostname = typeof payload.hostname === 'string' ? payload.hostname.toLowerCase() : '';
-    return {
-      ok: payload.success === true &&
-        payload.action === 'submit_question' &&
-        hostname === expectedHostname,
-      unavailable: false
-    };
-  } catch {
-    return { ok: false, unavailable: true };
-  }
-}
-
-function staticFilePath(requestUrl) {
-  let pathname;
-  try {
-    pathname = decodeURIComponent(new URL(requestUrl, 'http://localhost').pathname);
-  } catch {
-    return null;
-  }
-  if (pathname.includes('\\') || pathname.includes('\0')) return null;
-  let segments = pathname.split('/').filter(Boolean);
-  if (segments.length === 1 && (segments[0] === 'app' || segments[0] === 'screens')) {
-    segments.push('index.html');
-  }
-  if (segments.some(function (segment) { return segment === '.' || segment === '..' || segment.startsWith('.'); })) {
-    return null;
-  }
-  if (segments.length === 0) segments = ['index.html'];
-  if (segments[0] !== 'index.html' &&
-      segments[0] !== 'app' && segments[0] !== 'assets' && segments[0] !== 'screens') {
-    return null;
-  }
-  if (segments[0] === 'index.html' && segments.length !== 1) return null;
-
-  const filePath = path.resolve(PUBLIC_ROOT, ...segments);
-  return filePath.startsWith(PUBLIC_ROOT + path.sep) || filePath === path.join(PUBLIC_ROOT, 'index.html')
-    ? filePath
-    : null;
-}
-
-async function createQuestionDraft(question, env, fetchImpl) {
-  const model = env.GEMINI_MODEL || 'gemini-3.8-flash';
-  if (!/^[A-Za-z0-9._-]{1,80}$/.test(model)) throw new Error('Invalid Gemini model configuration');
-
-  const result = await fetchImpl(
-    'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        Accept: 'application/json; charset=utf-8',
-        'x-goog-api-key': env.GEMINI_API_KEY
-      },
-      signal: AbortSignal.timeout(30000),
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: question }] }],
-        systemInstruction: {
-          parts: [{
-            text: 'أنت مساعد يصوغ مسودة أولية باللغة العربية لعرضها على عالم شرعي للمراجعة. لا تقدّم المسودة كفتوى أو حكم معتمد، ولا تدّع أنك عالم. إذا احتاج السؤال إلى فتوى خاصة أو كان الدليل غير متحقق، فصرّح بذلك وأحل السائل إلى الدكتور خالد للمراجعة. لا تختلق آيات أو أحاديث أو مراجع. اجعل الرد موجزًا ومحترمًا، واختم بالتنبيه أن المسودة غير معتمدة حتى يراجعها الدكتور خالد.'
-          }]
-        },
-        generationConfig: { maxOutputTokens: 700, temperature: 0.2 }
-      })
-    }
-  );
-  if (!result.ok) {
-    console.error('Gemini request failed with status ' + result.status);
-    throw new Error('تعذر إنشاء مسودة الآن. حاول لاحقًا.');
-  }
-
-  const payload = await readUtf8Json(result);
-  const draft = payload.candidates && payload.candidates[0] &&
-    payload.candidates[0].content && payload.candidates[0].content.parts
-      ? payload.candidates[0].content.parts
-        .map(function (part) { return typeof part.text === 'string' ? part.text : ''; })
-        .join('')
-        .trim()
-      : '';
-  if (!draft) throw new Error('لم تُنتج الخدمة مسودة صالحة. حاول لاحقًا.');
-  if (draft.length <= MAX_DRAFT_LENGTH) return draft;
-  return draft.slice(0, MAX_DRAFT_LENGTH).trimEnd() + '\n[اختُصر الرد لطوله.]';
-}
-
-async function sendToTelegram(question, draft, env, fetchImpl) {
-  const message = 'سؤال للمراجعة من التطبيق:\n\n' + question +
-    '\n\nمسودة Gemini غير معتمدة:\n' + draft;
-  let result;
-  try {
-    result = await fetchImpl(
-      'https://api.telegram.org/bot' + env.TELEGRAM_BOT_TOKEN + '/sendMessage',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          Accept: 'application/json; charset=utf-8'
-        },
-        signal: AbortSignal.timeout(15000),
-        body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text: message })
-      }
-    );
-  } catch {
-    console.error('Telegram request could not be completed');
-    throw new Error('تعذر تأكيد إرسال السؤال إلى Telegram.');
-  }
-  if (!result.ok) {
-    console.error('Telegram request failed with status ' + result.status);
-    throw new Error('تعذر تأكيد إرسال السؤال إلى Telegram.');
-  }
-  let payload;
-  try {
-    payload = await readUtf8Json(result);
-  } catch {
-    console.error('Telegram returned an invalid response');
-    throw new Error('تعذر تأكيد إرسال السؤال إلى Telegram.');
-  }
-  if (!payload.ok) {
-    console.error('Telegram rejected a question message');
-    throw new Error('تعذر تأكيد إرسال السؤال إلى Telegram.');
-  }
-}
-
-function createServer(options) {
-  options = options || {};
-  const env = options.env || process.env;
-  const fetchImpl = options.fetch || global.fetch;
-  const limits = new Map();
-  const adminApi = createAdminApi({ env: env, fetch: fetchImpl });
-  const rateLimit = function (request) {
-    return consumeRateLimit(limits, clientAddress(request, env), Date.now());
-  };
-  const suggestionService = options.suggestionService || createSuggestionService({ env: env, fetch: fetchImpl });
-  const taskService = options.taskService || createTaskService({ env: env, fetch: fetchImpl });
-  const suggestionsApi = createSuggestionsApi({
-    env: env,
-    fetch: fetchImpl,
-    service: suggestionService,
-    rateLimit: rateLimit
-  });
-  const approvalApi = createApprovalApi({
-    env: env,
-    fetch: fetchImpl,
-    taskService: taskService,
-    rateLimit: rateLimit
-  });
-  const mediaLibrary = options.mediaLibrary || createMediaLibrary({
-    env: env,
-    fetch: fetchImpl,
-    storageDirectory: options.storageDirectory
-  });
-
-  return http.createServer(async function (request, response) {
-    response.setHeader('X-Content-Type-Options', 'nosniff');
-    response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    response.setHeader('X-Frame-Options', 'DENY');
-
-    const requestUrl = new URL(request.url, 'http://localhost');
-    if (requestUrl.pathname.startsWith('/api/')) {
-      if (!applyCorsHeaders(request, response, env)) {
-        sendJson(response, 403, { error: 'مصدر الطلب غير مسموح.' });
-        return;
-      }
-      if (request.method === 'OPTIONS') {
-        response.writeHead(204, { 'Allow': 'GET, HEAD, POST, PATCH, DELETE, OPTIONS' });
-        response.end();
-        return;
-      }
-    }
-    if (await suggestionsApi(request, response, requestUrl.pathname)) return;
-    if (await approvalApi(request, response, requestUrl.pathname)) return;
-    if (await adminApi(request, response, requestUrl.pathname)) return;
-    if (requestUrl.pathname === '/api/health' && request.method === 'GET') {
-      sendJson(response, 200, { ok: true });
-      return;
-    }
-    if (requestUrl.pathname === '/api/library' && request.method === 'GET') {
-      try {
-        sendJson(response, 200, { items: await mediaLibrary.listApproved() });
-      } catch {
-        console.error('Media library could not be loaded');
-        sendJson(response, 500, { error: 'تعذر تحميل المكتبة الآن.' });
-      }
-      return;
-    }
-    const mediaFileMatch = requestUrl.pathname.match(/^\/api\/library\/files\/([0-9a-f-]{36})$/i);
-    if (mediaFileMatch && (request.method === 'GET' || request.method === 'HEAD')) {
-      try {
-        const file = await mediaLibrary.getApprovedFile(mediaFileMatch[1]);
-        if (!file) {
-          sendJson(response, 404, { error: 'الملف غير موجود.' });
-          return;
-        }
-        const inline = file.item.kind === 'audio' || file.item.kind === 'video' || file.item.kind === 'image';
-        let content = file.data;
-        let statusCode = 200;
-        let contentRange;
-        const rangeHeader = request.headers.range;
-        if (rangeHeader && (file.item.kind === 'audio' || file.item.kind === 'video')) {
-          const range = rangeHeader.match(/^bytes=(\d*)-(\d*)$/);
-          if (!range || (!range[1] && !range[2])) {
-            response.writeHead(416, { 'Content-Range': 'bytes */' + file.data.length });
-            response.end();
-            return;
-          }
-          const start = range[1] ? Number(range[1]) : Math.max(0, file.data.length - Number(range[2]));
-          const end = range[2] && range[1]
-            ? Math.min(Number(range[2]), file.data.length - 1)
-            : file.data.length - 1;
-          if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) ||
-              start > end || start >= file.data.length) {
-            response.writeHead(416, { 'Content-Range': 'bytes */' + file.data.length });
-            response.end();
-            return;
-          }
-          content = file.data.subarray(start, end + 1);
-          contentRange = 'bytes ' + start + '-' + end + '/' + file.data.length;
-          statusCode = 206;
-        }
-        const encodedFileName = encodeURIComponent(file.item.fileName)
-          .replace(/[!'()*]/g, function (character) {
-            return '%' + character.charCodeAt(0).toString(16).toUpperCase();
-          });
-        const headers = {
-          'Accept-Ranges': 'bytes',
-          'Cache-Control': 'no-store',
-          'Content-Disposition': (inline ? 'inline' : 'attachment') +
-            "; filename*=UTF-8''" + encodedFileName,
-          'Content-Length': content.length,
-          'Content-Type': file.item.mimeType,
-          'X-Content-Type-Options': 'nosniff'
-        };
-        if (contentRange) headers['Content-Range'] = contentRange;
-        response.writeHead(statusCode, headers);
-        response.end(request.method === 'HEAD' ? undefined : content);
-      } catch {
-        console.error('Media library file could not be loaded');
-        sendJson(response, 500, { error: 'تعذر تحميل الملف الآن.' });
-      }
-      return;
-    }
-    if (requestUrl.pathname === '/api/questions') {
-      if (request.method !== 'POST') {
-        response.setHeader('Allow', 'POST');
-        sendJson(response, 405, { error: 'طريقة الطلب غير مدعومة.' });
-        return;
-      }
-      if (!isAllowedOrigin(request, env)) {
-        sendJson(response, 403, { error: 'مصدر الطلب غير مسموح.' });
-        return;
-      }
-      if (!env.GEMINI_API_KEY || !env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
-        sendJson(response, 503, { error: 'إعدادات Gemini وTelegram غير مكتملة على الخادم.' });
-        return;
-      }
-      if (!consumeRateLimit(limits, clientAddress(request, env), Date.now())) {
-        sendJson(response, 429, { error: 'وصلت إلى حد الإرسال المؤقت. حاول لاحقًا.' });
-        return;
-      }
-      if (!/^application\/json(?:\s*;|$)/i.test(request.headers['content-type'] || '')) {
-        request.resume();
-        sendJson(response, 415, { error: 'يجب إرسال السؤال بصيغة JSON.' });
-        return;
-      }
-
-      const body = await readJsonBody(request, response);
-      if (body === null) return;
-      if (!body || typeof body.question !== 'string') {
-        sendJson(response, 400, { error: 'اكتب السؤال بصيغة صحيحة.' });
-        return;
-      }
-      const question = body.question.trim();
-      if (question.length < 5 || question.length > MAX_QUESTION_LENGTH) {
-        sendJson(response, 400, { error: 'يجب أن يكون السؤال بين 5 و1600 حرف.' });
-        return;
-      }
-
-
-      const turnstileEnabled = env.TURNSTILE_ENABLED === 'true' || Boolean(env.TURNSTILE_SECRET_KEY);
-      if (turnstileEnabled) {
-        if (!env.TURNSTILE_SECRET_KEY) {
-          sendJson(response, 503, { error: 'التحقق الأمني غير متاح حاليًا. حاول لاحقًا.' });
-          return;
-        }
-        const verification = await verifyTurnstile(body.turnstileToken, request, env, fetchImpl);
-        if (!verification.ok) {
-          sendJson(response, verification.unavailable ? 503 : 403, {
-            error: verification.unavailable
-              ? 'تعذر التحقق الأمني الآن. حاول لاحقًا.'
-              : 'فشل التحقق الأمني. أعد المحاولة.'
-          });
-          return;
-        }
-      }
-
-      try {
-        const draft = await createQuestionDraft(question, env, fetchImpl);
-        try {
-          await sendToTelegram(question, draft, env, fetchImpl);
-        } catch (error) {
-          sendJson(response, 502, {
-            error: error.message,
-            draft: draft,
-            telegramSent: false
-          });
-          return;
-        }
-        sendJson(response, 200, { draft: draft, telegramSent: true });
-      } catch (error) {
-        if (error.name === 'TimeoutError' || error.name === 'AbortError') {
-          sendJson(response, 504, { error: 'انتهت مهلة الاتصال بالخدمة. حاول لاحقًا.' });
-          return;
-        }
-        if (error.message === 'تعذر إنشاء مسودة الآن. حاول لاحقًا.' ||
-            error.message === 'لم تُنتج الخدمة مسودة صالحة. حاول لاحقًا.') {
-          sendJson(response, 502, { error: error.message });
-          return;
-        }
-        console.error('Question processing failed');
-        sendJson(response, 502, { error: 'تعذر معالجة السؤال الآن. حاول لاحقًا.' });
-      }
-      return;
-    }
-
-    if (request.method !== 'GET' && request.method !== 'HEAD') {
-      sendJson(response, 405, { error: 'طريقة الطلب غير مدعومة.' });
-      return;
-    }
-    const filePath = staticFilePath(request.url);
-    if (!filePath) {
-      sendJson(response, 404, { error: 'الصفحة غير موجودة.' });
-      return;
-    }
-    try {
-      const file = await fs.promises.readFile(filePath);
-      response.writeHead(200, {
-        'Cache-Control': 'no-cache',
-        'Content-Length': file.length,
-        'Content-Type': MIME_TYPES[path.extname(filePath).toLowerCase()] || 'application/octet-stream'
-      });
-      response.end(request.method === 'HEAD' ? undefined : file);
-    } catch (error) {
-      if (error.code === 'ENOENT' || error.code === 'EISDIR') {
-        sendJson(response, 404, { error: 'الصفحة غير موجودة.' });
-        return;
-      }
-      console.error('Static file request failed');
-      sendJson(response, 500, { error: 'تعذر تحميل الصفحة.' });
-    }
-  });
-}
-
-if (require.main === module) {
-  loadEnvFile(path.join(PUBLIC_ROOT, '.env'));
-  const port = Number(process.env.PORT || 8080);
-  if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new Error('PORT must be a valid TCP port.');
-  }
-  const host = process.env.HOST || '127.0.0.1';
-  const mediaLibrary = createMediaLibrary({ env: process.env });
-  const server = createServer({ mediaLibrary: mediaLibrary });
-  server.listen(port, host, function () {
-    console.log('Ahl Athar server listening on port ' + port);
-    mediaLibrary.start().catch(function () {
-      console.error('Telegram media intake could not be started.');
-      server.close(function () {});
-    });
-  });
-}
-
-module.exports = { createServer: createServer, loadEnvFile: loadEnvFile };
+  return net.isIP(candidate) ? candidate : remoteAddress;}
