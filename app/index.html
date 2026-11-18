@@ -482,7 +482,12 @@ body,.app-shell,button,input,textarea,select{
 <div class="auth-actions">
 <button id="signInBtn" class="btn" type="submit">تسجيل الدخول</button>
 <button id="signUpBtn" class="btn" type="button">إنشاء حساب</button>
+<button id="resetPasswordBtn" class="btn" type="button">نسيت كلمة المرور؟</button>
 </div>
+</form>
+<form id="passwordRecoveryForm" class="auth-form" hidden>
+<label class="field" for="newPassword">كلمة المرور الجديدة<input id="newPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="ثمانية أحرف على الأقل"></label>
+<div class="auth-actions"><button id="saveNewPasswordBtn" class="btn" type="submit">حفظ كلمة المرور</button></div>
 </form>
 <div id="accountSignedIn" hidden>
 <p>تم تسجيل الدخول بالبريد:</p>

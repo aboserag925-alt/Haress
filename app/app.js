@@ -31,6 +31,7 @@ var deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 var accountUser = null;
 var accountSyncTimer = null;
 var activeSyncUserId = null;
+var passwordRecoveryMode = new URLSearchParams(window.location.search).get('auth') === 'recovery';
 var mediaItems = [];
 var activeMediaCategory = 'all';
 var prayerStatus = document.getElementById('locationStatus');
@@ -741,6 +742,7 @@ function setAccountState(state) {
   var configMissing = document.getElementById('authConfigMissing');
   var form = document.getElementById('authForm');
   var signedIn = document.getElementById('accountSignedIn');
+  var recoveryForm = document.getElementById('passwordRecoveryForm');
   var message = document.getElementById('authMessage');
   if (!state.configured) {
     accountUser = null;
@@ -748,12 +750,17 @@ function setAccountState(state) {
     configMissing.hidden = false;
     form.hidden = true;
     signedIn.hidden = true;
+    recoveryForm.hidden = true;
     setStatus(message, 'أضف إعدادات Supabase لتفعيل الحسابات.');
     return;
   }
   configMissing.hidden = true;
   accountUser = state.user;
+  if (state.event === 'PASSWORD_RECOVERY') passwordRecoveryMode = true;
+  if (state.event === 'USER_UPDATED') passwordRecoveryMode = false;
   if (!state.user) {
+    passwordRecoveryMode = false;
+    recoveryForm.hidden = true;
     activeSyncUserId = null;
     form.hidden = false;
     signedIn.hidden = true;
@@ -761,6 +768,13 @@ function setAccountState(state) {
     return;
   }
   form.hidden = true;
+  if (passwordRecoveryMode) {
+    signedIn.hidden = true;
+    recoveryForm.hidden = false;
+    setStatus(message, 'أدخل كلمة مرور جديدة لحسابك.');
+    return;
+  }
+  recoveryForm.hidden = true;
   signedIn.hidden = false;
   document.getElementById('accountEmail').textContent = state.user.email || '';
   setStatus(message, 'تسجيل الدخول محفوظ تلقائيًا على هذا الجهاز.');
@@ -796,6 +810,45 @@ function handleSignIn(event) {
   });
 }
 
+function handlePasswordReset() {
+  var emailInput = document.getElementById('authEmail');
+  if (!emailInput.reportValidity()) return;
+  var button = document.getElementById('resetPasswordBtn');
+  button.disabled = true;
+  setStatus(document.getElementById('authMessage'), 'جارٍ إرسال رابط استعادة كلمة المرور…');
+  window.ahlAuth.resetPassword(emailInput.value.trim()).then(function (result) {
+    if (result.error) throw result.error;
+    setStatus(document.getElementById('authMessage'), 'إذا كان البريد مسجلًا، فستصلك رسالة تتضمن رابطًا آمنًا لتعيين كلمة مرور جديدة.');
+  }).catch(function (error) {
+    setStatus(document.getElementById('authMessage'), 'تعذر إرسال رابط الاستعادة: ' + error.message, true);
+  }).finally(function () {
+    button.disabled = false;
+  });
+}
+
+function handlePasswordUpdate(event) {
+  event.preventDefault();
+  var form = document.getElementById('passwordRecoveryForm');
+  if (!form.reportValidity()) return;
+  var button = document.getElementById('saveNewPasswordBtn');
+  button.disabled = true;
+  setStatus(document.getElementById('authMessage'), 'جارٍ تحديث كلمة المرور…');
+  window.ahlAuth.updatePassword(document.getElementById('newPassword').value).then(function (result) {
+    if (result.error) throw result.error;
+    passwordRecoveryMode = false;
+    form.reset();
+    setAccountState({ configured: true, user: accountUser, event: 'USER_UPDATED' });
+    setStatus(document.getElementById('authMessage'), 'تم تحديث كلمة المرور بنجاح.');
+    var url = new URL(window.location.href);
+    url.searchParams.delete('auth');
+    window.history.replaceState({}, '', url);
+  }).catch(function (error) {
+    setStatus(document.getElementById('authMessage'), 'تعذر تحديث كلمة المرور: ' + error.message, true);
+  }).finally(function () {
+    button.disabled = false;
+  });
+}
+
 function handleSignUp() {
   var form = document.getElementById('authForm');
   if (!form.reportValidity()) return;
@@ -828,6 +881,8 @@ function initAuth() {
   window.ahlAuth.init(setAccountState);
   document.getElementById('authForm').addEventListener('submit', handleSignIn);
   document.getElementById('signUpBtn').addEventListener('click', handleSignUp);
+  document.getElementById('resetPasswordBtn').addEventListener('click', handlePasswordReset);
+  document.getElementById('passwordRecoveryForm').addEventListener('submit', handlePasswordUpdate);
   document.getElementById('signOutBtn').addEventListener('click', function () {
     setStatus(document.getElementById('authMessage'), 'جاري تسجيل الخروج…');
     window.ahlAuth.signOut().then(function (result) {

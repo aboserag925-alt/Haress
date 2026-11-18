@@ -53,7 +53,22 @@ window.ahlAuth = {
     return requireClient().auth.signInWithPassword({ email: email, password: password });
   },
   signUp: function (email, password) {
-    return requireClient().auth.signUp({ email: email, password: password });
+    return requireClient().auth.signUp({
+      email: email,
+      password: password,
+      options: { emailRedirectTo: window.location.href.split('#')[0] }
+    });
+  },
+  resetPassword: function (email) {
+    const redirectUrl = new URL(window.location.href);
+    redirectUrl.searchParams.set('auth', 'recovery');
+    redirectUrl.hash = '';
+    return requireClient().auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl.toString()
+    });
+  },
+  updatePassword: function (password) {
+    return requireClient().auth.updateUser({ password: password });
   },
   getAccessToken: async function () {
     const result = await requireClient().auth.getSession();
