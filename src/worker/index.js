@@ -9,9 +9,13 @@ const HOP_BY_HOP_HEADERS = new Set([
   'x-client-ip', 'x-proxy-secret'
 ]);
 
-const SECURITY_HEADERS = {
-  'Content-Security-Policy': "default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https:; connect-src 'self' https://*.supabase.co https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
-  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+// Keep this policy identical to server/security-headers.js (a parity test enforces it).
+// 'unsafe-inline' for scripts is a temporary concession: app/index.html, index.html and
+// app/admin.html still use inline <script> blocks and onclick="" handlers. Remove it after
+// moving them to external files, then switch script-src to 'self' only.
+export const SECURITY_HEADERS = {
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https:; connect-src 'self' https://*.supabase.co https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'geolocation=(self), camera=(), microphone=(), payment=()'
@@ -52,7 +56,7 @@ async function proxyToBackend(request, backendUrl, fetchImpl, env) {
 
   if (!isSecureBackendUrl(backendUrl)) {
     return new Response(
-      JSON.stringify({ error: 'الخادم الخلفي غير مُهيّأ.' }),
+      JSON.stringify({ error: 'خادم الواجهة الخلفية غير مضبط بشكل آمن.' }),
       { status: 503, headers: { 'Content-Type': 'application/json; charset=utf-8', 'X-Content-Type-Options': 'nosniff' } }
     );
   }
