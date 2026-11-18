@@ -194,7 +194,7 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
     });
     const res = await handleRequest(req, env, fetchImpl);
     assert.equal(res.status, 201);
-    assert.equal(captured.url, 'https://test-project.supabase.co/functions/v1/lectures-admin/lectures');
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/lectures-admin/lectures');
     assert.equal(captured.headers.authorization, 'Bearer signed-user-jwt');
     assert.equal(captured.headers.apikey, 'sb_publishable_test_only');
     assert.match(captured.body, /اختبار/);
