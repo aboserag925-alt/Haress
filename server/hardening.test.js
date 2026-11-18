@@ -38,11 +38,33 @@ function okFetch() {
     };
   }
   return async function (url) {
-    if (url.includes('generativelanguage.googleapis.com')) {
+    let hostname = '';
+    try {
+      hostname = new URL(url).hostname.toLowerCase();
+    } catch {
+      // Invalid URLs are not treated as requests to the Gemini API.
+    }
+    if (hostname === 'generativelanguage.googleapis.com') {
       return jsonResponse({ candidates: [{ content: { parts: [{ text: 'مسودة للمراجعة.' }] } }] });
     }
     return jsonResponse({ ok: true });
   };
+}
+
+test('mock fetch recognizes only the exact Gemini API hostname', async function () {
+  const mockFetch = okFetch();
+  const valid = await mockFetch('https://generativelanguage.googleapis.com/v1beta/models/test:generateContent');
+  assert.equal((await readMockJson(valid)).candidates[0].content.parts[0].text, 'مسودة للمراجعة.');
+
+  const lookalike = await mockFetch('https://generativelanguage.googleapis.com.attacker.example/v1');
+  assert.deepEqual(await readMockJson(lookalike), { ok: true });
+
+  const pathLookalike = await mockFetch('https://attacker.example/generativelanguage.googleapis.com');
+  assert.deepEqual(await readMockJson(pathLookalike), { ok: true });
+});
+
+async function readMockJson(response) {
+  return JSON.parse(Buffer.from(await response.arrayBuffer()).toString('utf8'));
 }
 
 function fakeRequest(headers, remoteAddress) {
