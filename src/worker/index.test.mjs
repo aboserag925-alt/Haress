@@ -163,8 +163,7 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
   const env = {
     DEPLOYMENT_ENV: 'preview',
     SUPABASE_FUNCTIONS_ENABLED: 'true',
-    SUPABASE_URL: 'https://test-project.supabase.co',
-    SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test_only'
+    SUPABASE_URL: 'https://test-project.supabase.co'
   };
 
   it('routes public lecture reads to the test Supabase Function and injects only the publishable key', async () => {
@@ -173,7 +172,7 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
       captured = { url: String(url), headers: Object.fromEntries(init.headers.entries()), method: init.method };
       return new Response(JSON.stringify({ items: [] }), { status: 200, headers: { 'content-type': 'application/json' } });
     };
-    const req = makeRequest('https://preview.example/api/lectures?limit=10', { headers: { origin: 'https://preview.example' } });
+    const req = makeRequest('https://preview.example/api/lectures?limit=10', { headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only' } });
     const res = await handleRequest(req, env, fetchImpl);
     assert.equal(res.status, 200);
     assert.equal(captured.url, 'https://test-project.supabase.co/functions/v1/lectures-admin/lectures?limit=10');
@@ -190,7 +189,7 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
     };
     const req = makeRequest('https://preview.example/api/lectures', {
       method: 'POST',
-      headers: { origin: 'https://preview.example', authorization: 'Bearer signed-user-jwt', 'content-type': 'application/json' },
+      headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only', authorization: 'Bearer signed-user-jwt', 'content-type': 'application/json' },
       body: JSON.stringify({ title: 'اختبار' })
     });
     const res = await handleRequest(req, env, fetchImpl);
@@ -211,7 +210,7 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
 
   it('rejects a production Supabase URL in preview without making a network request', async () => {
     const unsafeEnv = { ...env, SUPABASE_URL: 'https://uzepglfimareggswjzlf.supabase.co' };
-    const req = makeRequest('https://preview.example/api/lectures');
+    const req = makeRequest('https://preview.example/api/lectures', { headers: { apikey: 'sb_publishable_test_only' } });
     const res = await handleRequest(req, unsafeEnv, async () => {
       throw new Error('production project must never be contacted from preview');
     });
