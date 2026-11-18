@@ -55,7 +55,9 @@ test('the canonical AI storage migration is unique and keeps tasks tainted by de
 test('every SECURITY DEFINER migration function uses an empty search_path',()=>{
   for(const [name,sql] of [['AI storage',migration],['question cap',questionCap],['suggestion cap',suggestionCap]]){
     assert.match(sql,/security definer\s+set search_path = ''/i, name+' must pin an empty search_path');
-    assert.doesNotMatch(sql,/security definer\s+set search_path\s*=\s*(?!'')/i, name+' contains an unsafe search_path');
+    const paths = [...sql.matchAll(/security definer\s+set search_path\s*=\s*([^;\n]+)/gi)];
+    assert.ok(paths.length > 0, name+' must contain a SECURITY DEFINER function with a pinned search_path');
+    for (const match of paths) assert.equal(match[1].trim(), "''", name+' contains an unsafe search_path');
   }
   assert.match(triggerMigration,/set search_path = ''/i);
 });
