@@ -162,7 +162,6 @@ describe('Haress Worker: توجيه /api/*', () => {
 describe('Haress Worker: Supabase Edge Function preview routing', () => {
   const env = {
     DEPLOYMENT_ENV: 'preview',
-    SUPABASE_FUNCTIONS_ENABLED: 'true',
     SUPABASE_URL: 'https://bevyztwoijjzfngutnys.supabase.co'
   };
 
@@ -202,7 +201,7 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
 
   it('fails closed when preview Supabase configuration is incomplete', async () => {
     const req = makeRequest('https://preview.example/api/admin/session');
-    const res = await handleRequest(req, { SUPABASE_FUNCTIONS_ENABLED: 'true' }, async () => {
+    const res = await handleRequest(req, { DEPLOYMENT_ENV: 'preview' }, async () => {
       throw new Error('network should not be called');
     });
     assert.equal(res.status, 503);
