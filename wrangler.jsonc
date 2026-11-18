@@ -2,6 +2,10 @@
   "name": "hares",
   "compatibility_date": "2026-11-05",
   "main": "src/worker/index.js",
+  "vars": {
+    "DEPLOYMENT_ENV": "production",
+    "SUPABASE_URL": "https://uzepglfimareggswjzlf.supabase.co"
+  },
   "assets": {
     "directory": "./app",
     "binding": "ASSETS",
