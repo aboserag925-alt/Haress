@@ -25,11 +25,11 @@ begin
     raise exception 'Invalid daily question budget arguments';
   end if;
 
-  insert into public.question_daily_usage as usage (usage_day, used_count)
+  insert into public.question_daily_usage as existing (usage_day, used_count)
   values (p_day, 1)
   on conflict (usage_day) do update
-    set used_count = usage.used_count + 1
-    where usage.used_count < p_cap
+    set used_count = existing.used_count + 1
+    where existing.used_count < p_cap
   returning true into v_allowed;
 
   return coalesce(v_allowed, false);
