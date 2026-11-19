@@ -174,8 +174,8 @@ test('durable media index keeps object storage private and closes metadata to br
   }
   assert.match(mediaIndex,/file_unique_id text not null unique/i);
   assert.match(mediaIndex,/object_key text not null unique/i);
-  assert.match(mediaIndex,/status in \\('pending','approved','rejected','removed'\\)/i);
-  assert.match(mediaKind,/kind in \\('audio','video','document','image','other'\\)/i);
+  assert.ok(mediaIndex.includes("status in ('pending','approved','rejected','removed')"));
+  assert.ok(mediaKind.includes("kind in ('audio','video','document','image','other')"));
   assert.doesNotMatch(mediaIndex,/drop table|truncate|delete from/i);
 });
 
