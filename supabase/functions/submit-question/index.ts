@@ -105,7 +105,7 @@ async function sendToTelegram(question: string, draft: string, botToken: string,
     body: JSON.stringify({
       chat_id: chatId,
       text: "سؤال للمراجعة من التطبيق:\n\n" + question +
-        "\\n\\nمسودة Gemini غير معتمدة:\\n" + draft,
+        "\n\nمسودة Gemini غير معتمدة:\n" + draft,
     }),
     signal: AbortSignal.timeout(15000),
   });
