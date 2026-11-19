@@ -50,6 +50,11 @@ test('V3 keeps its editorial layout but uses the shared V2 identity tokens', () 
   assert.match(css, /--forest:var\(--v2-green\)/);
   assert.match(css, /--bronze:var\(--v2-gold\)/);
   assert.doesNotMatch(css, /#f4f0e6|#183d31|#9a7042|IBM Plex Sans Arabic/);
+  assert.match(css, /--v31-shadow:var\(--v2-shadow-soft\)/);
+  assert.doesNotMatch(css, /rgba\(24,61,49|rgba\(34,48,39/);
+  for (const token of ['--v2-compass-mark', '--v2-dialog-backdrop', '--v2-row-stripe', '--v2-shadow-soft', '--v2-shadow-active']) {
+    assert.ok(read('app/identity-tokens.css').includes(token), 'shared identity tokens must define ' + token);
+  }
 });
 
 test('approved shield is the only brand mark asset used by the application', () => {
