@@ -667,7 +667,7 @@ if (require.main === module) {
     if (shuttingDown) return;
     shuttingDown = true;
     console.log('Shutting down Ahl Athar server after ' + signal + '.');
-    server.close();
+    if (server.listening) server.close();
     try {
       await mediaLibrary.stop();
     } catch {
@@ -680,6 +680,10 @@ if (require.main === module) {
   process.once('SIGINT', function () { shutdown('SIGINT'); });
 
   server.listen(port, host, function () {
+    if (shuttingDown) {
+      server.close();
+      return;
+    }
     console.log('Ahl Athar server listening on port ' + port);
     mediaLibrary.start().catch(function () {
       console.error('Telegram media intake could not be started.');
