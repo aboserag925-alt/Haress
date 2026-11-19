@@ -13,6 +13,15 @@ test('suggestions and AI storage migration creates the required service-side tab
   }
 });
 
+const secureDefaults = fs.readFileSync(path.join(__dirname,'migrations','20261119060213_haress_ai_task_secure_defaults.sql'),'utf8');
+
+test('production AI task defaults require approval and mark new tasks as tainted',()=>{
+  assert.match(secureDefaults,/alter column requires_approval set default true/i);
+  assert.match(secureDefaults,/alter column tainted set default true/i);
+  assert.match(secureDefaults,/alter column source set default 'suggestion'/i);
+  assert.match(secureDefaults,/existing rows are intentionally unchanged/i);
+});
+
 test('AI tasks are tainted by default and approval RPC refuses tainted tasks',()=>{
   assert.match(migration,/tainted boolean not null default true/i);
   assert.match(migration,/if v_task\.tainted then raise exception 'Tainted tasks cannot be approved'/i);
