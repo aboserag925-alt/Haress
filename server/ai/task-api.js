@@ -20,7 +20,13 @@ function createTaskApi({env,fetch:fetchImpl=global.fetch,taskService,supervisor,
   const rows=await admin.json();return rows.length?user:null;
  }
  return async function handle(req,res,path){
-  const artifactMatch=typeof path==='string'?path.match(/^\\/api\\/admin\\/ai\\/tasks\\/([0-9a-f-]{36})\\/artifact$/i):null;
+  let artifactMatch=null;
+  const artifactPrefix='/api/admin/ai/tasks/';
+  const artifactSuffix='/artifact';
+  if(typeof path==='string'&&path.startsWith(artifactPrefix)&&path.endsWith(artifactSuffix)){
+   const candidate=path.slice(artifactPrefix.length,-artifactSuffix.length);
+   if(candidate.length===36&&/^[0-9a-f-]{36}$/i.test(candidate))artifactMatch=[path,candidate];
+  }
   if(path!=='/api/admin/ai/tasks'&&!artifactMatch)return false;
   if(!rateLimit(req)){send(res,429,{error:'تجاوزت حد المحاولات. حاول لاحقًا.'});return true;}
   if(artifactMatch&&req.method==='GET'){
