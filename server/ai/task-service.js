@@ -43,6 +43,16 @@ function createTaskService({env,fetch:fetchImpl=global.fetch}) {
       const rows=await request('/rest/v1/ai_tasks?id=eq.'+encodeURIComponent(id)+'&select=*&limit=1');
       return rows[0]||null;
     },
+    async getAnalysisArtifact(taskId) {
+      if(typeof taskId!=='string'||!taskId) throw new TypeError('Invalid AI task ID');
+      const rows=await request('/rest/v1/ai_task_artifacts?task_id=eq.'+encodeURIComponent(taskId)+'&artifact_type=eq.maestro_analysis_plan&select=id,task_id,version,schema_version,artifact,sha256,created_by,created_at&order=version.desc&limit=1');
+      const artifact=rows[0]||null;
+      if(!artifact) return null;
+      const canonical=JSON.stringify(canonicalize(artifact.artifact));
+      const actual=crypto.createHash('sha256').update(canonical,'utf8').digest('hex');
+      if(actual!==artifact.sha256) throw new Error('AI analysis artifact integrity check failed');
+      return artifact;
+    },
     async updateStatus(id,status) {
       const allowed=new Set(['ANALYZED','FAILED']);
       if(!allowed.has(status)) throw new TypeError('Invalid AI task status update');
