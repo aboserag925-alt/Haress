@@ -163,6 +163,7 @@ test('admin Edge Function creates and retrieves AI analysis artifacts through gu
 
 const mediaIndex = fs.readFileSync(path.join(__dirname,'migrations','20261119070000_media_library_durable_index.sql'),'utf8');
 const mediaKind = fs.readFileSync(path.join(__dirname,'migrations','20261119070010_media_library_document_kind.sql'),'utf8');
+const mediaReupload = fs.readFileSync(path.join(__dirname,'migrations','20261119070020_media_library_reupload_removed.sql'),'utf8');
 const questionFunction = fs.readFileSync(path.join(__dirname,'functions','submit-question','index.ts'),'utf8');
 const mediaFunction = fs.readFileSync(path.join(__dirname,'functions','media-library','index.ts'),'utf8');
 
@@ -176,6 +177,8 @@ test('durable media index keeps object storage private and closes metadata to br
   assert.match(mediaIndex,/object_key text not null unique/i);
   assert.ok(mediaIndex.includes("status in ('pending','approved','rejected','removed')"));
   assert.ok(mediaKind.includes("kind in ('audio','video','document','image','other')"));
+  assert.match(mediaReupload,/drop constraint if exists media_library_items_file_unique_id_key/i);
+  assert.match(mediaReupload,/where status <> 'removed'/i);
   assert.doesNotMatch(mediaIndex,/drop table|truncate|delete from/i);
 });
 
