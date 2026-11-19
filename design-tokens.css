@@ -1,0 +1,55 @@
+/* Design tokens — استراحة أهل الأثر */
+:root {
+  /* الألوان */
+  --green-deep: #0F4C3A;
+  --green-emerald: #1E7A5A;
+  --gold: #C9A24B;
+  --gold-light: #E3C77E;
+  --cream: #F7F1E3;
+  --charcoal: #1F2A2E;
+  --alert: #B3261E;
+
+  /* خطوط */
+  --font-heading: 'Cairo', system-ui, sans-serif;
+  --font-body: 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --font-quote: 'Amiri', serif;
+
+  /* أحجام نص */
+  --text-min: 16px;
+  --text-body: 20px;
+  --line-height-body: 1.8;
+
+  /* زخارف */
+  --radius-arch: 60% 60% 0 0 / 40% 40% 0 0;
+  --gold-rule: 2px solid var(--gold);
+
+  /* تباعد */
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+}
+
+body {
+  background: var(--cream);
+  color: var(--charcoal);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--line-height-body);
+  direction: rtl;
+}
+
+h1, h2, h3, .btn, .nav {
+  font-family: var(--font-heading);
+}
+
+.quote, blockquote, .ayah, .hadith {
+  font-family: var(--font-quote);
+}
+
+.btn { min-height: 44px; min-width: 44px; }
+a, button { min-height: 44px; }
+
+/* شعار — مكوّن SVG (استخدم <img src="logo.svg"> أو inline) */
+.logo-arch { width: 32px; height: 32px; }
