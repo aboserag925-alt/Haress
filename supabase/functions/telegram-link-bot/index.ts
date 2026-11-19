@@ -70,10 +70,11 @@ async function readJson(req: Request): Promise<Record<string, unknown>> {
 }
 
 async function telegramSend(token: string, chatId: string, text: string): Promise<void> {
+  if (text.length > MAX_TELEGRAM_TEXT) throw new Error("TELEGRAM_MESSAGE_TOO_LONG");
   const response = await fetch("https://api.telegram.org/bot" + token + "/sendMessage", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Accept": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text: text.slice(0, MAX_TELEGRAM_TEXT), disable_web_page_preview: false }),
+    body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: false }),
     signal: AbortSignal.timeout(15000),
   });
   let payload: Record<string, unknown>;
@@ -170,16 +171,19 @@ Deno.serve(async (req: Request) => {
     let duplicates = 0;
     const pending: Array<{ key: string; lines: string[] }> = [];
     for (const lecture of lectures || []) {
-      const links = [lecture.stream_url, lecture.recording_url].filter((value): value is string => typeof value === "string" && /^https:\/\//i.test(value));
+      const links = [
+        { field: "stream", label: "رابط البث", value: lecture.stream_url },
+        { field: "recording", label: "رابط التسجيل", value: lecture.recording_url },
+      ].filter((item): item is { field: string; label: string; value: string } =>
+        typeof item.value === "string" && /^https:\/\//i.test(item.value));
       if (!links.length) continue;
-      const sourceKey = "website-lecture:" + lecture.id + ":" + String(lecture.updated_at || "");
-      const reserved = await reserveDelivery(admin, sourceKey, "website_lecture", String(lecture.id), links.length);
-      if (!reserved) { duplicates++; continue; }
       const title = safeText(lecture.title, 180) || "محاضرة";
-      pending.push({
-        key: sourceKey,
-        lines: ["• " + title, ...links.map((link, i) => (i === 0 ? "رابط البث: " : "رابط التسجيل: ") + link)],
-      });
+      for (const item of links) {
+        const sourceKey = "website-lecture:" + lecture.id + ":" + String(lecture.updated_at || "") + ":" + item.field;
+        const reserved = await reserveDelivery(admin, sourceKey, "website_lecture", String(lecture.id), 1);
+        if (!reserved) { duplicates++; continue; }
+        pending.push({ key: sourceKey, lines: ["• " + title, item.label + ": " + item.value] });
+      }
     }
 
     let posted = 0;
