@@ -322,3 +322,57 @@ describe('Haress Worker: فشل الشبكة', () => {
     assert.equal(res.status, 502);
   });
 });
+
+
+describe('Haress Worker: Telegram doctor links', () => {
+  const env = {
+    DEPLOYMENT_ENV: 'preview',
+    SUPABASE_URL: 'https://bevyztwoijjzfngutnys.supabase.co'
+  };
+
+  it('routes the Telegram webhook without requiring a browser publishable key', async () => {
+    let captured = null;
+    const body = JSON.stringify({ update_id: 17, message: { text: 'https://example.com' } });
+    const req = makeRequest('https://preview.example/api/telegram/webhook', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-telegram-bot-api-secret-token': 'webhook-secret' },
+      body
+    });
+    const res = await handleRequest(req, env, async (url, init) => {
+      captured = { url: String(url), method: init.method, headers: Object.fromEntries(init.headers.entries()), body: await new Response(init.body).text() };
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'content-type': 'application/json' } });
+    });
+    assert.equal(res.status, 200);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/telegram-link-bot/webhook');
+    assert.equal(captured.method, 'POST');
+    assert.equal(captured.headers['x-telegram-bot-api-secret-token'], 'webhook-secret');
+    assert.equal(captured.headers.apikey, undefined);
+    assert.equal(captured.headers.authorization, undefined);
+    assert.equal(captured.body, body);
+  });
+
+  it('rejects non-POST Telegram webhook requests before forwarding', async () => {
+    let called = false;
+    const req = makeRequest('https://preview.example/api/telegram/webhook');
+    const res = await handleRequest(req, env, async () => { called = true; return new Response('ok'); });
+    assert.equal(res.status, 405);
+    assert.equal(called, false);
+  });
+
+  it('routes the administrator website-link sync through the approved Preview project', async () => {
+    let captured = null;
+    const req = makeRequest('https://preview.example/api/admin/telegram/publish-links', {
+      method: 'POST',
+      headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test', authorization: 'Bearer admin-jwt', 'content-type': 'application/json' },
+      body: '{}'
+    });
+    const res = await handleRequest(req, env, async (url, init) => {
+      captured = { url: String(url), headers: Object.fromEntries(init.headers.entries()) };
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+    assert.equal(res.status, 200);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/telegram-link-bot/admin/publish-website-links');
+    assert.equal(captured.headers.apikey, 'sb_publishable_test');
+    assert.equal(captured.headers.authorization, 'Bearer admin-jwt');
+  });
+});

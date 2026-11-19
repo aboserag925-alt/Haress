@@ -1,0 +1,2 @@
+[functions.telegram-link-bot]
+verify_jwt = false
