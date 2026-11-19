@@ -111,6 +111,55 @@ test('all Supabase Edge Functions allow only the approved Preview and Production
   }
 });
 
+
+const taskContext = fs.readFileSync(path.join(__dirname,'migrations','20261119000200_ai_task_request_context.sql'),'utf8');
+const taskCreation = fs.readFileSync(path.join(__dirname,'migrations','20261119000300_atomic_ai_task_creation.sql'),'utf8');
+const reviewStorage = fs.readFileSync(path.join(__dirname,'migrations','20261119000350_ai_reviews_storage.sql'),'utf8');
+const artifactStorage = fs.readFileSync(path.join(__dirname,'migrations','20261119000400_ai_task_analysis_artifacts.sql'),'utf8');
+
+test('AI task request context is additive and validates task types',()=>{
+  assert.match(taskContext,/add column if not exists task_type text/i);
+  assert.match(taskContext,/add column if not exists title text/i);
+  assert.match(taskContext,/add column if not exists description text/i);
+  assert.match(taskContext,/ai_tasks_task_type_check/i);
+  assert.doesNotMatch(taskContext,/drop table|truncate|delete from/i);
+});
+
+test('AI task creation is atomic and its SECURITY DEFINER RPC is service-only',()=>{
+  assert.match(taskCreation,/insert into public\.ai_tasks/i);
+  assert.match(taskCreation,/insert into public\.ai_audit_events/i);
+  assert.match(taskCreation,/security definer\s+set search_path = ''/i);
+  assert.match(taskCreation,/revoke all on function public\.create_ai_task_with_audit[\s\S]*?from public, anon, authenticated/i);
+  assert.match(taskCreation,/grant execute on function public\.create_ai_task_with_audit[\s\S]*?to service_role/i);
+  assert.match(taskCreation,/tainted,source,affected_areas/i);
+});
+
+test('AI reviews and immutable artifacts remain closed to browser roles',()=>{
+  assert.match(reviewStorage,/alter table public\.ai_reviews enable row level security/i);
+  assert.match(reviewStorage,/revoke all on public\.ai_reviews from public, anon, authenticated/i);
+  assert.match(artifactStorage,/alter table public\.ai_task_artifacts enable row level security/i);
+  assert.match(artifactStorage,/revoke all on public\.ai_task_artifacts from public, anon, authenticated, service_role/i);
+  assert.match(artifactStorage,/grant select on public\.ai_task_artifacts to service_role/i);
+  assert.match(artifactStorage,/sha256 text not null check/i);
+});
+
+test('AI analysis persistence validates admin, task provenance and artifact integrity atomically',()=>{
+  assert.match(artifactStorage,/create or replace function public\.record_ai_task_analysis/i);
+  assert.match(artifactStorage,/Administrator authorization required/i);
+  assert.match(artifactStorage,/p_artifact_sha256/i);
+  assert.match(artifactStorage,/ai\.analysis\.completed/i);
+  assert.match(artifactStorage,/revoke all on function public\.record_ai_task_analysis[\s\S]*?from public, anon, authenticated/i);
+  assert.match(artifactStorage,/grant execute on function public\.record_ai_task_analysis[\s\S]*?to service_role/i);
+});
+
+test('admin Edge Function creates and retrieves AI analysis artifacts through guarded RPCs',()=>{
+  assert.match(adminOperations,/create_ai_task_with_audit/);
+  assert.match(adminOperations,/record_ai_task_analysis/);
+  assert.match(adminOperations,/allowTaskRequest/);
+  assert.match(adminOperations,/auth\.getUser/);
+  assert.match(adminOperations,/from\("admin_users"\)/);
+});
+
 test('approval audit event is recorded once by the guarded database RPC',()=>{
   assert.doesNotMatch(adminOperations,/ai\.approval\.recorded/);
   assert.match(migration,/ai\.approval\.granted/);
