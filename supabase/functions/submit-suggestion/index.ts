@@ -2,6 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 
 const ALLOWED_ORIGINS = new Set([
   "https://hares-preview.aboserag925.workers.dev",
+  "https://feat-visual-identity-v2-mainline-20261119-hares.aboserag925.workers.dev",
   "https://hares.aboserag925.workers.dev",
   "http://localhost:8787",
   "http://127.0.0.1:8787",
