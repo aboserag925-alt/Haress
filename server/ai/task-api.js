@@ -39,10 +39,22 @@ function createTaskApi({env,fetch:fetchImpl=global.fetch,taskService,supervisor,
    // Never accept trustedSource, source, status, approval flags, or task IDs from the client.
    const task=await taskService.create({source:'suggestion',type:input.type,title:input.title.trim(),description:input.description.trim(),affectedAreas:input.affectedAreas||[],actorUserId:user.id});
    const analysis=await supervisor.analyze({id:task.id,type:input.type,title:input.title.trim(),description:input.description.trim(),affectedAreas:input.affectedAreas||[]});
-   await taskService.recordReviews(task.id,analysis.reports||[]);
    const status=analysis.task.status==='FAILED'?'FAILED':'ANALYZED';
-   const saved=await taskService.updateStatus(task.id,status);
-   send(res,201,{task:saved||{...task,status},reports:analysis.reports||[],plan:analysis.plan||[],createdBy:user.id});
+   const persisted=await taskService.recordAnalysis({
+    taskId:task.id,
+    actorUserId:user.id,
+    status,
+    source:{type:input.type,title:input.title.trim(),description:input.description.trim(),affectedAreas:input.affectedAreas||[]},
+    plan:analysis.plan||[],
+    reports:analysis.reports||[]
+   });
+   send(res,201,{
+    task:{...task,status:persisted.task_status},
+    reports:analysis.reports||[],
+    plan:analysis.plan||[],
+    artifact:{id:persisted.artifact_id,sha256:persisted.artifact_sha256},
+    createdBy:user.id
+   });
   }catch(error){
    send(res,error.statusCode||503,{error:error.statusCode?error.message:'تعذر إنشاء المهمة أو حفظ مراجعاتها.'});
   }
