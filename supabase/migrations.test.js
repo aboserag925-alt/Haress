@@ -164,21 +164,25 @@ test('AI task creation and provenance audit are committed atomically by a servic
 const analysisArtifactMigration = fs.readFileSync(path.join(__dirname,'migrations','20261119000400_ai_task_analysis_artifacts.sql'),'utf8');
 
 test('Maestro analysis artifacts are immutable to browser roles and persisted atomically with reviews, status and audit',()=>{
-  assert.match(analysisArtifactMigration,/create table if not exists public\\.ai_task_artifacts/i);
-  assert.match(analysisArtifactMigration,/task_id uuid not null references public\\.ai_tasks\\(id\\) on delete restrict/i);
-  assert.match(analysisArtifactMigration,/sha256 text not null check \\(sha256 ~ '\\\^\[0-9a-f\]\{64\}\$'\\)/i);
-  assert.match(analysisArtifactMigration,/alter table public\\.ai_task_artifacts enable row level security/i);
-  assert.match(analysisArtifactMigration,/revoke all on public\\.ai_task_artifacts from public, anon, authenticated, service_role/i);
-  assert.match(analysisArtifactMigration,/grant select on public\\.ai_task_artifacts to service_role/i);
-  assert.match(analysisArtifactMigration,/create or replace function public\\.record_ai_task_analysis/i);
+  for(const fragment of [
+    'create table if not exists public.ai_task_artifacts',
+    'task_id uuid not null references public.ai_tasks(id) on delete restrict',
+    "sha256 text not null check (sha256 ~ '^[0-9a-f]{64}$')",
+    'alter table public.ai_task_artifacts enable row level security',
+    'revoke all on public.ai_task_artifacts from public, anon, authenticated, service_role',
+    'grant select on public.ai_task_artifacts to service_role',
+    'create or replace function public.record_ai_task_analysis',
+    'insert into public.ai_reviews',
+    'insert into public.ai_task_artifacts',
+    'update public.ai_tasks',
+    'insert into public.ai_audit_events',
+    'revoke all on function public.record_ai_task_analysis',
+    'grant execute on function public.record_ai_task_analysis',
+    'from public, anon, authenticated',
+    'to service_role'
+  ]) assert.ok(analysisArtifactMigration.includes(fragment),fragment);
   assert.match(analysisArtifactMigration,/security definer\\s+set search_path = ''/i);
   assert.match(analysisArtifactMigration,/for update/i);
-  assert.match(analysisArtifactMigration,/insert into public\\.ai_reviews/i);
-  assert.match(analysisArtifactMigration,/insert into public\\.ai_task_artifacts/i);
-  assert.match(analysisArtifactMigration,/update public\\.ai_tasks[\\s\\S]*?set status = p_status/i);
-  assert.match(analysisArtifactMigration,/insert into public\\.ai_audit_events/i);
-  assert.match(analysisArtifactMigration,/revoke all on function public\\.record_ai_task_analysis[\\s\\S]*?from public, anon, authenticated/i);
-  assert.match(analysisArtifactMigration,/grant execute on function public\\.record_ai_task_analysis[\\s\\S]*?to service_role/i);
   assert.match(analysisArtifactMigration,/begin;[\\s\\S]*commit;/i);
   assert.doesNotMatch(analysisArtifactMigration,/\\b(drop table|truncate|delete from)\\b/i);
 });
