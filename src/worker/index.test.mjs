@@ -241,6 +241,37 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
     assert.equal(captured.headers.apikey, 'sb_publishable_test_only');
   });
 
+  it('routes AI task creation requests to admin-operations', async () => {
+    let captured = null;
+    const req = makeRequest('https://preview.example/api/admin/ai/tasks', {
+      method: 'POST',
+      headers: { apikey: 'sb_publishable_test_only', authorization: 'Bearer user.jwt.token', 'content-type': 'application/json' },
+      body: JSON.stringify({ type: 'suggestion', title: 'Test task', description: 'A valid test task description' })
+    });
+    const res = await handleRequest(req, env, async (url, init) => {
+      captured = { url: String(url), headers: Object.fromEntries(init.headers.entries()) };
+      return new Response(JSON.stringify({ task: { id: 'task-id' } }), { status: 201 });
+    });
+    assert.equal(res.status, 201);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/admin-operations/admin/ai/tasks');
+    assert.equal(captured.headers.authorization, 'Bearer user.jwt.token');
+  });
+
+  it('routes AI artifact reads to admin-operations', async () => {
+    let captured = null;
+    const taskId = '123e4567-e89b-42d3-a456-426614174000';
+    const req = makeRequest(`https://preview.example/api/admin/ai/tasks/${taskId}/artifact`, {
+      headers: { apikey: 'sb_publishable_test_only', authorization: 'Bearer user.jwt.token' }
+    });
+    const res = await handleRequest(req, env, async (url, init) => {
+      captured = { url: String(url), headers: Object.fromEntries(init.headers.entries()) };
+      return new Response(JSON.stringify({ artifact: {} }), { status: 200 });
+    });
+    assert.equal(res.status, 200);
+    assert.equal(captured.url, `https://bevyztwoijjzfngutnys.supabase.co/functions/v1/admin-operations/admin/ai/tasks/${taskId}/artifact`);
+    assert.equal(captured.headers.authorization, 'Bearer user.jwt.token');
+  });
+
   it('routes AI approval requests to admin-operations without changing the signed JWT', async () => {
     let captured = null;
     const fetchImpl = async (url, init) => {
