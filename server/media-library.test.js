@@ -218,6 +218,64 @@ test('does not contact Telegram when media intake is disabled', async function (
   });
 });
 
+test('stops Telegram long polling immediately during graceful shutdown', async function () {
+  let pollStarted = false;
+  await withLibrary(async function (context) {
+    context.env.TELEGRAM_MEDIA_ENABLED = 'true';
+    context.fetch = async function (url, options) {
+      context.calls.push({ url: url, options: options });
+      if (!url.includes('/getUpdates')) throw new Error('Unexpected Telegram request');
+      pollStarted = true;
+      return new Promise(function (resolve, reject) {
+        options.signal.addEventListener('abort', function () {
+          const error = new Error('Polling aborted for shutdown.');
+          error.name = 'AbortError';
+          reject(error);
+        }, { once: true });
+      });
+    };
+    context.library = createMediaLibrary({
+      env: context.env,
+      fetch: context.fetch,
+      storageDirectory: context.storageDirectory
+    });
+    await context.library.start();
+    assert.equal(pollStarted, true);
+    await context.library.stop();
+    assert.equal(context.calls.filter(function (call) {
+      return call.url.includes('/getUpdates');
+    }).length, 1);
+  });
+});
+
+test('starting Telegram media intake twice does not create duplicate pollers', async function () {
+  await withLibrary(async function (context) {
+    context.env.TELEGRAM_MEDIA_ENABLED = 'true';
+    let pollCalls = 0;
+    context.fetch = async function (url, options) {
+      context.calls.push({ url: url, options: options });
+      if (!url.includes('/getUpdates')) throw new Error('Unexpected Telegram request');
+      pollCalls += 1;
+      return new Promise(function (resolve, reject) {
+        options.signal.addEventListener('abort', function () {
+          const error = new Error('Polling aborted for shutdown.');
+          error.name = 'AbortError';
+          reject(error);
+        }, { once: true });
+      });
+    };
+    context.library = createMediaLibrary({
+      env: context.env,
+      fetch: context.fetch,
+      storageDirectory: context.storageDirectory
+    });
+    await context.library.start();
+    await context.library.start();
+    assert.equal(pollCalls, 1);
+    await context.library.stop();
+  });
+});
+
 test('STORAGE_DIRECTORY: explicit options.storageDirectory takes highest precedence', async function () {
   const explicitDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ahl-storage-explicit-'));
   const envDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ahl-storage-env-'));
