@@ -37,7 +37,7 @@ function createTaskApi({env,fetch:fetchImpl=global.fetch,taskService,supervisor,
      send(res,400,{error:'بيانات المهمة غير صالحة.'});return true;
    }
    // Never accept trustedSource, source, status, approval flags, or task IDs from the client.
-   const task=await taskService.create({source:'suggestion',affectedAreas:input.affectedAreas||[],actorUserId:user.id});
+   const task=await taskService.create({source:'suggestion',type:input.type,title:input.title.trim(),description:input.description.trim(),affectedAreas:input.affectedAreas||[],actorUserId:user.id});
    const analysis=await supervisor.analyze({id:task.id,type:input.type,title:input.title.trim(),description:input.description.trim(),affectedAreas:input.affectedAreas||[]});
    await taskService.recordReviews(task.id,analysis.reports||[]);
    const status=analysis.task.status==='FAILED'?'FAILED':'ANALYZED';
