@@ -112,6 +112,8 @@ function createMediaLibrary(options) {
   let running = false;
   let pollPromise = null;
   let pollAbortController = null;
+  let startPromise = null;
+  let stopRequested = false;
 
   async function initialize() {
     if (initialized) return;
@@ -424,19 +426,37 @@ function createMediaLibrary(options) {
     }
   }
 
+  const initializeForStart = options.initialize || initialize;
+
   async function start() {
     if (env.TELEGRAM_MEDIA_ENABLED !== 'true' || running) return;
+    if (startPromise) return startPromise;
     if (!botToken || !mediaGroupId) {
       throw new Error('Telegram media requires a bot token and a group ID.');
     }
-    await initialize();
-    running = true;
-    pollAbortController = new AbortController();
-    pollPromise = pollLoop();
+
+    stopRequested = false;
+    const pendingStart = (async function () {
+      await initializeForStart();
+      if (stopRequested) return;
+      running = true;
+      pollAbortController = new AbortController();
+      pollPromise = pollLoop();
+    })();
+    startPromise = pendingStart;
+    try {
+      await pendingStart;
+    } finally {
+      if (startPromise === pendingStart) startPromise = null;
+    }
   }
 
   async function stop() {
+    stopRequested = true;
     running = false;
+    if (pollAbortController) pollAbortController.abort();
+    const pendingStart = startPromise;
+    if (pendingStart) await pendingStart;
     if (pollAbortController) pollAbortController.abort();
     if (pollPromise) await pollPromise;
     pollPromise = null;
