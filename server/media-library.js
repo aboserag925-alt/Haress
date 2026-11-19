@@ -118,6 +118,16 @@ function createMediaLibrary(options) {
   async function initialize() {
     if (initialized) return;
     if (useRemote) {
+      if (typeof storage.loadIndex !== 'function') {
+        throw new Error('Remote media storage does not support durable index reads.');
+      }
+      const stored = await storage.loadIndex();
+      if (!stored || !Array.isArray(stored.items) ||
+          (stored.offset !== null && !Number.isSafeInteger(stored.offset))) {
+        throw new Error('Invalid remote media library index.');
+      }
+      items = stored.items;
+      offset = stored.offset;
       initialized = true;
       return;
     }
@@ -139,7 +149,13 @@ function createMediaLibrary(options) {
   }
 
   async function save() {
-    if (useRemote) return;
+    if (useRemote) {
+      if (typeof storage.saveIndex !== 'function') {
+        throw new Error('Remote media storage does not support durable index writes.');
+      }
+      await storage.saveIndex(items, offset);
+      return;
+    }
     await fs.mkdir(storageDirectory, { recursive: true });
     const temporaryPath = indexPath + '.' + randomUUID() + '.tmp';
     await fs.writeFile(temporaryPath, JSON.stringify({ offset: offset, items: items }), 'utf8');
