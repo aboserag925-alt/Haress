@@ -4,8 +4,8 @@ import vm from 'node:vm';
 const email = process.env.SUPABASE_E2E_NON_ADMIN_EMAIL;
 const password = process.env.SUPABASE_E2E_NON_ADMIN_PASSWORD;
 if (!email || !password) {
-  console.log('SKIP: dedicated non-admin test credentials are not configured; no account was created.');
-  process.exit(0);
+  console.error('BLOCKED: dedicated non-admin test credentials are not configured. Set SUPABASE_E2E_NON_ADMIN_EMAIL and SUPABASE_E2E_NON_ADMIN_PASSWORD in the Preview-Build-CI environment; no account was created.');
+  process.exit(1);
 }
 
 const sandbox = { window: {} };
