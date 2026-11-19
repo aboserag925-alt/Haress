@@ -101,7 +101,8 @@ SupabaseMediaStorage.prototype.loadIndex = async function () {
       removedAt: row.removed_at,
       objectKey: row.object_key
     })),
-    offset: Array.isArray(state) && state[0] && Number.isSafeInteger(Number(state[0].telegram_update_offset))
+    offset: Array.isArray(state) && state[0] && state[0].telegram_update_offset !== null &&
+      Number.isSafeInteger(Number(state[0].telegram_update_offset))
       ? Number(state[0].telegram_update_offset) : null
   };
 };
