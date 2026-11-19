@@ -187,3 +187,18 @@ test('Maestro analysis artifacts are immutable to browser roles and persisted at
   ]) assert.ok(analysisArtifactMigration.includes(fragment),fragment);
   for(const forbidden of ['drop table','truncate','delete from']) assert.equal(analysisArtifactMigration.includes(forbidden),false,forbidden);
 });
+
+
+test('Maestro artifact RPC validates all writes inside one locked database transaction',()=>{
+  const fn=analysisArtifactMigration.slice(
+    analysisArtifactMigration.indexOf('create or replace function public.record_ai_task_analysis'),
+    analysisArtifactMigration.indexOf('$record_analysis$;',analysisArtifactMigration.indexOf('create or replace function public.record_ai_task_analysis'))+'$record_analysis$;'.length
+  );
+  assert.match(fn,/where id = p_task_id[\\s\\S]*?for update/i);
+  assert.match(fn,/if v_task\.status <> 'PROPOSED'[\\s\\S]*?raise exception/i);
+  assert.match(fn,/insert into public\.ai_reviews[\\s\\S]*?insert into public\.ai_task_artifacts[\\s\\S]*?update public\.ai_tasks[\\s\\S]*?insert into public\.ai_audit_events/i);
+  assert.match(fn,/raise exception 'Invalid AI review report'/i);
+  assert.match(fn,/raise exception 'Invalid AI review warning'/i);
+  assert.match(analysisArtifactMigration,/revoke all on function public\.record_ai_task_analysis\\([\\s\\S]*?from public, anon, authenticated/i);
+  assert.match(analysisArtifactMigration,/grant execute on function public\.record_ai_task_analysis\\([\\s\\S]*?to service_role/i);
+});
