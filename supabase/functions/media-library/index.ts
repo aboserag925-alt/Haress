@@ -55,8 +55,11 @@ Deno.serve(async (req: Request) => {
   if (!url || !key) return json({ error: "خدمة المكتبة غير مهيأة." }, 503, origin);
   const client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   const pathname = new URL(req.url).pathname;
-  const functionPrefix = "/functions/v1/media-library";
-  const route = pathname.startsWith(functionPrefix) ? pathname.slice(functionPrefix.length) : pathname;
+  const pathSegments = pathname.split("/").filter(Boolean);
+  const functionIndex = pathSegments.lastIndexOf("media-library");
+  const route = functionIndex >= 0
+    ? "/" + pathSegments.slice(functionIndex + 1).join("/")
+    : pathname;
 
   if (route === "" || route === "/" || route === "/library") {
     const { data, error } = await client.from("media_library_items")
