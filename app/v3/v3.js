@@ -13,11 +13,11 @@
       themeButton.setAttribute('aria-label', theme === 'dark' ? 'تفعيل المظهر الفاتح' : 'تفعيل المظهر الداكن');
       themeButton.textContent = theme === 'dark' ? '☼' : '◐';
     }
-    try { localStorage.setItem('haress-v3-theme', theme); } catch (error) {}
+    try { localStorage.setItem('haress-identity-v2-theme', theme); } catch (error) {}
   }
 
   try {
-    var saved = localStorage.getItem('haress-v3-theme');
+    var saved = localStorage.getItem('haress-identity-v2-theme');
     if (saved === 'light' || saved === 'dark') setTheme(saved);
     else setTheme('light');
   } catch (error) { setTheme('light'); }
