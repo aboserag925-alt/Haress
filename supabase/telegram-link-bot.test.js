@@ -13,7 +13,7 @@ test('Telegram link delivery ledger is service-role-only with RLS enabled', () =
   assert.match(migration, /grant all on public\.telegram_link_deliveries to service_role/i);
   assert.match(migration, /source_key text not null unique/i);
   assert.match(migration, /source_type in \('group_message', 'website_lecture'\)/i);
-  assert.match(migration, /^\s*begin;/i);
+  assert.match(migration, /^(?:\\s*--[^\\n]*\\n)*\\s*begin;/i);
   assert.match(migration, /commit;\s*$/i);
   assert.doesNotMatch(migration, /\b(drop table|truncate|delete from)\b/i);
 });
