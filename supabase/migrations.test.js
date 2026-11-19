@@ -142,3 +142,21 @@ test('approval audit event is recorded once by the guarded database RPC',()=>{
   assert.match(migration,/ai\.approval\.granted/);
   assert.match(migration,/ai\.approval\.rejected/);
 });
+
+
+const atomicTaskCreation = fs.readFileSync(path.join(__dirname,'migrations','20261119000300_atomic_ai_task_creation.sql'),'utf8');
+
+test('AI task creation and provenance audit are committed atomically by a service-only RPC',()=>{
+  assert.match(atomicTaskCreation,/create or replace function public\\.create_ai_task_with_audit/i);
+  assert.match(atomicTaskCreation,/returns setof public\\.ai_tasks/i);
+  assert.match(atomicTaskCreation,/security definer\\s+set search_path = ''/i);
+  assert.match(atomicTaskCreation,/insert into public\\.ai_tasks[\\s\\S]*?returning \\* into v_task/i);
+  assert.match(atomicTaskCreation,/insert into public\\.ai_audit_events[\\s\\S]*?return next v_task/i);
+  assert.match(atomicTaskCreation,/revoke all on function public\\.create_ai_task_with_audit[\\s\\S]*?from public, anon, authenticated/i);
+  assert.match(atomicTaskCreation,/grant execute on function public\\.create_ai_task_with_audit[\\s\\S]*?to service_role/i);
+  assert.match(atomicTaskCreation,/tainted,source,affected_areas/i);
+  assert.match(atomicTaskCreation,/false,true,v_source/i);
+  assert.match(atomicTaskCreation,/^\\s*(?:--[^\\n]*\\n\\s*)*begin;/i);
+  assert.match(atomicTaskCreation,/commit;\\s*$/i);
+  assert.doesNotMatch(atomicTaskCreation,/\\b(drop table|truncate|delete from|update public\\.ai_tasks)\\b/i);
+});
