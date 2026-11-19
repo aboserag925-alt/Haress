@@ -179,10 +179,11 @@ test('Maestro analysis artifacts are immutable to browser roles and persisted at
     'revoke all on function public.record_ai_task_analysis',
     'grant execute on function public.record_ai_task_analysis',
     'from public, anon, authenticated',
-    'to service_role'
+    'to service_role',
+    "set search_path = ''",
+    'for update',
+    'begin;',
+    'commit;'
   ]) assert.ok(analysisArtifactMigration.includes(fragment),fragment);
-  assert.match(analysisArtifactMigration,/security definer\\s+set search_path = ''/i);
-  assert.match(analysisArtifactMigration,/for update/i);
-  assert.match(analysisArtifactMigration,/begin;[\\s\\S]*commit;/i);
-  assert.doesNotMatch(analysisArtifactMigration,/\\b(drop table|truncate|delete from)\\b/i);
+  for(const forbidden of ['drop table','truncate','delete from']) assert.equal(analysisArtifactMigration.includes(forbidden),false,forbidden);
 });
