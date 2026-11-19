@@ -149,3 +149,52 @@ test('analysis artifact retrieval fails closed when its digest does not match',a
   });
   await assert.rejects(service.getAnalysisArtifact('task-1'),/integrity check failed/);
 });
+
+
+test('analysis persistence propagates an RPC failure without attempting a non-atomic fallback',async()=>{
+  const calls=[];
+  const service=createTaskService({
+    env:{SUPABASE_URL:'https://preview.example',SUPABASE_SERVICE_ROLE_KEY:'test-only'},
+    fetch:async(url,init)=>{
+      calls.push({url,body:JSON.parse(init.body)});
+      return {ok:false,status:500,json:async()=>({message:'transaction rejected'})};
+    }
+  });
+  await assert.rejects(service.recordAnalysis({
+    taskId:'task-rollback-1',actorUserId:'preview-admin',status:'FAILED',
+    source:{type:'security'},plan:[],reports:[]
+  }),/AI task storage request failed/);
+  assert.equal(calls.length,1);
+  assert.ok(calls[0].url.endsWith('/rpc/record_ai_task_analysis'));
+  assert.equal(Object.hasOwn(calls[0].body,'p_fallback'),false);
+});
+
+test('analysis persistence fails closed when the RPC response does not match the submitted digest and status',async()=>{
+  const service=createTaskService({
+    env:{SUPABASE_URL:'https://preview.example',SUPABASE_SERVICE_ROLE_KEY:'test-only'},
+    fetch:async()=>({ok:true,status:200,json:async()=>[{
+      task_id:'task-mismatch',artifact_id:'artifact-mismatch',
+      artifact_sha256:'f'.repeat(64),task_status:'ANALYZED'
+    }]})
+  });
+  await assert.rejects(service.recordAnalysis({
+    taskId:'task-mismatch',actorUserId:'preview-admin',status:'ANALYZED',
+    source:{type:'security'},plan:[],reports:[]
+  }),/could not be verified/);
+});
+
+test('artifact retrieval verifies SHA-256 after recursively canonicalizing object key order',async()=>{
+  const crypto=require('node:crypto');
+  const artifact={z:0,a:{z:1,a:2}};
+  const canonical='{"a":{"a":2,"z":1},"z":0}';
+  const digest=crypto.createHash('sha256').update(canonical,'utf8').digest('hex');
+  const service=createTaskService({
+    env:{SUPABASE_URL:'https://preview.example',SUPABASE_SERVICE_ROLE_KEY:'test-only'},
+    fetch:async()=>({ok:true,status:200,json:async()=>[{
+      id:'artifact-canonical',task_id:'task-canonical',artifact,sha256:digest
+    }]})
+  });
+  const row=await service.getAnalysisArtifact('task-canonical');
+  assert.equal(row.id,'artifact-canonical');
+  assert.equal(row.sha256,digest);
+});
