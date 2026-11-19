@@ -304,6 +304,38 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
     assert.equal(res.status, 503);
   });
 
+  it('routes AI task creation to the test admin-operations Function', async () => {
+    let captured = null;
+    const fetchImpl = async (url, init) => {
+      captured = { url: String(url), method: init.method, authorization: new Headers(init.headers).get('authorization') };
+      return new Response(JSON.stringify({ task: { id: 'task-test' } }), { status: 201 });
+    };
+    const req = makeRequest('https://preview.example/api/admin/ai/tasks', {
+      method: 'POST',
+      headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only', authorization: 'Bearer signed-user-jwt', 'content-type': 'application/json' },
+      body: JSON.stringify({ type: 'suggestion', title: 'اختبار مهمة', description: 'وصف اختبار للمهمة' })
+    });
+    const res = await handleRequest(req, env, fetchImpl);
+    assert.equal(res.status, 201);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/admin-operations/admin/ai/tasks');
+    assert.equal(captured.method, 'POST');
+    assert.equal(captured.authorization, 'Bearer signed-user-jwt');
+  });
+
+  it('routes AI task artifact reads to the test admin-operations Function', async () => {
+    let capturedUrl = null;
+    const fetchImpl = async (url) => {
+      capturedUrl = String(url);
+      return new Response(JSON.stringify({ artifact: { sha256: 'a'.repeat(64) } }), { status: 200 });
+    };
+    const req = makeRequest('https://preview.example/api/admin/ai/tasks/123e4567-e89b-42d3-a456-426614174000/artifact', {
+      headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only', authorization: 'Bearer signed-user-jwt' }
+    });
+    const res = await handleRequest(req, env, fetchImpl);
+    assert.equal(res.status, 200);
+    assert.equal(capturedUrl, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/admin-operations/admin/ai/tasks/123e4567-e89b-42d3-a456-426614174000/artifact');
+  });
+
   it('does not route unrelated APIs to the lectures Function', async () => {
     const req = makeRequest('https://preview.example/api/library');
     const res = await handleRequest(req, env, async () => new Response('unused'));
