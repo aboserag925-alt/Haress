@@ -111,6 +111,7 @@ function createMediaLibrary(options) {
   let initialized = false;
   let running = false;
   let pollPromise = null;
+  let pollAbortController = null;
 
   async function initialize() {
     if (initialized) return;
@@ -162,14 +163,14 @@ function createMediaLibrary(options) {
     else await fs.rm(path.join(filesDirectory, item.storedName), { force: true });
   }
 
-  async function telegram(method, payload) {
+  async function telegram(method, payload, signal) {
     const response = await fetchImpl('https://api.telegram.org/bot' + botToken + '/' + method, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
         Accept: 'application/json; charset=utf-8'
       },
-      signal: AbortSignal.timeout(method === 'getUpdates' ? 35000 : 15000),
+      signal: signal || AbortSignal.timeout(method === 'getUpdates' ? 35000 : 15000),
       body: JSON.stringify(payload)
     });
     let result;
@@ -408,7 +409,7 @@ function createMediaLibrary(options) {
           offset: offset === null ? undefined : offset,
           timeout: 25,
           allowed_updates: ['message', 'callback_query']
-        });
+        }, pollAbortController.signal);
         for (const update of updates) {
           if (!running) break;
           await processUpdate(update);
@@ -416,6 +417,7 @@ function createMediaLibrary(options) {
           await save();
         }
       } catch (error) {
+        if (!running) break;
         console.error('Telegram media polling failed: ' + error.message);
         await new Promise(function (resolve) { setTimeout(resolve, 5000); });
       }
@@ -423,18 +425,22 @@ function createMediaLibrary(options) {
   }
 
   async function start() {
-    if (env.TELEGRAM_MEDIA_ENABLED !== 'true') return;
+    if (env.TELEGRAM_MEDIA_ENABLED !== 'true' || running) return;
     if (!botToken || !mediaGroupId) {
       throw new Error('Telegram media requires a bot token and a group ID.');
     }
     await initialize();
     running = true;
+    pollAbortController = new AbortController();
     pollPromise = pollLoop();
   }
 
   async function stop() {
     running = false;
+    if (pollAbortController) pollAbortController.abort();
     if (pollPromise) await pollPromise;
+    pollPromise = null;
+    pollAbortController = null;
   }
 
   async function listApproved() {
