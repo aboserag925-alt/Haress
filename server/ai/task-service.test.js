@@ -122,3 +122,30 @@ test('analysis persistence rejects oversized plans before contacting storage',as
   }),/Invalid AI analysis artifact/);
   assert.equal(called,false);
 });
+
+test('analysis artifact retrieval verifies the stored SHA-256 digest',async()=>{
+  const crypto=require('node:crypto');
+  const artifact={a:1,b:2};
+  const digest=crypto.createHash('sha256').update(JSON.stringify(artifact),'utf8').digest('hex');
+  const service=createTaskService({
+    env:{SUPABASE_URL:'https://preview.example',SUPABASE_SERVICE_ROLE_KEY:'test-only'},
+    fetch:async(url)=>({
+      ok:true,status:200,
+      json:async()=>[{id:'artifact-1',task_id:'task-1',artifact,sha256:digest}]
+    })
+  });
+  const row=await service.getAnalysisArtifact('task-1');
+  assert.equal(row.id,'artifact-1');
+  assert.equal(row.sha256,digest);
+});
+
+test('analysis artifact retrieval fails closed when its digest does not match',async()=>{
+  const service=createTaskService({
+    env:{SUPABASE_URL:'https://preview.example',SUPABASE_SERVICE_ROLE_KEY:'test-only'},
+    fetch:async()=>({
+      ok:true,status:200,
+      json:async()=>[{id:'artifact-1',task_id:'task-1',artifact:{a:1},sha256:'0'.repeat(64)}]
+    })
+  });
+  await assert.rejects(service.getAnalysisArtifact('task-1'),/integrity check failed/);
+});
