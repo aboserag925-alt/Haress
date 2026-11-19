@@ -20,7 +20,14 @@ function createTaskService({env,fetch:fetchImpl=global.fetch}) {
         affected_areas:Array.isArray(input.affectedAreas)?input.affectedAreas.filter(x=>typeof x==='string').slice(0,30):[]
       })});
       const task=rows[0];
-      try{await audit.record({event:'ai.task.created',suggestionId:task.suggestion_id,metadata:{task_id:task.id,risk:task.risk,affected_areas:task.affected_areas}});}catch{console.error('AI task audit event could not be recorded');}
+      // Audit is part of the task-creation security boundary: do not report success
+      // or continue into analysis when provenance could not be durably recorded.
+      await audit.record({
+        event:'ai.task.created',
+        suggestionId:task.suggestion_id,
+        actorUserId:input.actorUserId||null,
+        metadata:{task_id:task.id,risk:task.risk,affected_areas:task.affected_areas}
+      });
       return task;
     },
     async get(id) {
