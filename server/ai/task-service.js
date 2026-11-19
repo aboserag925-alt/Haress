@@ -15,6 +15,9 @@ function createTaskService({env,fetch:fetchImpl=global.fetch}) {
       const risk=assess({affectedAreas:Array.isArray(input.affectedAreas)?input.affectedAreas:[]});
       const rows=await request('/rest/v1/ai_tasks?select=*',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({
         suggestion_id:input.suggestionId||null,status:'PROPOSED',risk:risk.risk,confidence:null,
+        task_type:['suggestion','security','implementation','ux','content','performance','product'].includes(input.type)?input.type:null,
+        title:typeof input.title==='string'?input.title.slice(0,120):null,
+        description:typeof input.description==='string'?input.description.slice(0,3000):null,
         requires_approval:risk.requiresApproval,approved:false,tainted:true,
         source:input.source==='suggestion'?'suggestion':'internal',
         affected_areas:Array.isArray(input.affectedAreas)?input.affectedAreas.filter(x=>typeof x==='string').slice(0,30):[]
