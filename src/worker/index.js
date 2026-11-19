@@ -5,8 +5,8 @@
  *
  * المسارات:
  * - مسارات المحاضرات وإدارة الاقتراحات وموافقات الذكاء الاصطناعي المحددة: تُوجّه
- *   إلى Supabase Edge Functions في Preview مع تمرير مفتاح publishable القادم من العميل فقط.
- *   يُفرض نطاق مشروع الاختبار المعتمد ولا يُقبل عنوان الإنتاج.
+ *   إلى Supabase Edge Functions في Preview أو Production مع تمرير مفتاح publishable القادم من العميل فقط.
+ *   يُفرض نطاق مشروع Supabase المطابق لكل بيئة ولا يسمح بعبور البيئات.
  * - بقية /api/*: تُوجّه إلى API_BACKEND_URL؛ وعند غيابه تُرفض بأمان (503).
  * - المسارات الأخرى: تُخدم من الأصول الثابتة (دليل ./app) عبر ربط ASSETS.
  *
@@ -88,7 +88,7 @@ function supabaseFunctionRoute(pathname) {
 }
 
 async function proxyToSupabaseFunction(request, env, fetchImpl) {
-  if (!env || env.DEPLOYMENT_ENV !== 'preview') return null;
+  if (!env || !['preview', 'production'].includes(env.DEPLOYMENT_ENV)) return null;
   const requestUrl = new URL(request.url);
   const functionRoute = supabaseFunctionRoute(requestUrl.pathname);
   if (!functionRoute) return null;
