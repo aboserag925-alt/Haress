@@ -16,7 +16,7 @@ function telegramResponse(payload) {
   };
 }
 
-async function withLibrary(run, customFetch) {
+async function withLibrary(run, customFetch, libraryOptions) {
   const storageDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'ahl-media-test-'));
   const calls = [];
   const responder = customFetch || async function (url) {
@@ -45,11 +45,11 @@ async function withLibrary(run, customFetch) {
       env: env,
       fetch: fetch,
       storageDirectory: storageDirectory,
-      library: createMediaLibrary({
+      library: createMediaLibrary(Object.assign({
         env: env,
         fetch: fetch,
         storageDirectory: storageDirectory
-      })
+      }, libraryOptions || {}))
     });
   } finally {
     await fs.rm(storageDirectory, { recursive: true, force: true });
@@ -216,6 +216,124 @@ test('does not contact Telegram when media intake is disabled', async function (
     await context.library.start();
     assert.equal(context.calls.length, 0);
   });
+});
+
+test('stops Telegram long polling immediately during graceful shutdown', async function () {
+  let pollStarted = false;
+  await withLibrary(async function (context) {
+    context.env.TELEGRAM_MEDIA_ENABLED = 'true';
+    context.fetch = async function (url, options) {
+      context.calls.push({ url: url, options: options });
+      if (!url.includes('/getUpdates')) throw new Error('Unexpected Telegram request');
+      pollStarted = true;
+      return new Promise(function (resolve, reject) {
+        options.signal.addEventListener('abort', function () {
+          const error = new Error('Polling aborted for shutdown.');
+          error.name = 'AbortError';
+          reject(error);
+        }, { once: true });
+      });
+    };
+    context.library = createMediaLibrary({
+      env: context.env,
+      fetch: context.fetch,
+      storageDirectory: context.storageDirectory
+    });
+    await context.library.start();
+    assert.equal(pollStarted, true);
+    await context.library.stop();
+    assert.equal(context.calls.filter(function (call) {
+      return call.url.includes('/getUpdates');
+    }).length, 1);
+  });
+});
+
+test('starting Telegram media intake twice does not create duplicate pollers', async function () {
+  await withLibrary(async function (context) {
+    context.env.TELEGRAM_MEDIA_ENABLED = 'true';
+    let pollCalls = 0;
+    context.fetch = async function (url, options) {
+      context.calls.push({ url: url, options: options });
+      if (!url.includes('/getUpdates')) throw new Error('Unexpected Telegram request');
+      pollCalls += 1;
+      return new Promise(function (resolve, reject) {
+        options.signal.addEventListener('abort', function () {
+          const error = new Error('Polling aborted for shutdown.');
+          error.name = 'AbortError';
+          reject(error);
+        }, { once: true });
+      });
+    };
+    context.library = createMediaLibrary({
+      env: context.env,
+      fetch: context.fetch,
+      storageDirectory: context.storageDirectory
+    });
+    await context.library.start();
+    await context.library.start();
+    assert.equal(pollCalls, 1);
+    await context.library.stop();
+  });
+});
+
+test('concurrent starts share one initialization and one Telegram poller', async function () {
+  let releaseInitialization;
+  let initializationCalls = 0;
+  let pollCalls = 0;
+  const initializationGate = new Promise(function (resolve) { releaseInitialization = resolve; });
+  await withLibrary(async function (context) {
+    context.env.TELEGRAM_MEDIA_ENABLED = 'true';
+    const first = context.library.start();
+    const second = context.library.start();
+    await Promise.resolve();
+    assert.equal(initializationCalls, 1);
+    releaseInitialization();
+    await Promise.all([first, second]);
+    await new Promise(function (resolve) { setImmediate(resolve); });
+    assert.equal(pollCalls, 1);
+    await context.library.stop();
+  }, async function (url, options) {
+    if (!url.includes('/getUpdates')) throw new Error('Unexpected Telegram request');
+    pollCalls += 1;
+    return new Promise(function (resolve, reject) {
+      options.signal.addEventListener('abort', function () {
+        const error = new Error('Polling aborted for shutdown.');
+        error.name = 'AbortError';
+        reject(error);
+      }, { once: true });
+    });
+  }, {
+    initialize: async function () {
+      initializationCalls += 1;
+      await initializationGate;
+    }
+  });
+});
+
+test('shutdown during initialization prevents Telegram polling from starting', async function () {
+  let releaseInitialization;
+  let initializationCalls = 0;
+  let pollCalls = 0;
+  const initializationGate = new Promise(function (resolve) { releaseInitialization = resolve; });
+  await withLibrary(async function (context) {
+    context.env.TELEGRAM_MEDIA_ENABLED = 'true';
+    const starting = context.library.start();
+    await Promise.resolve();
+    const stopping = context.library.stop();
+    releaseInitialization();
+    await Promise.all([starting, stopping]);
+    assert.equal(pollCalls, 0);
+    await context.library.stop();
+  }, async function (url) {
+    if (url.includes('/getUpdates')) pollCalls += 1;
+    throw new Error('Telegram must not be contacted after shutdown.');
+  }, {
+    initialize: async function () {
+      initializationCalls += 1;
+      await initializationGate;
+    }
+  });
+  assert.equal(initializationCalls, 1);
 });
 
 test('STORAGE_DIRECTORY: explicit options.storageDirectory takes highest precedence', async function () {

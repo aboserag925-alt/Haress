@@ -662,7 +662,28 @@ if (require.main === module) {
   const host = process.env.HOST || '127.0.0.1';
   const mediaLibrary = createMediaLibrary({ env: process.env });
   const server = createServer({ mediaLibrary: mediaLibrary });
+  let shuttingDown = false;
+  async function shutdown(signal) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log('Shutting down Ahl Athar server after ' + signal + '.');
+    if (server.listening) server.close();
+    try {
+      await mediaLibrary.stop();
+    } catch {
+      console.error('Telegram media intake did not stop cleanly.');
+      process.exitCode = 1;
+    }
+  }
+
+  process.once('SIGTERM', function () { shutdown('SIGTERM'); });
+  process.once('SIGINT', function () { shutdown('SIGINT'); });
+
   server.listen(port, host, function () {
+    if (shuttingDown) {
+      server.close();
+      return;
+    }
     console.log('Ahl Athar server listening on port ' + port);
     mediaLibrary.start().catch(function () {
       console.error('Telegram media intake could not be started.');
