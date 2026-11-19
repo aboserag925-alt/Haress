@@ -472,7 +472,8 @@ function createServer(options) {
       }
     }
     if (await suggestionsApi(request, response, requestUrl.pathname)) return;
-    if (await taskApi(request, response, requestUrl.pathname)) return;\n    if (await approvalApi(request, response, requestUrl.pathname)) return;
+    if (await taskApi(request, response, requestUrl.pathname)) return;
+    if (await approvalApi(request, response, requestUrl.pathname)) return;
     if (await adminApi(request, response, requestUrl.pathname)) return;
     if (requestUrl.pathname === '/api/health' && request.method === 'GET') {
       sendJson(response, 200, { ok: true });
