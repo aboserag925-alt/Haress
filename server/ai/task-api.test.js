@@ -29,7 +29,7 @@ test('AI task endpoint persists tainted task reviews after admin-only analysis',
  const api=createTaskApi({env,fetch:authFetch,taskService,supervisor});
  const res=response();await api(request({type:'suggestion',title:'تحسين المكتبة',description:'إضافة تصنيف جديد إلى مكتبة المواد',affectedAreas:['library']}),res,'/api/admin/ai/tasks');
  assert.equal(res.status,201);
- assert.deepEqual(createArgs,{source:'suggestion',affectedAreas:['library']});
+ assert.deepEqual(createArgs,{source:'suggestion',affectedAreas:['library'],actorUserId:'preview-admin'});
  assert.equal(analysisInput.id,'task-preview-1');
  assert.equal(analysisInput.title,'تحسين المكتبة');
  assert.equal(reviewArgs.id,'task-preview-1');
