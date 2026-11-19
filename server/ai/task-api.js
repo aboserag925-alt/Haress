@@ -1,0 +1,84 @@
+'use strict';
+const MAX_BYTES=8192;
+function send(res,status,payload){res.writeHead(status,{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(payload));}
+async function readBody(req){
+ const chunks=[];let size=0;
+ for await(const chunk of req){size+=chunk.length;if(size>MAX_BYTES)throw Object.assign(new Error('Request too large'),{statusCode:413});chunks.push(chunk);}
+ try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw Object.assign(new Error('Invalid JSON'),{statusCode:400});}
+}
+function createTaskApi({env,fetch:fetchImpl=global.fetch,taskService,supervisor,rateLimit=()=>true}){
+ async function authenticate(req){
+  const match=(req.headers.authorization||'').match(/^Bearer\s+([A-Za-z0-9._~-]+)$/i);
+  if(!match||!env.SUPABASE_URL||!env.SUPABASE_ANON_KEY||!env.SUPABASE_SERVICE_ROLE_KEY)return null;
+  const base=env.SUPABASE_URL.replace(/\/$/,'');
+  const auth=await fetchImpl(base+'/auth/v1/user',{headers:{apikey:env.SUPABASE_ANON_KEY,Authorization:'Bearer '+match[1]},signal:AbortSignal.timeout(10000)});
+  if(!auth.ok)return null;
+  const user=await auth.json();if(!user?.id)return null;
+  const key=env.SUPABASE_SERVICE_ROLE_KEY;
+  const admin=await fetchImpl(base+'/rest/v1/admin_users?select=user_id&user_id=eq.'+encodeURIComponent(user.id)+'&limit=1',{headers:{apikey:key,Authorization:'Bearer '+key},signal:AbortSignal.timeout(10000)});
+  if(!admin.ok)return null;
+  const rows=await admin.json();return rows.length?user:null;
+ }
+ return async function handle(req,res,path){
+  let artifactMatch=null;
+  const artifactPrefix='/api/admin/ai/tasks/';
+  const artifactSuffix='/artifact';
+  if(typeof path==='string'&&path.startsWith(artifactPrefix)&&path.endsWith(artifactSuffix)){
+   const candidate=path.slice(artifactPrefix.length,-artifactSuffix.length);
+   if(candidate.length===36&&/^[0-9a-f-]{36}$/i.test(candidate))artifactMatch=[path,candidate];
+  }
+  if(path!=='/api/admin/ai/tasks'&&!artifactMatch)return false;
+  if(!rateLimit(req)){send(res,429,{error:'تجاوزت حد المحاولات. حاول لاحقًا.'});return true;}
+  if(artifactMatch&&req.method==='GET'){
+   try{
+    const user=await authenticate(req);
+    if(!user){send(res,403,{error:'عرض خطط الذكاء الاصطناعي متاح للمشرفين المصرح لهم فقط.'});return true;}
+    const artifact=await taskService.getAnalysisArtifact(artifactMatch[1]);
+    if(!artifact){send(res,404,{error:'لم يتم العثور على خطة محفوظة لهذه المهمة.'});return true;}
+    send(res,200,{artifact});
+   }catch(error){
+    send(res,503,{error:'تعذر قراءة الخطة أو التحقق من سلامتها.'});
+   }
+   return true;
+  }
+  if(artifactMatch){res.setHeader('Allow','GET');send(res,405,{error:'طريقة الطلب غير مدعومة.'});return true;}
+  if(req.method!=='POST'){res.setHeader('Allow','POST');send(res,405,{error:'طريقة الطلب غير مدعومة.'});return true;}
+  if(!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type']||'')){send(res,415,{error:'أرسل البيانات بصيغة JSON.'});return true;}
+  try{
+   const user=await authenticate(req);
+   if(!user){send(res,403,{error:'إنشاء مهام الذكاء الاصطناعي متاح للمشرفين المصرح لهم فقط.'});return true;}
+   const input=await readBody(req);
+   const allowed=new Set(['type','title','description','affectedAreas']);
+   if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(k=>!allowed.has(k))||
+      !['suggestion','security','implementation','ux','content','performance','product'].includes(input.type)||
+      typeof input.title!=='string'||input.title.trim().length<4||input.title.length>120||
+      typeof input.description!=='string'||input.description.trim().length<10||input.description.length>3000||
+      (input.affectedAreas!==undefined&&(!Array.isArray(input.affectedAreas)||input.affectedAreas.length>30||input.affectedAreas.some(x=>typeof x!=='string'||x.length>80)))){
+     send(res,400,{error:'بيانات المهمة غير صالحة.'});return true;
+   }
+   // Never accept trustedSource, source, status, approval flags, or task IDs from the client.
+   const task=await taskService.create({source:'suggestion',type:input.type,title:input.title.trim(),description:input.description.trim(),affectedAreas:input.affectedAreas||[],actorUserId:user.id});
+   const analysis=await supervisor.analyze({id:task.id,type:input.type,title:input.title.trim(),description:input.description.trim(),affectedAreas:input.affectedAreas||[]});
+   const status=analysis.task.status==='FAILED'?'FAILED':'ANALYZED';
+   const persisted=await taskService.recordAnalysis({
+    taskId:task.id,
+    actorUserId:user.id,
+    status,
+    source:{type:input.type,title:input.title.trim(),description:input.description.trim(),affectedAreas:input.affectedAreas||[]},
+    plan:analysis.plan||[],
+    reports:analysis.reports||[]
+   });
+   send(res,201,{
+    task:{...task,status:persisted.task_status},
+    reports:analysis.reports||[],
+    plan:analysis.plan||[],
+    artifact:{id:persisted.artifact_id,sha256:persisted.artifact_sha256},
+    createdBy:user.id
+   });
+  }catch(error){
+   send(res,error.statusCode||503,{error:error.statusCode?error.message:'تعذر إنشاء المهمة أو حفظ مراجعاتها.'});
+  }
+  return true;
+ };
+}
+module.exports={createTaskApi};

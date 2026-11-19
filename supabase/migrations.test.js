@@ -38,6 +38,28 @@ test('migration is transactional and does not destructively drop existing data',
   assert.doesNotMatch(migration,/\b(drop table|truncate|delete from)\b/i);
 });
 
+const taskContextMigration = fs.readFileSync(path.join(__dirname,'migrations','20261119000200_ai_task_request_context.sql'),'utf8');
+
+test('AI task context migration adds request fields without rewriting existing rows',()=>{
+  assert.match(taskContextMigration,/add column if not exists task_type text/i);
+  assert.match(taskContextMigration,/add column if not exists title text/i);
+  assert.match(taskContextMigration,/add column if not exists description text/i);
+  assert.match(taskContextMigration,/ai_tasks_task_type_check/i);
+  assert.match(taskContextMigration,/begin;[\s\S]*commit;/i);
+  assert.doesNotMatch(taskContextMigration,/\b(drop table|truncate|delete from|update public\.ai_tasks)\b/i);
+});
+
+const previewHardening = fs.readFileSync(path.join(__dirname,'migrations','20261119000100_preview_ai_fk_index_and_rpc_hardening.sql'),'utf8');
+
+test('Preview follow-up hardens legacy quota RPC and removes duplicate index safely',()=>{
+  assert.ok(previewHardening.includes('create index if not exists ai_tasks_approval_id_idx'));
+  assert.ok(previewHardening.includes('create index if not exists ai_tasks_human_approval_id_idx'));
+  assert.ok(previewHardening.includes('drop index if exists public.suggestions_created_at_idx'));
+  assert.ok(previewHardening.includes("alter function public.consume_suggestion_daily_cap(date, integer)\n  set search_path = ''"));
+  assert.ok(previewHardening.includes('revoke all on function public.consume_suggestion_daily_cap(date, integer)'));
+  assert.ok(previewHardening.includes('grant execute on function public.consume_suggestion_daily_cap(date, integer)'));
+});
+
 const questionCap = fs.readFileSync(path.join(__dirname,'migrations','002_question_daily_cap.sql'),'utf8');
 const suggestionCap = fs.readFileSync(path.join(__dirname,'migrations','20261118204702_suggestion_daily_cap.sql'),'utf8');
 const triggerMigration = fs.readFileSync(path.join(__dirname,'migrations','20261118203913_set_updated_at_search_path.sql'),'utf8');
@@ -79,6 +101,19 @@ test('suggestion Edge Function uses the atomic RPC and Cairo calendar day',()=>{
 });
 
 
+test('AI migration reconciles an existing partial Preview schema without dropping data',()=>{
+  assert.match(migration,/create table if not exists public\.ai_reviews/i);
+  assert.match(migration,/add column if not exists approval_id uuid/i);
+  assert.match(migration,/add column if not exists human_approved boolean/i);
+  assert.match(migration,/add column if not exists human_approval_id uuid/i);
+  assert.match(migration,/alter column tainted set default true/i);
+  assert.match(migration,/alter column requires_approval set default true/i);
+  assert.match(migration,/alter column source set default 'suggestion'/i);
+  assert.match(migration,/update public\.ai_tasks set tainted = true where approved = false and tainted = false/i);
+  assert.match(migration,/set search_path = ''/i);
+  assert.match(migration,/for update/i);
+});
+
 test('AI migration reconciles legacy production columns without replacing existing tables',()=>{
   assert.match(migration,/add column if not exists risk text/i);
   assert.match(migration,/add column if not exists confidence numeric/i);
@@ -106,4 +141,69 @@ test('approval audit event is recorded once by the guarded database RPC',()=>{
   assert.doesNotMatch(adminOperations,/ai\.approval\.recorded/);
   assert.match(migration,/ai\.approval\.granted/);
   assert.match(migration,/ai\.approval\.rejected/);
+});
+
+
+const atomicTaskCreation = fs.readFileSync(path.join(__dirname,'migrations','20261119000300_atomic_ai_task_creation.sql'),'utf8');
+
+test('AI task creation and provenance audit are committed atomically by a service-only RPC',()=>{
+  assert.match(atomicTaskCreation,/create or replace function public\.create_ai_task_with_audit/i);
+  assert.match(atomicTaskCreation,/returns setof public\.ai_tasks/i);
+  assert.match(atomicTaskCreation,/security definer\s+set search_path = ''/i);
+  assert.match(atomicTaskCreation,/insert into public\.ai_tasks[\s\S]*?returning \* into v_task/i);
+  assert.match(atomicTaskCreation,/insert into public\.ai_audit_events[\s\S]*?return next v_task/i);
+  assert.match(atomicTaskCreation,/revoke all on function public\.create_ai_task_with_audit[\s\S]*?from public, anon, authenticated/i);
+  assert.match(atomicTaskCreation,/grant execute on function public\.create_ai_task_with_audit[\s\S]*?to service_role/i);
+  assert.match(atomicTaskCreation,/tainted,source,affected_areas/i);
+  assert.match(atomicTaskCreation,/false,true,v_source/i);
+  assert.match(atomicTaskCreation,/^\s*(?:--[^\n]*\n\s*)*begin;/i);
+  assert.match(atomicTaskCreation,/commit;\s*$/i);
+  assert.doesNotMatch(atomicTaskCreation,/\b(drop table|truncate|delete from|update public\.ai_tasks)\b/i);
+});
+
+const analysisArtifactMigration = fs.readFileSync(path.join(__dirname,'migrations','20261119000400_ai_task_analysis_artifacts.sql'),'utf8');
+
+test('Maestro analysis artifacts are immutable to browser roles and persisted atomically with reviews, status and audit',()=>{
+  for(const fragment of [
+    'create table if not exists public.ai_task_artifacts',
+    'task_id uuid not null references public.ai_tasks(id) on delete restrict',
+    "sha256 text not null check (sha256 ~ '^[0-9a-f]{64}$')",
+    'alter table public.ai_task_artifacts enable row level security',
+    'revoke all on public.ai_task_artifacts from public, anon, authenticated, service_role',
+    'grant select on public.ai_task_artifacts to service_role',
+    'create or replace function public.record_ai_task_analysis',
+    'insert into public.ai_reviews',
+    'insert into public.ai_task_artifacts',
+    'update public.ai_tasks',
+    'insert into public.ai_audit_events',
+    'revoke all on function public.record_ai_task_analysis',
+    'grant execute on function public.record_ai_task_analysis',
+    'from public, anon, authenticated',
+    'to service_role',
+    "set search_path = ''",
+    'for update',
+    'begin;',
+    'commit;'
+  ]) assert.ok(analysisArtifactMigration.includes(fragment),fragment);
+  for(const forbidden of ['drop table','truncate','delete from']) assert.equal(analysisArtifactMigration.includes(forbidden),false,forbidden);
+});
+
+
+test('Maestro artifact RPC validates all writes inside one locked database transaction',()=>{
+  const fn=analysisArtifactMigration.slice(
+    analysisArtifactMigration.indexOf('create or replace function public.record_ai_task_analysis'),
+    analysisArtifactMigration.indexOf('$record_analysis$;',analysisArtifactMigration.indexOf('create or replace function public.record_ai_task_analysis'))+'$record_analysis$;'.length
+  );
+  assert.ok(fn.indexOf('where id = p_task_id') < fn.indexOf('for update'));
+  assert.ok(fn.includes("if v_task.status <> 'PROPOSED'"));
+  assert.ok(fn.includes("raise exception 'AI task is not eligible for initial analysis persistence'"));
+  const writes=['insert into public.ai_reviews','insert into public.ai_task_artifacts','update public.ai_tasks','insert into public.ai_audit_events'].map(x=>fn.indexOf(x));
+  assert.ok(writes.every(x=>x>=0));
+  assert.deepEqual(writes,[...writes].sort((a,b)=>a-b));
+  assert.match(fn,/raise exception 'Invalid AI review report'/i);
+  assert.match(fn,/raise exception 'Invalid AI review warning'/i);
+  assert.ok(analysisArtifactMigration.includes('revoke all on function public.record_ai_task_analysis('));
+  assert.ok(analysisArtifactMigration.includes('from public, anon, authenticated'));
+  assert.ok(analysisArtifactMigration.includes('grant execute on function public.record_ai_task_analysis('));
+  assert.ok(analysisArtifactMigration.includes('to service_role'));
 });

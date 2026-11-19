@@ -9,6 +9,10 @@ const { createSuggestionsApi } = require('./suggestions/suggestion-api');
 const { createSuggestionService } = require('./suggestions/suggestion-service');
 const { createApprovalApi } = require('./ai/approval-api');
 const { createTaskService } = require('./ai/task-service');
+const { createTaskApi } = require('./ai/task-api');
+const { HaresAISupervisor } = require('./ai/supervisor');
+const { reportOnly } = require('./ai/agents');
+const securityAgent = require('./ai/agents/security-agent');
 const { staticSecurityHeaders } = require('./security-headers');
 
 const PUBLIC_ROOT = path.resolve(__dirname, '..');
@@ -426,6 +430,24 @@ function createServer(options) {
     taskService: taskService,
     rateLimit: rateLimit
   });
+  const supervisor = options.supervisor || new HaresAISupervisor({
+    security: securityAgent,
+    suggestion: reportOnly('suggestion'),
+    product: reportOnly('product'),
+    ux: reportOnly('ux'),
+    content: reportOnly('content'),
+    performance: reportOnly('performance'),
+    test: reportOnly('test'),
+    verifier: reportOnly('verifier'),
+    developer: reportOnly('developer')
+  });
+  const taskApi = createTaskApi({
+    env: env,
+    fetch: fetchImpl,
+    taskService: taskService,
+    supervisor: supervisor,
+    rateLimit: rateLimit
+  });
   const mediaLibrary = options.mediaLibrary || createMediaLibrary({
     env: env,
     fetch: fetchImpl,
@@ -450,6 +472,7 @@ function createServer(options) {
       }
     }
     if (await suggestionsApi(request, response, requestUrl.pathname)) return;
+    if (await taskApi(request, response, requestUrl.pathname)) return;
     if (await approvalApi(request, response, requestUrl.pathname)) return;
     if (await adminApi(request, response, requestUrl.pathname)) return;
     if (requestUrl.pathname === '/api/health' && request.method === 'GET') {
