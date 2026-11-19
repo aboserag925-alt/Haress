@@ -23,6 +23,15 @@ test('MemoryStore: no silent overwrite', async function () {
   assert.equal(got.body.toString('utf8'), 'one');
 });
 
+test('MemoryStore: explicit upsert replaces an existing object', async function () {
+  const s = new MemoryStore();
+  await s.put('library/media-index.json', Buffer.from('first'), 'application/json');
+  await s.put('library/media-index.json', Buffer.from('second'), 'application/json', { upsert: true });
+  const got = await s.get('library/media-index.json');
+  assert.equal(got.body.toString('utf8'), 'second');
+  assert.equal(got.contentType, 'application/json');
+});
+
 test('buildKey: object key shape', async function () {
   assert.equal(buildKey('audio', 'abc', 'lesson.mp3'), 'library/audio/abc/lesson.mp3');
   assert.equal(buildKey('video', 'abc', 'v.mp4'), 'library/video/abc/v.mp4');
