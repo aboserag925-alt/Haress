@@ -9,7 +9,7 @@ const edgeFunctions = [
 
 for (const path of edgeFunctions) {
   test(path + ': requires a verified user and explicit admin_users membership before protected operations', () => {
-    const source = fs.readFileSync(new URL('../' + path, import.meta.url), 'utf8');
+    const source = fs.readFileSync(new URL('../../' + path, import.meta.url), 'utf8');
 
     const bearer = source.indexOf('authHeader.match(/^Bearer\\s+');
     const verifyUser = source.indexOf('publicClient.auth.getUser(tokenMatch[1])');
