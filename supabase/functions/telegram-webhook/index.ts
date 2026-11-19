@@ -33,7 +33,7 @@ function isAddressed(message: Record<string, any>, botUsername: string): boolean
   const text = typeof message.text === "string" ? message.text : "";
   if (/^\/(?:live|broadcast)(?:@\w+)?(?:\s|$)/i.test(text)) return true;
   if (/(?:^|\s)يا\s+حارس(?:[!،,.؟?\s]|$)/u.test(text)) return true;
-  if (botUsername && new RegExp("(^|\\s)@" + botUsername.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&") + "(?=\\s|$)", "i").test(text)) return true;
+  if (botUsername && text.toLowerCase().includes("@" + botUsername.toLowerCase())) return true;
   const reply = message.reply_to_message;
   return Boolean(reply?.from?.is_bot && (
     !botUsername || String(reply.from.username || "").toLowerCase() === botUsername.toLowerCase()
