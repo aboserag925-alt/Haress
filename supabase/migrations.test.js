@@ -194,9 +194,12 @@ test('Maestro artifact RPC validates all writes inside one locked database trans
     analysisArtifactMigration.indexOf('create or replace function public.record_ai_task_analysis'),
     analysisArtifactMigration.indexOf('$record_analysis$;',analysisArtifactMigration.indexOf('create or replace function public.record_ai_task_analysis'))+'$record_analysis$;'.length
   );
-  assert.match(fn,/where id = p_task_id[\\s\\S]*?for update/i);
-  assert.match(fn,/if v_task\.status <> 'PROPOSED'[\\s\\S]*?raise exception/i);
-  assert.match(fn,/insert into public\.ai_reviews[\\s\\S]*?insert into public\.ai_task_artifacts[\\s\\S]*?update public\.ai_tasks[\\s\\S]*?insert into public\.ai_audit_events/i);
+  assert.ok(fn.indexOf('where id = p_task_id') < fn.indexOf('for update'));
+  assert.ok(fn.includes("if v_task.status <> 'PROPOSED'"));
+  assert.ok(fn.includes("raise exception 'AI task is not eligible for initial analysis persistence'"));
+  const writes=['insert into public.ai_reviews','insert into public.ai_task_artifacts','update public.ai_tasks','insert into public.ai_audit_events'].map(x=>fn.indexOf(x));
+  assert.ok(writes.every(x=>x>=0));
+  assert.deepEqual(writes,[...writes].sort((a,b)=>a-b));
   assert.match(fn,/raise exception 'Invalid AI review report'/i);
   assert.match(fn,/raise exception 'Invalid AI review warning'/i);
   assert.ok(analysisArtifactMigration.includes('revoke all on function public.record_ai_task_analysis('));
