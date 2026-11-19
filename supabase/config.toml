@@ -1,0 +1,4 @@
+project_id = "haress"
+
+[functions.telegram-link-bot]
+verify_jwt = false
