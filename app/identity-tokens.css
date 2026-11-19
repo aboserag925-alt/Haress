@@ -6,6 +6,9 @@ html.identity-v2{
   --v2-green-deep:#104a35;--v2-gold:#c5a04a;--v2-gold-soft:#ead9a8;
   --v2-line:rgba(23,107,73,.16);--v2-shadow:0 14px 38px rgba(24,56,45,.08);
   --v2-radius:22px;--v2-font:"Noto Naskh Arabic",serif;--v2-danger:#a34737;
+  --v2-compass-mark:rgba(23,107,73,.055);--v2-dialog-backdrop:rgba(16,40,30,.42);
+  --v2-row-stripe:rgba(255,255,255,.25);--v2-shadow-soft:0 12px 34px rgba(24,56,45,.055);
+  --v2-shadow-active:0 3px 10px rgba(23,107,73,.12);
 }
 html.identity-v2[data-theme="dark"]{
   color-scheme:dark;--v2-bg:#101b16;--v2-surface:#17251e;
@@ -13,4 +16,7 @@ html.identity-v2[data-theme="dark"]{
   --v2-green:#9ac8a9;--v2-green-deep:#c5dfcb;--v2-gold:#d7b96c;
   --v2-gold-soft:#3a3422;--v2-line:rgba(215,185,108,.22);
   --v2-shadow:0 14px 38px rgba(0,0,0,.2);--v2-danger:#f2a79d;
+  --v2-compass-mark:rgba(154,200,169,.08);--v2-dialog-backdrop:rgba(0,0,0,.62);
+  --v2-row-stripe:rgba(255,255,255,.025);--v2-shadow-soft:0 14px 36px rgba(0,0,0,.12);
+  --v2-shadow-active:0 3px 10px rgba(0,0,0,.2);
 }
