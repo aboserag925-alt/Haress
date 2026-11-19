@@ -76,6 +76,8 @@ function copyHeaders(source) {
 }
 
 function supabaseFunctionRoute(pathname) {
+  if (pathname === '/api/telegram/webhook') return { name: 'telegram-link-bot', path: '/webhook', publicWebhook: true };
+  if (pathname === '/api/admin/telegram/publish-links') return { name: 'telegram-link-bot', path: '/admin/publish-website-links' };
   if (pathname === '/api/lectures') return { name: 'lectures-admin', path: '/lectures' };
   if (/^\/api\/lectures\/[0-9a-f-]{36}$/i.test(pathname)) return { name: 'lectures-admin', path: pathname.slice(4) };
   if (pathname === '/api/admin/session') return { name: 'lectures-admin', path: '/admin/session' };
@@ -94,6 +96,48 @@ async function proxyToSupabaseFunction(request, env, fetchImpl) {
   if (!functionRoute) return null;
 
   const supabaseUrl = typeof env.SUPABASE_URL === 'string' ? env.SUPABASE_URL.trim() : '';
+  if (functionRoute.publicWebhook) {
+    if (request.method !== 'POST') {
+      return new Response(JSON.stringify({ error: 'طريقة الطلب غير مدعومة.' }), {
+        status: 405,
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', Allow: 'POST' }
+      });
+    }
+    const approvedHosts = {
+      preview: 'bevyztwoijjzfngutnys.supabase.co',
+      production: 'uzepglfimareggswjzlf.supabase.co'
+    };
+    let host = '';
+    try { host = new URL(supabaseUrl).hostname; } catch { /* Fail closed below. */ }
+    if (!isSecureBackendUrl(supabaseUrl) || host !== approvedHosts[env.DEPLOYMENT_ENV]) {
+      return new Response(JSON.stringify({ error: 'إعداد خدمة Supabase غير مكتمل أو لا يطابق مشروع البيئة المعتمد.' }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }
+      });
+    }
+    const webhookUrl = new URL('/functions/v1/' + functionRoute.name + functionRoute.path, supabaseUrl);
+    const webhookHeaders = copyHeaders(request.headers);
+    webhookHeaders.delete('apikey');
+    webhookHeaders.delete('authorization');
+    try {
+      const response = await fetchImpl(webhookUrl.href, {
+        method: 'POST', headers: webhookHeaders, body: request.body, signal: request.signal
+      });
+      const headers = {};
+      for (const [key, value] of response.headers.entries()) {
+        if (HOP_BY_HOP_HEADERS.has(key.toLowerCase())) continue;
+        headers[key] = value;
+      }
+      headers['Cache-Control'] = 'no-store';
+      headers['X-Content-Type-Options'] = 'nosniff';
+      return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+    } catch {
+      return new Response(JSON.stringify({ error: 'تعذر الاتصال بخدمة Telegram.' }), {
+        status: 502,
+        headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }
+      });
+    }
+  }
   const publishableKey = (request.headers.get('apikey') || '').trim();
   const approvedProjects = {
     preview: 'bevyztwoijjzfngutnys.supabase.co',
