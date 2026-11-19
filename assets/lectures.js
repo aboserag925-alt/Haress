@@ -28,7 +28,7 @@
       parent.appendChild(a);
     } catch (_) {}
   }
-  fetch(base + '/api/lectures').then(function (response) {
+  fetch(base + '/api/lectures', { headers: window.AHL_SUPABASE_CONFIG && window.AHL_SUPABASE_CONFIG.anonKey ? { apikey: window.AHL_SUPABASE_CONFIG.anonKey } : {} }).then(function (response) {
     if (!response.ok) throw new Error('unavailable');
     return response.json();
   }).then(function (payload) {

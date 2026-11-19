@@ -18,7 +18,9 @@ jobs:
   build-and-test:
     name: Build and test application
     environment:
-      name: ${{ github.event_name == 'pull_request' && 'Preview' || 'Main' }}
+      # PR builds must not receive Cloudflare deployment secrets from the Preview environment.
+      # Production builds use Main only to read the public Supabase build inputs.
+      name: ${{ github.event_name == 'pull_request' && 'Preview-Build-CI' || 'Main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -34,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Validate Wrangler configuration and Worker bundle (dry run)
+      - name: Validate production Worker configuration (dry run only)
         run: npx --yes wrangler@4 deploy --dry-run
 
       - name: Run test suite
@@ -48,11 +50,10 @@ jobs:
         run: |
           if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
             echo "Missing Supabase URL or publishable key in the selected GitHub Actions environment."
-            echo "Pull requests require Preview environment secrets; main requires Main environment secrets."
             exit 1
           fi
           if [ "$SUPABASE_URL" != "$EXPECTED_SUPABASE_URL" ]; then
-            echo "SUPABASE_URL does not match the Supabase project approved for this deployment context."
+            echo "Supabase URL does not match the approved project for this deployment context."
             exit 1
           fi
 
@@ -84,6 +85,47 @@ jobs:
           console.log('Supabase URL and publishable key are present; values withheld.');
           NODE
 
+      - name: Smoke test Supabase test Edge Function authorization and RLS
+        if: github.event_name == 'pull_request'
+        env:
+          EXPECTED_SUPABASE_URL: https://bevyztwoijjzfngutnys.supabase.co
+          PREVIEW_ORIGIN: https://hares-preview.aboserag925.workers.dev
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import vm from 'node:vm';
+          const sandbox = { window: {} };
+          vm.runInNewContext(fs.readFileSync('app/supabase-config.js', 'utf8'), sandbox, { timeout: 1000 });
+          const config = sandbox.window.AHL_SUPABASE_CONFIG;
+          if (!config?.url || config.url !== process.env.EXPECTED_SUPABASE_URL || !config.anonKey) {
+            console.error('Test Supabase build configuration is missing or does not match the approved test project.');
+            process.exit(1);
+          }
+          const base = config.url + '/functions/v1/lectures-admin';
+          const headers = { apikey: config.anonKey, Origin: process.env.PREVIEW_ORIGIN };
+          const publicResponse = await fetch(base + '/lectures', { headers });
+          if (publicResponse.status !== 200) {
+            console.error('Public lectures Edge Function returned HTTP ' + publicResponse.status);
+            process.exit(1);
+          }
+          const publicBody = await publicResponse.json();
+          if (!Array.isArray(publicBody.items)) {
+            console.error('Public lectures Edge Function returned an invalid response shape.');
+            process.exit(1);
+          }
+          const adminResponse = await fetch(base + '/admin/session', { headers });
+          if (adminResponse.status !== 401) {
+            console.error('Unauthenticated lecture-admin request must return HTTP 401; got ' + adminResponse.status);
+            process.exit(1);
+          }
+          const operationsResponse = await fetch(config.url + '/functions/v1/admin-operations/admin/suggestions', { headers });
+          if (operationsResponse.status !== 401) {
+            console.error('Unauthenticated admin-operations request must return HTTP 401; got ' + operationsResponse.status);
+            process.exit(1);
+          }
+          console.log('Supabase test Functions: public RLS read passed; both unauthenticated admin routes correctly rejected.');
+          NODE
+
       - name: Upload built application assets
         uses: actions/upload-artifact@v4
         with:
@@ -91,6 +133,65 @@ jobs:
           path: app/
           if-no-files-found: error
           retention-days: 1
+
+  deploy-preview:
+    name: Deploy isolated Cloudflare Preview Worker
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: Preview
+    steps:
+      - name: Check out pull request source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Download tested application assets
+        uses: actions/download-artifact@v4
+        with:
+          name: hares-app-assets
+          path: app/
+
+      - name: Validate Cloudflare Preview credentials
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing Preview secret CLOUDFLARE_API_TOKEN"; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Missing Preview secret CLOUDFLARE_ACCOUNT_ID"; exit 1; }
+
+      - name: Deploy preview Worker (never production)
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --config wrangler.preview.jsonc
+
+      - name: Verify preview HTTP response and fail-closed API
+        env:
+          PREVIEW_URL: https://hares-preview.aboserag925.workers.dev
+        run: |
+          publishable_key=$(node -e "const fs=require('fs'),vm=require('vm'),sandbox={window:{}};vm.runInNewContext(fs.readFileSync('app/supabase-config.js','utf8'),sandbox);process.stdout.write(sandbox.window.AHL_SUPABASE_CONFIG.anonKey)")
+          test -n "$publishable_key" || { echo "Missing public Supabase key in the tested build artifact"; exit 1; }
+          page_status=$(curl --silent --show-error --output /tmp/preview.html --dump-header /tmp/preview.headers --write-out '%{http_code}' "$PREVIEW_URL/")
+          test "$page_status" = "200" || { echo "Preview page returned HTTP $page_status"; exit 1; }
+          grep -Eiq '^content-type: text/html' /tmp/preview.headers || { echo "Preview did not return HTML"; exit 1; }
+          grep -Eiq "^x-content-type-options: nosniff" /tmp/preview.headers || { echo "Missing nosniff header"; exit 1; }
+          grep -Eiq "content-security-policy:.*object-src 'none'" /tmp/preview.headers || { echo "Missing expected CSP directive"; exit 1; }
+          lectures_status=$(curl --silent --show-error --output /tmp/preview-lectures.json --write-out '%{http_code}' -H "apikey: $publishable_key" "$PREVIEW_URL/api/lectures")
+          test "$lectures_status" = "200" || { echo "Supabase-backed public lectures route returned HTTP $lectures_status"; cat /tmp/preview-lectures.json; exit 1; }
+          jq -e '.items | type == "array"' /tmp/preview-lectures.json >/dev/null || { echo "Public lectures response shape is invalid"; exit 1; }
+          suggestion_status=$(curl --silent --show-error --output /tmp/preview-suggestion-submit.json --write-out '%{http_code}' -H "apikey: $publishable_key" -H 'content-type: application/json' --data '{"category":"bug","title":"اختبار توجيه","description":"طلب اختبار يجب رفضه لغياب رمز Turnstile"}' "$PREVIEW_URL/api/suggestions")
+          test "$suggestion_status" = "400" || { echo "Public suggestion route must reach Edge Function and reject missing Turnstile token with HTTP 400; got $suggestion_status"; cat /tmp/preview-suggestion-submit.json; exit 1; }
+          admin_status=$(curl --silent --show-error --output /tmp/preview-admin.json --write-out '%{http_code}' -H "apikey: $publishable_key" "$PREVIEW_URL/api/admin/session")
+          test "$admin_status" = "401" || { echo "Unauthenticated lecture-admin route must return HTTP 401; got $admin_status"; exit 1; }
+          suggestions_status=$(curl --silent --show-error --output /tmp/preview-suggestions.json --write-out '%{http_code}' -H "apikey: $publishable_key" "$PREVIEW_URL/api/admin/suggestions")
+          test "$suggestions_status" = "401" || { echo "Unauthenticated suggestions admin route must return HTTP 401; got $suggestions_status"; exit 1; }
+          api_status=$(curl --silent --show-error --output /tmp/preview-api.json --write-out '%{http_code}' "$PREVIEW_URL/api/health")
+          test "$api_status" = "503" || { echo "Unmigrated API routes must remain fail-closed with HTTP 503; got $api_status"; exit 1; }
+          echo "Preview HTML, security headers, Supabase public read, admin authentication, and legacy API isolation verified."
 
   deploy:
     name: Deploy production Worker

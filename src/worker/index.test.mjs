@@ -159,6 +159,158 @@ describe('Haress Worker: توجيه /api/*', () => {
   });
 });
 
+describe('Haress Worker: Supabase Edge Function preview routing', () => {
+  const env = {
+    DEPLOYMENT_ENV: 'preview',
+    SUPABASE_URL: 'https://bevyztwoijjzfngutnys.supabase.co'
+  };
+
+  it('routes public lecture reads to the test Supabase Function and injects only the publishable key', async () => {
+    let captured = null;
+    const fetchImpl = async (url, init) => {
+      captured = { url: String(url), headers: Object.fromEntries(init.headers.entries()), method: init.method };
+      return new Response(JSON.stringify({ items: [] }), { status: 200, headers: { 'content-type': 'application/json' } });
+    };
+    const req = makeRequest('https://preview.example/api/lectures?limit=10', { headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only' } });
+    const res = await handleRequest(req, env, fetchImpl);
+    assert.equal(res.status, 200);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/lectures-admin/lectures?limit=10');
+    assert.equal(captured.headers.apikey, 'sb_publishable_test_only');
+    assert.equal(captured.headers.authorization, undefined);
+    assert.equal(captured.method, 'GET');
+  });
+
+  it("forwards the signed-in user JWT for administrator lecture writes", async () => {
+    let captured = null;
+    const fetchImpl = async (url, init) => {
+      captured = { url: String(url), headers: Object.fromEntries(init.headers.entries()), method: init.method, body: await new Response(init.body).text() };
+      return new Response(JSON.stringify({ item: { id: '00000000-0000-4000-8000-000000000001' } }), { status: 201 });
+    };
+    const req = makeRequest('https://preview.example/api/lectures', {
+      method: 'POST',
+      headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only', authorization: 'Bearer signed-user-jwt', 'content-type': 'application/json' },
+      body: JSON.stringify({ title: 'اختبار' })
+    });
+    const res = await handleRequest(req, env, fetchImpl);
+    assert.equal(res.status, 201);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/lectures-admin/lectures');
+    assert.equal(captured.headers.authorization, 'Bearer signed-user-jwt');
+    assert.equal(captured.headers.apikey, 'sb_publishable_test_only');
+    assert.match(captured.body, /اختبار/);
+  });
+
+  it('routes public suggestion submissions to the Turnstile-protected test Function', async () => {
+    let captured = null;
+    const fetchImpl = async (url, init) => {
+      captured = {
+        url: String(url),
+        method: init.method,
+        headers: Object.fromEntries(init.headers.entries()),
+        body: await new Response(init.body).text()
+      };
+      return new Response(JSON.stringify({ item: { id: 'suggestion-test' } }), { status: 201 });
+    };
+    const payload = { category: 'bug', title: 'مشكلة في البحث', description: 'البحث لا يعرض النتائج المطلوبة', turnstileToken: 'one-time-turnstile-token' };
+    const req = makeRequest('https://preview.example/api/suggestions', {
+      method: 'POST',
+      headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only', 'content-type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const res = await handleRequest(req, env, fetchImpl);
+    assert.equal(res.status, 201);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/submit-suggestion');
+    assert.equal(captured.method, 'POST');
+    assert.equal(captured.headers.apikey, 'sb_publishable_test_only');
+    assert.equal(captured.headers.origin, 'https://preview.example');
+    assert.deepEqual(JSON.parse(captured.body), payload);
+  });
+
+  it('routes administrator suggestion reads to the admin-operations Function', async () => {
+    let captured = null;
+    const fetchImpl = async (url, init) => {
+      captured = { url: String(url), headers: Object.fromEntries(init.headers.entries()), method: init.method };
+      return new Response(JSON.stringify({ items: [] }), { status: 200 });
+    };
+    const req = makeRequest('https://preview.example/api/admin/suggestions', {
+      headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only', authorization: 'Bearer signed-user-jwt' }
+    });
+    const res = await handleRequest(req, env, fetchImpl);
+    assert.equal(res.status, 200);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/admin-operations/admin/suggestions');
+    assert.equal(captured.headers.authorization, 'Bearer signed-user-jwt');
+    assert.equal(captured.headers.apikey, 'sb_publishable_test_only');
+  });
+
+  it('routes AI approval requests to admin-operations without changing the signed JWT', async () => {
+    let captured = null;
+    const fetchImpl = async (url, init) => {
+      captured = { url: String(url), headers: Object.fromEntries(init.headers.entries()), method: init.method };
+      return new Response(JSON.stringify({ approvalId: 'approval-test' }), { status: 200 });
+    };
+    const req = makeRequest('https://preview.example/api/admin/ai/tasks/123e4567-e89b-42d3-a456-426614174000/approval', {
+      method: 'POST',
+      headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only', authorization: 'Bearer signed-user-jwt', 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'IMPLEMENT', decision: 'APPROVED' })
+    });
+    const res = await handleRequest(req, env, fetchImpl);
+    assert.equal(res.status, 200);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/admin-operations/admin/ai/tasks/123e4567-e89b-42d3-a456-426614174000/approval');
+    assert.equal(captured.method, 'POST');
+    assert.equal(captured.headers.authorization, 'Bearer signed-user-jwt');
+  });
+
+  it('fails closed when preview Supabase configuration is incomplete', async () => {
+    const req = makeRequest('https://preview.example/api/admin/session');
+    const res = await handleRequest(req, { DEPLOYMENT_ENV: 'preview' }, async () => {
+      throw new Error('network should not be called');
+    });
+    assert.equal(res.status, 503);
+  });
+
+  it('keeps production Supabase routing fail-closed until production Functions and migrations are deployed', async () => {
+    const productionEnv = {
+      DEPLOYMENT_ENV: 'production',
+      SUPABASE_URL: 'https://uzepglfimareggswjzlf.supabase.co'
+    };
+    const req = makeRequest('https://hares.aboserag925.workers.dev/api/lectures', {
+      headers: { apikey: 'sb_publishable_test_only' }
+    });
+    const res = await handleRequest(req, productionEnv, async () => {
+      throw new Error('production Supabase must not be contacted before its dependencies are deployed');
+    });
+    assert.equal(res.status, 503);
+  });
+
+  it('rejects a preview Supabase URL in production without making a network request', async () => {
+    const unsafeEnv = {
+      DEPLOYMENT_ENV: 'production',
+      SUPABASE_URL: 'https://bevyztwoijjzfngutnys.supabase.co'
+    };
+    const req = makeRequest('https://hares.aboserag925.workers.dev/api/lectures', {
+      headers: { apikey: 'sb_publishable_test_only' }
+    });
+    const res = await handleRequest(req, unsafeEnv, async () => {
+      throw new Error('preview project must never be contacted from production');
+    });
+    assert.equal(res.status, 503);
+  });
+
+  it('rejects a production Supabase URL in preview without making a network request', async () => {
+    const unsafeEnv = { ...env, SUPABASE_URL: 'https://uzepglfimareggswjzlf.supabase.co' };
+    const req = makeRequest('https://preview.example/api/lectures', { headers: { apikey: 'sb_publishable_test_only' } });
+    const res = await handleRequest(req, unsafeEnv, async () => {
+      throw new Error('production project must never be contacted from preview');
+    });
+    assert.equal(res.status, 503);
+  });
+
+  it('does not route unrelated APIs to the lectures Function', async () => {
+    const req = makeRequest('https://preview.example/api/library');
+    const res = await handleRequest(req, env, async () => new Response('unused'));
+    assert.equal(res.status, 503);
+  });
+});
+
 describe('Haress Worker: فشل الشبكة', () => {
   it('يرد 502 عندما يفشل استدعاء الخادم الخلفي', async () => {
     const fetchImpl = async () => {

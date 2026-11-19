@@ -46,7 +46,7 @@ describe('scripts/build-cloudflare.mjs', () => {
     assert.equal(config.main, 'src/worker/index.js');
     assert.equal(config.assets?.directory, './app');
     assert.equal(config.assets?.binding, 'ASSETS');
-    assert.deepEqual(config.assets?.run_worker_first, ['/api/*']);
+    assert.equal(config.assets?.run_worker_first, true, 'يجب تمرير كل الطلبات عبر Worker لتطبيق ترويسات الحماية على الأصول الثابتة وترك /api/* تحت توجيه العامل');
     assert.equal(config.rules, undefined, 'توجيه الأصول ليس من قواعد bundling');
   });
 
