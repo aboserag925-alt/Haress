@@ -218,8 +218,16 @@
 <div class="auth-actions">
 <button id="signInBtn" class="btn" type="submit">تسجيل الدخول</button>
 <button id="signUpBtn" class="btn" type="button">إنشاء حساب</button>
+<button id="resetPasswordBtn" class="btn" type="button">نسيت كلمة المرور؟</button>
 </div>
 </form>
+<div id="passwordResetPanel" class="notice" hidden>
+<p>اكتب كلمة المرور الجديدة بعد فتح رابط الاستعادة الذي يصلك عبر البريد الإلكتروني.</p>
+<label class="field" for="newAuthPassword">كلمة المرور الجديدة
+<input id="newAuthPassword" type="password" autocomplete="new-password" minlength="8" required placeholder="ثمانية أحرف على الأقل">
+</label>
+<button id="updatePasswordBtn" class="btn" type="button">حفظ كلمة المرور الجديدة</button>
+</div>
 <div id="accountSignedIn" hidden>
 <p>تم تسجيل الدخول بالبريد:</p>
 <p id="accountEmail" class="account-email"></p>
