@@ -186,6 +186,13 @@ jobs:
           grep -Eiq '^content-type: text/html' /tmp/preview.headers || { echo "Preview did not return HTML"; exit 1; }
           grep -Eiq "^x-content-type-options: nosniff" /tmp/preview.headers || { echo "Missing nosniff header"; exit 1; }
           grep -Eiq "content-security-policy:.*object-src 'none'" /tmp/preview.headers || { echo "Missing expected CSP directive"; exit 1; }
+          for asset in /identity-tokens.css /identity-v2.css /identity-v2.js /icon.svg /admin.html /v3/v3.css; do
+            asset_status=$(curl --silent --show-error --output "/tmp/asset-$(basename "$asset")" --write-out '%{http_code}' "$PREVIEW_URL$asset")
+            test "$asset_status" = "200" || { echo "Identity asset $asset returned HTTP $asset_status"; exit 1; }
+          done
+          grep -Fq -- '--v2-bg:#f5f9f5' /tmp/asset-identity-tokens.css || { echo "Preview identity token palette is missing"; exit 1; }
+          grep -Fq 'Noto Naskh Arabic' /tmp/asset-identity-tokens.css || { echo "Preview Arabic font token is missing"; exit 1; }
+
           lectures_status=$(curl --silent --show-error --output /tmp/preview-lectures.json --write-out '%{http_code}' -H "apikey: $publishable_key" "$PREVIEW_URL/api/lectures")
           test "$lectures_status" = "200" || { echo "Supabase-backed public lectures route returned HTTP $lectures_status"; cat /tmp/preview-lectures.json; exit 1; }
           jq -e '.items | type == "array"' /tmp/preview-lectures.json >/dev/null || { echo "Public lectures response shape is invalid"; exit 1; }

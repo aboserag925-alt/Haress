@@ -9,10 +9,11 @@ const required = [
   'app/index.html',
   'app/manifest.json',
   'app/sw.js',
-  'app/tailwind.css',
+  'app/identity-tokens.css',
+  'app/identity-v2.css',
+  'app/identity-v2.js',
   'app/app.js',
-  'app/icon.svg',
-  'app/apple-touch-icon.png'
+  'app/icon.svg'
 ];
 
 export function validateHtmlRtl(html) {

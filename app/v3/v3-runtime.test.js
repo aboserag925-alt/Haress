@@ -55,9 +55,17 @@ test('V3.1 design system preserves the approved identity and reduced-motion supp
   assert.match(css, /--v31-text-display:/, 'V3.1 Arabic type scale must be present');
   assert.match(css, /--v31-motion:/, 'V3.1 motion token must be present');
   assert.match(css, /prefers-reduced-motion:\s*reduce/, 'motion must respect reduced-motion preferences');
-  assert.match(css, /--paper:#f4f0e6/, 'approved warm ivory canvas must remain');
-  assert.match(css, /--forest:#183d31/, 'approved forest-green identity must remain');
-  assert.match(css, /--bronze:#9a7042/, 'restrained bronze accent must remain');
+  assert.ok(css.includes("--paper:var(--v2-bg)"), "V3 canvas must use shared V2 tokens");
+  assert.ok(css.includes("--forest:var(--v2-green)"), "V3 green must use shared V2 tokens");
+  assert.ok(css.includes("--bronze:var(--v2-gold)"), "V3 gold must use shared V2 tokens");
+  assert.doesNotMatch(css, /IBM Plex Sans Arabic|#f4f0e6|#183d31|#9a7042/);
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.match(html, /class="identity-v2"/);
+  assert.ok(html.includes('href="/identity-tokens.css"'));
+  assert.ok(html.includes('href="/identity-tokens.css"'));
+  assert.ok(html.includes('href="/identity-v2.css"'));
+  assert.ok(html.includes('class="brand-shield" src="/icon.svg"'));
+  assert.ok(html.includes("family=Noto+Naskh+Arabic"));
 });
 
 test('V3.1 page has no root base URL and keeps fragment navigation local', () => {
@@ -110,3 +118,16 @@ test('account recovery exposes reset and update actions and handles the recovery
   assert.match(authClient, /auth\.resetPasswordForEmail\(email,\s*\{\s*redirectTo:\s*redirectTo\s*\}\)/);
   assert.match(authClient, /auth\.updateUser\(\{\s*password:\s*password\s*\}\)/);
 });
+
+test('V3 PWA manifest and service worker use the shared identity cache generation', () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'));
+  assert.equal(manifest.background_color, '#f5f9f5');
+  assert.equal(manifest.theme_color, '#f5f9f5');
+  const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  assert.match(sw, /identity-v2/);
+  assert.ok(sw.includes("'/identity-tokens.css'"));
+  assert.ok(sw.includes("'/identity-v2.css'"));
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.ok(html.includes('href="/identity-v2.css"'));
+});
+

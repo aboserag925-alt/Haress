@@ -66,20 +66,25 @@ jobs:
           if (!v3.includes('/v3/manifest.json') || !fs.existsSync('app/v3/manifest.json')) {
             throw new Error('V3 install manifest missing');
           }
+          if (!v3.includes('/identity-tokens.css') || !v3.includes('/identity-v2.css')) {
+            throw new Error('V3 shared V2 identity assets missing');
+          }
           if (/tailwind\.css|visual-identity-v2|brand-motion|interactive-identity/.test(v3)) {
             throw new Error('V3 imports a legacy visual asset');
           }
           console.log('V3 contract OK: ' + baseIds.length + ' legacy IDs and ' + selectors.length + ' app.js selectors preserved');
           NODE
       - name: Restore generated-only assets
-        run: git restore -- app/auth-client.js app/tailwind.css
+        run: git restore -- app/auth-client.js
       - name: Check whitespace
         run: git diff --check
       - name: Verify generated assets
         run: |
           test -s app/auth-client.js
           test -s app/supabase-config.js
-          test -s app/tailwind.css
+          test -s app/identity-tokens.css
+          test -s app/identity-v2.css
+          test -s app/identity-v2.js
           test -s app/vendor/adhan.umd.min.js
 
   secrets:

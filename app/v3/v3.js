@@ -8,7 +8,7 @@
 
   function setTheme(theme) {
     root.setAttribute('data-theme', theme);
-    if (themeMeta) themeMeta.setAttribute('content', theme === 'dark' ? '#19382f' : '#f4f0e6');
+    if (themeMeta) themeMeta.setAttribute('content', theme === 'dark' ? '#101b16' : '#f5f9f5');
     if (themeButton) {
       themeButton.setAttribute('aria-label', theme === 'dark' ? 'تفعيل المظهر الفاتح' : 'تفعيل المظهر الداكن');
       themeButton.textContent = theme === 'dark' ? '☼' : '◐';

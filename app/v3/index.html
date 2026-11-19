@@ -1,15 +1,18 @@
 <!doctype html>
-<html lang="ar" dir="rtl" data-theme="light">
+<html lang="ar" dir="rtl" class="identity-v2" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f5f1e7">
+<meta name="theme-color" content="#f5f9f5">
 <meta name="description" content="استراحة أهل الأثر — مجلس للعلم والذكر">
 <link rel="manifest" href="/v3/manifest.json">
+<link rel="apple-touch-icon" href="/icon.svg">
 <title>استراحة أهل الأثر | مجلس العلم والذكر</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/identity-tokens.css">
+<link rel="stylesheet" href="/identity-v2.css">
 <link rel="stylesheet" href="/v3/v3.css">
 <script src="/supabase-config.js"></script>
 <script src="/runtime-config.js"></script>
@@ -25,11 +28,11 @@
 <div class="frame editorial-frame">
   <header class="masthead editorial-masthead">
     <a class="wordmark" href="/v3/" aria-label="استراحة أهل الأثر — الرئيسية">
-      <span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-      <span><b>أهل الأثر</b><small>مجلة المجلس العلمي</small></span>
+      <img class="brand-shield" src="/icon.svg" alt="">
+      <span><b>استراحة أهل الأثر</b><small>علم شرعي بمنهج أهل السنة</small></span>
     </a>
     <div class="masthead-meta">
-      <span class="edition">القرآن والسنة بفهم أهل السنة</span>
+      <span class="edition">القرآن والسنة بفهم وأخلاق سلف الأمة</span>
       <button class="radio-launch" id="quranRadioButton" type="button" aria-expanded="false" aria-controls="quranRadioPanel">استمع إلى القرآن <span aria-hidden="true">◖</span></button>
       <button class="icon-button" type="button" data-v3-theme-toggle aria-label="تبديل المظهر">◐</button>
       <button class="text-button" type="button" onclick="share()">مشاركة <span aria-hidden="true">↗</span></button>
