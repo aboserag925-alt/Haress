@@ -49,6 +49,18 @@ test('V3 native runtime owns required feature entry points', () => {
 });
 
 
+test('public question submission fails closed when Turnstile is not configured', () => {
+  const runtime = fs.readFileSync(path.join(root, 'v3-runtime.js'), 'utf8');
+  const start = runtime.indexOf('  async function sendQuestion()');
+  const end = runtime.indexOf('  /* Supabase client contract', start);
+  assert.ok(start >= 0 && end > start);
+  const handler = runtime.slice(start, end);
+  assert.match(handler, /if\s*\(!siteKey\(\)\)\s*\{[^}]*التحقق الأمني غير مهيأ/);
+  assert.match(handler, /if\s*\(!await prepareTurnstile\(\)\)\s*return/);
+  assert.match(handler, /var payload=\{question:question,turnstileToken:token\}/);
+  assert.doesNotMatch(handler, /if\(siteKey\(\)\)/);
+});
+
 test('V3.1 design system preserves the approved identity and reduced-motion support', () => {
   const css = fs.readFileSync(path.join(root, 'v3.css'), 'utf8');
   assert.match(css, /--v31-space-1:/, 'V3.1 spacing tokens must be present');
