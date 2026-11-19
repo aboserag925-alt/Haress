@@ -199,6 +199,8 @@ test('Maestro artifact RPC validates all writes inside one locked database trans
   assert.match(fn,/insert into public\.ai_reviews[\\s\\S]*?insert into public\.ai_task_artifacts[\\s\\S]*?update public\.ai_tasks[\\s\\S]*?insert into public\.ai_audit_events/i);
   assert.match(fn,/raise exception 'Invalid AI review report'/i);
   assert.match(fn,/raise exception 'Invalid AI review warning'/i);
-  assert.match(analysisArtifactMigration,/revoke all on function public\.record_ai_task_analysis\\([\\s\\S]*?from public, anon, authenticated/i);
-  assert.match(analysisArtifactMigration,/grant execute on function public\.record_ai_task_analysis\\([\\s\\S]*?to service_role/i);
+  assert.ok(analysisArtifactMigration.includes('revoke all on function public.record_ai_task_analysis('));
+  assert.ok(analysisArtifactMigration.includes('from public, anon, authenticated'));
+  assert.ok(analysisArtifactMigration.includes('grant execute on function public.record_ai_task_analysis('));
+  assert.ok(analysisArtifactMigration.includes('to service_role'));
 });
