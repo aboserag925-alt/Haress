@@ -146,6 +146,13 @@ jobs:
           console.log('Supabase test Functions: public lecture/media reads passed; question Turnstile and both admin routes fail closed.');
           NODE
 
+      - name: Verify authenticated non-admin authorization (Preview only)
+        if: github.event_name == 'pull_request'
+        env:
+          SUPABASE_E2E_NON_ADMIN_EMAIL: ${{ secrets.SUPABASE_E2E_NON_ADMIN_EMAIL }}
+          SUPABASE_E2E_NON_ADMIN_PASSWORD: ${{ secrets.SUPABASE_E2E_NON_ADMIN_PASSWORD }}
+        run: node scripts/smoke-admin-nonadmin.mjs
+
       - name: Upload built application assets
         uses: actions/upload-artifact@v4
         with:
