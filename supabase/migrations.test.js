@@ -161,6 +161,41 @@ test('admin Edge Function creates and retrieves AI analysis artifacts through gu
   assert.match(adminOperations,/from\("admin_users"\)/);
 });
 
+const mediaIndex = fs.readFileSync(path.join(__dirname,'migrations','20261119070000_media_library_durable_index.sql'),'utf8');
+const mediaKind = fs.readFileSync(path.join(__dirname,'migrations','20261119070010_media_library_document_kind.sql'),'utf8');
+const questionFunction = fs.readFileSync(path.join(__dirname,'functions','submit-question','index.ts'),'utf8');
+const mediaFunction = fs.readFileSync(path.join(__dirname,'functions','media-library','index.ts'),'utf8');
+
+test('durable media index keeps object storage private and closes metadata to browser roles',()=>{
+  for(const table of ['media_library_items','media_library_state']){
+    assert.match(mediaIndex,new RegExp('create table if not exists public\\\\.'+table+'\\\\b','i'));
+    assert.match(mediaIndex,new RegExp('alter table public\\\\.'+table+' enable row level security','i'));
+    assert.match(mediaIndex,new RegExp('revoke all on public\\\\.'+table+' from public, anon, authenticated','i'));
+  }
+  assert.match(mediaIndex,/file_unique_id text not null unique/i);
+  assert.match(mediaIndex,/object_key text not null unique/i);
+  assert.match(mediaIndex,/status in \\(\x27pending\x27,\x27approved\x27,\x27rejected\x27,\x27removed\x27\\)/i);
+  assert.match(mediaKind,/kind in \\(\x27audio\x27,\x27video\x27,\x27document\x27,\x27image\x27,\x27other\x27\\)/i);
+  assert.doesNotMatch(mediaIndex,/drop table|truncate|delete from/i);
+});
+
+test('public question function validates Turnstile and reserves the atomic Cairo daily cap before sending',()=>{
+  assert.match(questionFunction,/submit_question/);
+  assert.match(questionFunction,/consume_question_daily_cap/);
+  assert.match(questionFunction,/timeZone: "Africa\\/Cairo"/);
+  assert.match(questionFunction,/GEMINI_API_KEY/);
+  assert.match(questionFunction,/TELEGRAM_BOT_TOKEN/);
+  assert.match(questionFunction,/telegramSent: false/);
+  assert.match(questionFunction,/ALLOWED_ORIGINS/);
+});
+
+test('media library API lists only approved rows and signs private object URLs',()=>{
+  assert.match(mediaFunction,/eq\\("status", "approved"\\)/);
+  assert.match(mediaFunction,/createSignedUrl/);
+  assert.match(mediaFunction,/SUPABASE_STORAGE_BUCKET/);
+  assert.match(mediaFunction,/Cache-Control/);
+});
+
 test('approval audit event is recorded once by the guarded database RPC',()=>{
   assert.doesNotMatch(adminOperations,/ai\.approval\.recorded/);
   assert.match(migration,/ai\.approval\.granted/);
