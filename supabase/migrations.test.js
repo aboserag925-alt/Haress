@@ -185,7 +185,7 @@ test('durable media index keeps object storage private and closes metadata to br
 test('public question function validates Turnstile and reserves the atomic Cairo daily cap before sending',()=>{
   assert.match(questionFunction,/submit_question/);
   assert.match(questionFunction,/consume_question_daily_cap/);
-  assert.match(questionFunction,/timeZone: "Africa\\/Cairo"/);
+  assert.ok(questionFunction.includes('timeZone: "Africa/Cairo"'));
   assert.match(questionFunction,/GEMINI_API_KEY/);
   assert.match(questionFunction,/TELEGRAM_BOT_TOKEN/);
   assert.match(questionFunction,/telegramSent: false/);
