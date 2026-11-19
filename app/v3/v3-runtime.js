@@ -390,15 +390,13 @@
     var question=$('qt').value.trim(), button=$('sendQuestionBtn');
     if(question.length<5||question.length>1600){status('qm','اكتب سؤالًا بين 5 و1600 حرف.',true);return;}
     if(!$('questionConsent').checked){status('qm','وافق على إرسال السؤال للمراجعة أولًا.',true);return;}
-    var token='';
-    if(siteKey()) {
-      if(!await prepareTurnstile()) return;
-      token=window.turnstile.getResponse(state.turnstileId)||'';
-      if(!token){status('qm','أكمل التحقق الأمني قبل الإرسال.',true);return;}
-    }
+    if(!siteKey()){status('qm','التحقق الأمني غير مهيأ بعد. لا يمكن إرسال السؤال بأمان حاليًا.',true);return;}
+    if(!await prepareTurnstile()) return;
+    var token=window.turnstile.getResponse(state.turnstileId)||'';
+    if(!token){status('qm','أكمل التحقق الأمني قبل الإرسال.',true);return;}
     button.disabled=true; $('questionDraft').hidden=true; status('qm','جارٍ إرسال السؤال للمراجعة…');
     try {
-      var payload={question:question}; if(token) payload.turnstileToken=token;
+      var payload={question:question,turnstileToken:token};
       var response=await fetch(api('/api/questions'),{method:'POST',headers:{'Content-Type':'application/json; charset=utf-8'},body:JSON.stringify(payload)});
       var result; try { result=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(await response.arrayBuffer())); }
       catch(e){throw new Error('استجابة الخادم غير صالحة. حاول لاحقًا.');}
