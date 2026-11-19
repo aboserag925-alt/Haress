@@ -45,7 +45,15 @@ function extractUrls(text: string, entities: Array<Record<string, unknown>> = []
     }
   }
   for (const match of text.matchAll(/https?:\/\/[^\s<>"']+/giu)) add(match[0]);
-  return [...found].slice(0, MAX_URLS_PER_MESSAGE);
+  const selected: string[] = [];
+  let total = 0;
+  for (const link of found) {
+    const next = link.length + (selected.length ? 4 : 0);
+    if (selected.length >= MAX_URLS_PER_MESSAGE || total + next > MAX_TELEGRAM_TEXT - 120) break;
+    selected.push(link);
+    total += next;
+  }
+  return selected;
 }
 
 function safeText(value: unknown, max = 180): string {
@@ -159,8 +167,8 @@ Deno.serve(async (req: Request) => {
       .eq("status", "published").order("starts_at", { ascending: true, nullsFirst: false })
       .limit(200);
     if (error) return json({ error: "تعذر قراءة روابط المحاضرات." }, 502);
-    let posted = 0;
     let duplicates = 0;
+    const pending: Array<{ key: string; lines: string[] }> = [];
     for (const lecture of lectures || []) {
       const links = [lecture.stream_url, lecture.recording_url].filter((value): value is string => typeof value === "string" && /^https:\/\//i.test(value));
       if (!links.length) continue;
@@ -168,14 +176,43 @@ Deno.serve(async (req: Request) => {
       const reserved = await reserveDelivery(admin, sourceKey, "website_lecture", String(lecture.id), links.length);
       if (!reserved) { duplicates++; continue; }
       const title = safeText(lecture.title, 180) || "محاضرة";
-      const lines = ["روابط المحاضرة: " + title, ...links.map((link, i) => (i === 0 ? "رابط البث: " : "رابط التسجيل: ") + link)];
+      pending.push({
+        key: sourceKey,
+        lines: ["• " + title, ...links.map((link, i) => (i === 0 ? "رابط البث: " : "رابط التسجيل: ") + link)],
+      });
+    }
+
+    let posted = 0;
+    let batch: Array<{ key: string; lines: string[] }> = [];
+    let batchText = "روابط المحاضرات المنشورة من موقع حارس:\n";
+    const flush = async (): Promise<boolean> => {
+      if (!batch.length) return true;
       try {
-        await telegramSend(token, groupId, lines.join("\n"));
-        posted++;
+        await telegramSend(token, groupId, batchText);
+        posted += batch.length;
+        batch = [];
+        batchText = "روابط المحاضرات المنشورة من موقع حارس:\n";
+        return true;
       } catch {
-        await rollbackDelivery(admin, sourceKey);
-        return json({ error: "توقف النشر بعد " + posted + " محاضرة؛ تعذر إرسال الرسالة التالية.", posted, duplicates }, 502);
+        return false;
       }
+    };
+
+    for (let i = 0; i < pending.length; i++) {
+      const entry = pending[i];
+      const section = entry.lines.join("\n") + "\n\n";
+      if (batch.length && (batch.length >= 15 || batchText.length + section.length > 3500)) {
+        if (!await flush()) {
+          for (const unsent of [...batch, ...pending.slice(i)]) await rollbackDelivery(admin, unsent.key);
+          return json({ error: "توقف النشر بعد " + posted + " مجموعة من الروابط؛ تعذر إرسال الدفعة التالية.", posted, duplicates }, 502);
+        }
+      }
+      batch.push(entry);
+      batchText += section;
+    }
+    if (!await flush()) {
+      for (const unsent of batch) await rollbackDelivery(admin, unsent.key);
+      return json({ error: "توقف النشر بعد " + posted + " مجموعة من الروابط؛ تعذر إرسال الدفعة الأخيرة.", posted, duplicates }, 502);
     }
     return json({ ok: true, posted, duplicates, checked: (lectures || []).length });
   }
