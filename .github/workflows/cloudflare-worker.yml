@@ -6,6 +6,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      confirm_production:
+        description: "Confirm deployment to the production Cloudflare Worker"
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -195,7 +201,7 @@ jobs:
 
   deploy:
     name: Deploy production Worker
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && inputs.confirm_production == true && github.ref == 'refs/heads/main'
     needs: build-and-test
     runs-on: ubuntu-latest
     timeout-minutes: 20
