@@ -1,5 +1,19 @@
 'use strict';
+const crypto=require('node:crypto');
 const {assess}=require('./risk-engine');
+function canonicalize(value){
+  if(Array.isArray(value)) return value.map(canonicalize);
+  if(value&&typeof value==='object') return Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonicalize(value[key])]));
+  return value;
+}
+function normalizeReport(report={}){
+  return {
+    agent:String(report.agent||'unknown').slice(0,40),
+    status:['PASS','FAIL','NEEDS_REVIEW','BLOCKED'].includes(report.status)?report.status:'NEEDS_REVIEW',
+    data:report.data&&typeof report.data==='object'&&!Array.isArray(report.data)?report.data:{},
+    warnings:Array.isArray(report.warnings)?report.warnings.map(x=>String(x).slice(0,240)).slice(0,10):[]
+  };
+}
 function createTaskService({env,fetch:fetchImpl=global.fetch}) {
   async function request(path,init={}) {
     if(!env.SUPABASE_URL||!env.SUPABASE_SERVICE_ROLE_KEY) throw new Error('AI task storage is not configured');
@@ -35,16 +49,37 @@ function createTaskService({env,fetch:fetchImpl=global.fetch}) {
       const rows=await request('/rest/v1/ai_tasks?id=eq.'+encodeURIComponent(id)+'&select=*',{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({status,updated_at:new Date().toISOString()})});
       return rows[0]||null;
     },
-    async recordReviews(taskId,reports=[]) {
-      if(!Array.isArray(reports)||reports.length>12) throw new TypeError('Invalid AI review reports');
-      if(!reports.length) return [];
-      const rows=reports.map(report=>({
-        task_id:taskId,
-        agent:String(report.agent||'unknown').slice(0,40),
-        result:['PASS','FAIL','NEEDS_REVIEW','BLOCKED'].includes(report.status)?report.status:'NEEDS_REVIEW',
-        report:{data:report.data&&typeof report.data==='object'?report.data:{},warnings:Array.isArray(report.warnings)?report.warnings.map(x=>String(x).slice(0,240)).slice(0,10):[]}
-      }));
-      return request('/rest/v1/ai_reviews?select=*',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(rows)});
+    async recordAnalysis({taskId,actorUserId,status,source,plan=[],reports=[]}={}) {
+      if(!taskId||!actorUserId||!['ANALYZED','FAILED'].includes(status)||!Array.isArray(plan)||plan.length>40||!Array.isArray(reports)||reports.length>12) {
+        throw new TypeError('Invalid AI analysis artifact');
+      }
+      const artifact={
+        schemaVersion:1,
+        taskId,
+        createdBy:actorUserId,
+        status,
+        source:{
+          type:String(source?.type||'').slice(0,40),
+          title:String(source?.title||'').slice(0,120),
+          description:String(source?.description||'').slice(0,3000),
+          affectedAreas:Array.isArray(source?.affectedAreas)?source.affectedAreas.filter(x=>typeof x==='string').slice(0,30):[]
+        },
+        plan,
+        reports:reports.map(normalizeReport)
+      };
+      const canonical=JSON.stringify(canonicalize(artifact));
+      if(Buffer.byteLength(canonical,'utf8')>65536) throw new TypeError('AI analysis artifact exceeds storage limit');
+      const sha256=crypto.createHash('sha256').update(canonical,'utf8').digest('hex');
+      const rows=await request('/rest/v1/rpc/record_ai_task_analysis',{method:'POST',body:JSON.stringify({
+        p_task_id:taskId,
+        p_actor_user_id:actorUserId,
+        p_status:status,
+        p_artifact:artifact,
+        p_artifact_sha256:sha256
+      })});
+      const result=Array.isArray(rows)?rows[0]:rows;
+      if(!result?.artifact_id||result.artifact_sha256!==sha256||result.task_status!==status) throw new Error('AI analysis artifact persistence could not be verified');
+      return {...result,artifact};
     },
     async recordHumanApproval({taskId,actorUserId,action,decision,reason=''}) {
       if(!taskId||!actorUserId||!['IMPLEMENT','MERGE'].includes(action)||!['APPROVED','REJECTED'].includes(decision)) throw new TypeError('Invalid approval request');
