@@ -82,6 +82,8 @@ function supabaseFunctionRoute(pathname) {
   if (pathname === '/api/admin/lectures') return { name: 'lectures-admin', path: '/admin/lectures' };
   if (pathname === '/api/suggestions') return { name: 'submit-suggestion', path: '' };
   if (pathname === '/api/questions') return { name: 'submit-question', path: '' };
+  if (pathname === '/api/library') return { name: 'media-library', path: '/library' };
+  if (/^\\/api\\/library\\/files\\/[0-9a-f-]{36}$/i.test(pathname)) return { name: 'media-library', path: pathname.slice('/api/library'.length) };
   if (pathname === '/api/admin/suggestions') return { name: 'admin-operations', path: '/admin/suggestions' };
   if (/^\/api\/admin\/suggestions\/[0-9a-f-]{36}$/i.test(pathname)) return { name: 'admin-operations', path: pathname.slice(4) };
   if (pathname === '/api/admin/ai/tasks') return { name: 'admin-operations', path: '/admin/ai/tasks' };
