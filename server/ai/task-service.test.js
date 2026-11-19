@@ -99,7 +99,7 @@ test('analysis plan, source provenance, reviews, status and audit metadata persi
     reports:[{agent:'security',status:'PASS',data:{checks:3},warnings:['reviewed']}]
   });
   assert.equal(calls.length,1);
-  assert.match(calls[0].url,/\\/rpc\\/record_ai_task_analysis$/);
+  assert.ok(calls[0].url.endsWith('/rpc/record_ai_task_analysis'));
   assert.equal(calls[0].payload.p_task_id,'task-analysis-1');
   assert.equal(calls[0].payload.p_actor_user_id,'preview-admin');
   assert.equal(calls[0].payload.p_artifact.source.type,'security');
