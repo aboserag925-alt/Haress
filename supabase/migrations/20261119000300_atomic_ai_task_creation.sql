@@ -33,6 +33,12 @@ begin
     raise exception 'Invalid AI task type';
   end if;
 
+  if p_actor_user_id is null or not exists (
+    select 1 from public.admin_users where user_id = p_actor_user_id
+  ) then
+    raise exception 'Administrator authorization required';
+  end if;
+
   v_source := p_source;
   v_areas := coalesce(p_affected_areas, '{}'::text[]);
 
