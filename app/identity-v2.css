@@ -145,7 +145,6 @@ html.identity-v2 .support-prompt{margin-top:12px}
 html.identity-v2 .wallet-detail{margin:10px 0;padding:15px;border:1px solid var(--v2-line);border-radius:15px;background:var(--v2-surface-soft)}
 html.identity-v2 .wallet-detail summary{color:var(--v2-green);font-weight:700;cursor:pointer}
 html.identity-v2 .wallet-detail p{color:var(--v2-muted);line-height:1.8}
-html.identity-v2 .wallet-number{direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums}
 html.identity-v2 .account-email{overflow-wrap:anywhere;color:var(--v2-green)}
 html.identity-v2 .auth-form{display:grid;gap:12px;margin-top:14px}
 html.identity-v2 .copy-feedback{min-height:1.5em;color:var(--v2-green);font-size:12px}
@@ -175,7 +174,7 @@ html.identity-v2 .copy-feedback{min-height:1.5em;color:var(--v2-green);font-size
 }
 
 html.identity-v2 .adhan-field{margin-top:14px}
-html.identity-v2 .wallet-number{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:12px}
+html.identity-v2 .wallet-number{direction:ltr;unicode-bidi:isolate;font-variant-numeric:tabular-nums;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:12px}
 html.identity-v2 .wallet-number>b{font-size:22px;letter-spacing:1px}
 
 /* Progressive entrance motion: content stays visible unless the V2 script is active. */
