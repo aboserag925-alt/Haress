@@ -309,11 +309,9 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--bronze);outline-off
 
 /* V3.1 design system — tokens and refinement layer; no component contract changes. */
 :root{
-  --v31-space-1:4px;--v31-space-2:8px;--v31-space-3:12px;--v31-space-4:16px;
-  --v31-space-5:24px;--v31-space-6:32px;--v31-space-7:48px;--v31-space-8:64px;
   --v31-text-xs:clamp(10px,.72rem,11px);--v31-text-sm:clamp(12px,.84rem,13px);
   --v31-text-md:clamp(14px,.96rem,16px);--v31-text-lg:clamp(18px,1.35rem,22px);
-  --v31-text-xl:clamp(26px,2.4vw,34px);--v31-text-display:clamp(48px,8vw,88px);
+  --v31-text-display:clamp(48px,8vw,88px);
   --v31-radius:3px;--v31-radius-pill:999px;--v31-border:1px solid var(--line);
   --v31-shadow:var(--v2-shadow-soft);
   --v31-motion:cubic-bezier(.22,.68,0,1);--v31-fast:180ms;--v31-slow:560ms;
