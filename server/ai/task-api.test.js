@@ -19,11 +19,10 @@ test('AI task endpoint rejects client-supplied trust and approval fields',async(
  assert.equal(res.status,400);assert.equal(created,false);
 });
 test('AI task endpoint persists tainted task reviews after admin-only analysis',async()=>{
- let createArgs,analysisInput,reviewArgs,statusArgs;
+ let createArgs,analysisInput,persistArgs;
  const taskService={
   create:async args=>{createArgs=args;return{id:'task-preview-1',tainted:true,status:'PROPOSED'};},
-  recordReviews:async(id,reports)=>{reviewArgs={id,reports};},
-  updateStatus:async(id,status)=>{statusArgs={id,status};return{id,status,tainted:true};}
+  recordAnalysis:async args=>{persistArgs=args;return{task_status:args.status,artifact_id:'artifact-preview-1',artifact_sha256:'a'.repeat(64)};}
  };
  const supervisor={analyze:async input=>{analysisInput=input;return{task:{id:input.id,status:'ANALYZED',tainted:true},reports:[{agent:'security',status:'PASS',data:{reviewRequired:true},warnings:[]}],plan:[{reviewRequired:true}]};}};
  const api=createTaskApi({env,fetch:authFetch,taskService,supervisor});
@@ -32,13 +31,17 @@ test('AI task endpoint persists tainted task reviews after admin-only analysis',
  assert.deepEqual(createArgs,{source:'suggestion',type:'suggestion',title:'تحسين المكتبة',description:'إضافة تصنيف جديد إلى مكتبة المواد',affectedAreas:['library'],actorUserId:'preview-admin'});
  assert.equal(analysisInput.id,'task-preview-1');
  assert.equal(analysisInput.title,'تحسين المكتبة');
- assert.equal(reviewArgs.id,'task-preview-1');
- assert.deepEqual(statusArgs,{id:'task-preview-1',status:'ANALYZED'});
+ assert.equal(persistArgs.taskId,'task-preview-1');
+ assert.equal(persistArgs.actorUserId,'preview-admin');
+ assert.equal(persistArgs.status,'ANALYZED');
+ assert.equal(persistArgs.source.title,'تحسين المكتبة');
+ assert.deepEqual(persistArgs.plan,[{reviewRequired:true}]);
+ assert.equal(JSON.parse(res.body).artifact.id,'artifact-preview-1');
  assert.equal(JSON.parse(res.body).task.tainted,true);
 });
 test('AI task endpoint persists failed required reviews as FAILED',async()=>{
  let savedStatus;
- const api=createTaskApi({env,fetch:authFetch,taskService:{create:async()=>({id:'task-failed'}),recordReviews:async()=>{},updateStatus:async(id,status)=>{savedStatus=status;return{id,status};}},supervisor:{analyze:async()=>({task:{status:'FAILED'},reports:[{agent:'security',status:'BLOCKED'}]})}});
+ const api=createTaskApi({env,fetch:authFetch,taskService:{create:async()=>({id:'task-failed',tainted:true}),recordAnalysis:async args=>{savedStatus=args.status;return{task_status:args.status,artifact_id:'artifact-failed',artifact_sha256:'b'.repeat(64)};}},supervisor:{analyze:async()=>({task:{status:'FAILED'},reports:[{agent:'security',status:'BLOCKED'}]})}});
  const res=response();await api(request({type:'security',title:'مراجعة الصلاحيات',description:'تحقق من إعدادات الصلاحيات الحالية'}),res,'/api/admin/ai/tasks');
  assert.equal(res.status,201);assert.equal(savedStatus,'FAILED');
 });
