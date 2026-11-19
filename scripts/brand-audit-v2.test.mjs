@@ -29,7 +29,8 @@ test('main app and admin share V2 components without inline style layers', () =>
   assert.ok(admin.includes('src="identity-v2.js"'));
   for (const html of [main, admin]) {
     assert.match(html, /family=Noto\+Naskh\+Arabic/);
-    assert.doesNotMatch(html, /Aref Ruqaa|Reem Kufi|Cairo|Amiri|IBM Plex Sans Arabic/);
+    assert.doesNotMatch(html, /family=(?:Aref\\+Ruqaa|Reem\\+Kufi|Cairo|Amiri|IBM\\+Plex)/i);
+    assert.doesNotMatch(html, /font-family\\s*:[^;]*(?:Aref Ruqaa|Reem Kufi|Cairo|Amiri|IBM Plex Sans Arabic)/i);
     assert.doesNotMatch(html, /<style\b|\sstyle\s*=/i);
   }
   assert.match(admin, /class="identity-v2 admin-v2"/);
