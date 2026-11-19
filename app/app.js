@@ -742,6 +742,7 @@ function setAccountState(state) {
   var configMissing = document.getElementById('authConfigMissing');
   var form = document.getElementById('authForm');
   var signedIn = document.getElementById('accountSignedIn');
+  var recoveryPanel = document.getElementById('passwordResetPanel');
   var message = document.getElementById('authMessage');
   if (!state.configured) {
     accountUser = null;
@@ -749,11 +750,21 @@ function setAccountState(state) {
     configMissing.hidden = false;
     form.hidden = true;
     signedIn.hidden = true;
+    recoveryPanel.hidden = true;
     setStatus(message, 'أضف إعدادات Supabase لتفعيل الحسابات.');
     return;
   }
   configMissing.hidden = true;
   accountUser = state.user;
+  if (state.event === 'PASSWORD_RECOVERY') {
+    activeSyncUserId = null;
+    form.hidden = true;
+    signedIn.hidden = true;
+    recoveryPanel.hidden = false;
+    setStatus(message, 'أدخل كلمة المرور الجديدة لإكمال استعادة الحساب.');
+    return;
+  }
+  recoveryPanel.hidden = true;
   if (!state.user) {
     activeSyncUserId = null;
     form.hidden = false;
@@ -829,6 +840,48 @@ function initAuth() {
   window.ahlAuth.init(setAccountState);
   document.getElementById('authForm').addEventListener('submit', handleSignIn);
   document.getElementById('signUpBtn').addEventListener('click', handleSignUp);
+  document.getElementById('resetPasswordBtn').addEventListener('click', function () {
+    var emailInput = document.getElementById('authEmail');
+    var email = emailInput.value.trim();
+    if (!email || !emailInput.checkValidity()) {
+      setStatus(document.getElementById('authMessage'), 'أدخل بريدك الإلكتروني الصحيح أولًا.', true);
+      emailInput.focus();
+      return;
+    }
+    var button = document.getElementById('resetPasswordBtn');
+    button.disabled = true;
+    setStatus(document.getElementById('authMessage'), 'جارٍ إرسال رابط الاستعادة…');
+    window.ahlAuth.requestPasswordReset(email).then(function (result) {
+      if (result.error) throw result.error;
+      setStatus(document.getElementById('authMessage'), 'إذا كان البريد مسجلًا، فستصلك رسالة استعادة كلمة المرور.');
+    }).catch(function (error) {
+      setStatus(document.getElementById('authMessage'), 'تعذر إرسال رابط الاستعادة: ' + error.message, true);
+    }).finally(function () {
+      button.disabled = false;
+    });
+  });
+  document.getElementById('updatePasswordBtn').addEventListener('click', function () {
+    var input = document.getElementById('newAuthPassword');
+    var password = input.value;
+    if (password.length < 8) {
+      setStatus(document.getElementById('authMessage'), 'كلمة المرور يجب ألا تقل عن 8 أحرف.', true);
+      input.focus();
+      return;
+    }
+    var button = document.getElementById('updatePasswordBtn');
+    button.disabled = true;
+    window.ahlAuth.updatePassword(password).then(function (result) {
+      if (result.error) throw result.error;
+      input.value = '';
+      document.getElementById('passwordResetPanel').hidden = true;
+      document.getElementById('accountSignedIn').hidden = !accountUser;
+      setStatus(document.getElementById('authMessage'), 'تم تحديث كلمة المرور بنجاح.');
+    }).catch(function (error) {
+      setStatus(document.getElementById('authMessage'), 'تعذر تحديث كلمة المرور: ' + error.message, true);
+    }).finally(function () {
+      button.disabled = false;
+    });
+  });
   document.getElementById('signOutBtn').addEventListener('click', function () {
     setStatus(document.getElementById('authMessage'), 'جاري تسجيل الخروج…');
     window.ahlAuth.signOut().then(function (result) {

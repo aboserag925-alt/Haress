@@ -13,6 +13,15 @@ test('suggestions and AI storage migration creates the required service-side tab
   }
 });
 
+const secureDefaults = fs.readFileSync(path.join(__dirname,'migrations','20261119060213_haress_ai_task_secure_defaults.sql'),'utf8');
+
+test('production AI task defaults require approval and mark new tasks as tainted',()=>{
+  assert.match(secureDefaults,/alter column requires_approval set default true/i);
+  assert.match(secureDefaults,/alter column tainted set default true/i);
+  assert.match(secureDefaults,/alter column source set default 'suggestion'/i);
+  assert.match(secureDefaults,/existing rows are intentionally unchanged/i);
+});
+
 test('AI tasks are tainted by default and approval RPC refuses tainted tasks',()=>{
   assert.match(migration,/tainted boolean not null default true/i);
   assert.match(migration,/if v_task\.tainted then raise exception 'Tainted tasks cannot be approved'/i);
@@ -98,8 +107,97 @@ test('all Supabase Edge Functions allow only the approved Preview and Production
   ]){
     const source=fs.readFileSync(file,'utf8');
     assert.match(source,/https:\/\/hares-preview\.aboserag925\.workers\.dev/);
+    assert.match(source,/https:\/\/feat-visual-identity-v2-mainline-20261119-hares\.aboserag925\.workers\.dev/);
     assert.match(source,/https:\/\/hares\.aboserag925\.workers\.dev/);
   }
+});
+
+
+const taskContext = fs.readFileSync(path.join(__dirname,'migrations','20261119000200_ai_task_request_context.sql'),'utf8');
+const taskCreation = fs.readFileSync(path.join(__dirname,'migrations','20261119000300_atomic_ai_task_creation.sql'),'utf8');
+const reviewStorage = fs.readFileSync(path.join(__dirname,'migrations','20261119000350_ai_reviews_storage.sql'),'utf8');
+const artifactStorage = fs.readFileSync(path.join(__dirname,'migrations','20261119000400_ai_task_analysis_artifacts.sql'),'utf8');
+
+test('AI task request context is additive and validates task types',()=>{
+  assert.match(taskContext,/add column if not exists task_type text/i);
+  assert.match(taskContext,/add column if not exists title text/i);
+  assert.match(taskContext,/add column if not exists description text/i);
+  assert.match(taskContext,/ai_tasks_task_type_check/i);
+  assert.doesNotMatch(taskContext,/drop table|truncate|delete from/i);
+});
+
+test('AI task creation is atomic and its SECURITY DEFINER RPC is service-only',()=>{
+  assert.match(taskCreation,/insert into public\.ai_tasks/i);
+  assert.match(taskCreation,/insert into public\.ai_audit_events/i);
+  assert.match(taskCreation,/security definer\s+set search_path = ''/i);
+  assert.match(taskCreation,/revoke all on function public\.create_ai_task_with_audit[\s\S]*?from public, anon, authenticated/i);
+  assert.match(taskCreation,/grant execute on function public\.create_ai_task_with_audit[\s\S]*?to service_role/i);
+  assert.match(taskCreation,/tainted,source,affected_areas/i);
+});
+
+test('AI reviews and immutable artifacts remain closed to browser roles',()=>{
+  assert.match(reviewStorage,/alter table public\.ai_reviews enable row level security/i);
+  assert.match(reviewStorage,/revoke all on public\.ai_reviews from public, anon, authenticated/i);
+  assert.match(artifactStorage,/alter table public\.ai_task_artifacts enable row level security/i);
+  assert.match(artifactStorage,/revoke all on public\.ai_task_artifacts from public, anon, authenticated, service_role/i);
+  assert.match(artifactStorage,/grant select on public\.ai_task_artifacts to service_role/i);
+  assert.match(artifactStorage,/sha256 text not null check/i);
+});
+
+test('AI analysis persistence validates admin, task provenance and artifact integrity atomically',()=>{
+  assert.match(artifactStorage,/create or replace function public\.record_ai_task_analysis/i);
+  assert.match(artifactStorage,/Administrator authorization required/i);
+  assert.match(artifactStorage,/p_artifact_sha256/i);
+  assert.match(artifactStorage,/ai\.analysis\.completed/i);
+  assert.match(artifactStorage,/revoke all on function public\.record_ai_task_analysis[\s\S]*?from public, anon, authenticated/i);
+  assert.match(artifactStorage,/grant execute on function public\.record_ai_task_analysis[\s\S]*?to service_role/i);
+});
+
+test('admin Edge Function creates and retrieves AI analysis artifacts through guarded RPCs',()=>{
+  assert.match(adminOperations,/create_ai_task_with_audit/);
+  assert.match(adminOperations,/record_ai_task_analysis/);
+  assert.match(adminOperations,/allowTaskRequest/);
+  assert.match(adminOperations,/auth\.getUser/);
+  assert.match(adminOperations,/from\("admin_users"\)/);
+});
+
+const mediaIndex = fs.readFileSync(path.join(__dirname,'migrations','20261119070000_media_library_durable_index.sql'),'utf8');
+const mediaKind = fs.readFileSync(path.join(__dirname,'migrations','20261119070010_media_library_document_kind.sql'),'utf8');
+const mediaReupload = fs.readFileSync(path.join(__dirname,'migrations','20261119070020_media_library_reupload_removed.sql'),'utf8');
+const questionFunction = fs.readFileSync(path.join(__dirname,'functions','submit-question','index.ts'),'utf8');
+const mediaFunction = fs.readFileSync(path.join(__dirname,'functions','media-library','index.ts'),'utf8');
+
+test('durable media index keeps object storage private and closes metadata to browser roles',()=>{
+  for(const table of ['media_library_items','media_library_state']){
+    assert.ok(mediaIndex.includes('create table if not exists public.'+table));
+    assert.ok(mediaIndex.includes('alter table public.'+table+' enable row level security'));
+    assert.ok(mediaIndex.includes('revoke all on public.'+table+' from public, anon, authenticated'));
+  }
+  assert.match(mediaIndex,/file_unique_id text not null unique/i);
+  assert.match(mediaIndex,/object_key text not null unique/i);
+  assert.ok(mediaIndex.includes("status in ('pending','approved','rejected','removed')"));
+  assert.ok(mediaKind.includes("kind in ('audio','video','document','image','other')"));
+  assert.match(mediaReupload,/drop constraint if exists media_library_items_file_unique_id_key/i);
+  assert.match(mediaReupload,/where status <> 'removed'/i);
+  assert.doesNotMatch(mediaIndex,/drop table|truncate|delete from/i);
+});
+
+test('public question function validates Turnstile and reserves the atomic Cairo daily cap before sending',()=>{
+  assert.match(questionFunction,/submit_question/);
+  assert.match(questionFunction,/consume_question_daily_cap/);
+  assert.ok(questionFunction.includes('timeZone: "Africa/Cairo"'));
+  assert.match(questionFunction,/GEMINI_API_KEY/);
+  assert.match(questionFunction,/TELEGRAM_BOT_TOKEN/);
+  assert.match(questionFunction,/telegramSent: false/);
+  assert.match(questionFunction,/ALLOWED_ORIGINS/);
+});
+
+test('media library API lists only approved rows and signs private object URLs',()=>{
+  assert.ok(mediaFunction.includes('.eq("status", "approved")'));
+  assert.ok(mediaFunction.includes('lastIndexOf("media-library")'));
+  assert.match(mediaFunction,/createSignedUrl/);
+  assert.match(mediaFunction,/SUPABASE_STORAGE_BUCKET/);
+  assert.match(mediaFunction,/Cache-Control/);
 });
 
 test('approval audit event is recorded once by the guarded database RPC',()=>{

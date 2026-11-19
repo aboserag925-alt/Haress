@@ -18,7 +18,6 @@ COPY --from=build --chown=node:node /build/index.html ./index.html
 COPY --from=build --chown=node:node /build/runtime-config.js ./runtime-config.js
 COPY --from=build --chown=node:node /build/app/ ./app/
 COPY --from=build --chown=node:node /build/assets/ ./assets/
-COPY --from=build --chown=node:node /build/screens/ ./screens/
 COPY --from=build --chown=node:node /build/server/ ./server/
 RUN mkdir -p storage/media && chown -R node:node storage
 USER node

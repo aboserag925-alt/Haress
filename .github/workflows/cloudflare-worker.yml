@@ -129,8 +129,29 @@ jobs:
             console.error('Unauthenticated admin-operations request must return HTTP 401; got ' + operationsResponse.status);
             process.exit(1);
           }
-          console.log('Supabase test Functions: public RLS read passed; both unauthenticated admin routes correctly rejected.');
+          const questionResponse = await fetch(config.url + '/functions/v1/submit-question', {
+            method: 'POST',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: 'اختبار مسار السؤال' })
+          });
+          if (questionResponse.status !== 400) {
+            console.error('Question Function must reject a missing Turnstile token with HTTP 400; got ' + questionResponse.status);
+            process.exit(1);
+          }
+          const libraryResponse = await fetch(config.url + '/functions/v1/media-library/library', { headers });
+          if (libraryResponse.status !== 200 || !Array.isArray((await libraryResponse.json()).items)) {
+            console.error('Media library Function did not return an approved-items array.');
+            process.exit(1);
+          }
+          console.log('Supabase test Functions: public lecture/media reads passed; question Turnstile and both admin routes fail closed.');
           NODE
+
+      - name: Verify authenticated non-admin authorization (Preview only)
+        if: github.event_name == 'pull_request'
+        env:
+          SUPABASE_E2E_NON_ADMIN_EMAIL: ${{ secrets.SUPABASE_E2E_NON_ADMIN_EMAIL }}
+          SUPABASE_E2E_NON_ADMIN_PASSWORD: ${{ secrets.SUPABASE_E2E_NON_ADMIN_PASSWORD }}
+        run: node scripts/smoke-admin-nonadmin.mjs
 
       - name: Upload built application assets
         uses: actions/upload-artifact@v4
@@ -186,11 +207,28 @@ jobs:
           grep -Eiq '^content-type: text/html' /tmp/preview.headers || { echo "Preview did not return HTML"; exit 1; }
           grep -Eiq "^x-content-type-options: nosniff" /tmp/preview.headers || { echo "Missing nosniff header"; exit 1; }
           grep -Eiq "content-security-policy:.*object-src 'none'" /tmp/preview.headers || { echo "Missing expected CSP directive"; exit 1; }
+          for asset in /identity-tokens.css /identity-v2.css /identity-v2.js /icon.svg /admin.html /v3/v3.css; do
+            asset_result=$(curl --location --max-redirs 3 --proto-redir '=https' --silent --show-error --output "/tmp/asset-$(basename "$asset")" --write-out '%{http_code}|%{url_effective}' "$PREVIEW_URL$asset")
+            asset_status=${asset_result%%|*}
+            asset_url=${asset_result#*|}
+            test "$asset_status" = "200" || { echo "Identity asset $asset returned HTTP $asset_status"; exit 1; }
+            case "$asset_url" in "$PREVIEW_URL"/*) ;; *) echo "Identity asset $asset redirected outside the Preview origin: $asset_url"; exit 1 ;; esac
+          done
+          grep -Fq -- '--v2-bg:#f5f9f5' /tmp/asset-identity-tokens.css || { echo "Preview identity token palette is missing"; exit 1; }
+          grep -Fq 'Noto Naskh Arabic' /tmp/asset-identity-tokens.css || { echo "Preview Arabic font token is missing"; exit 1; }
+
           lectures_status=$(curl --silent --show-error --output /tmp/preview-lectures.json --write-out '%{http_code}' -H "apikey: $publishable_key" "$PREVIEW_URL/api/lectures")
           test "$lectures_status" = "200" || { echo "Supabase-backed public lectures route returned HTTP $lectures_status"; cat /tmp/preview-lectures.json; exit 1; }
           jq -e '.items | type == "array"' /tmp/preview-lectures.json >/dev/null || { echo "Public lectures response shape is invalid"; exit 1; }
           suggestion_status=$(curl --silent --show-error --output /tmp/preview-suggestion-submit.json --write-out '%{http_code}' -H "apikey: $publishable_key" -H 'content-type: application/json' --data '{"category":"bug","title":"اختبار توجيه","description":"طلب اختبار يجب رفضه لغياب رمز Turnstile"}' "$PREVIEW_URL/api/suggestions")
           test "$suggestion_status" = "400" || { echo "Public suggestion route must reach Edge Function and reject missing Turnstile token with HTTP 400; got $suggestion_status"; cat /tmp/preview-suggestion-submit.json; exit 1; }
+          question_status=$(curl --silent --show-error --output /tmp/preview-question-submit.json --write-out '%{http_code}' -H "apikey: $publishable_key" -H 'content-type: application/json' --data '{"question":"اختبار مسار السؤال"}' "$PREVIEW_URL/api/questions")
+          test "$question_status" = "400" || { echo "Public question route must reach Edge Function and reject missing Turnstile token with HTTP 400; got $question_status"; cat /tmp/preview-question-submit.json; exit 1; }
+          library_status=$(curl --silent --show-error --output /tmp/preview-library.json --write-out '%{http_code}' -H "apikey: $publishable_key" "$PREVIEW_URL/api/library")
+          test "$library_status" = "200" || { echo "Approved media library route returned HTTP $library_status"; cat /tmp/preview-library.json; exit 1; }
+          jq -e '.items | type == "array"' /tmp/preview-library.json >/dev/null || { echo "Media library response shape is invalid"; exit 1; }
+          library_file_status=$(curl --silent --show-error --output /tmp/preview-library-file.json --write-out '%{http_code}' -H "apikey: $publishable_key" "$PREVIEW_URL/api/library/files/00000000-0000-4000-8000-000000000000")
+          test "$library_file_status" = "404" || { echo "Unknown media library file must return HTTP 404; got $library_file_status"; cat /tmp/preview-library-file.json; exit 1; }
           admin_status=$(curl --silent --show-error --output /tmp/preview-admin.json --write-out '%{http_code}' -H "apikey: $publishable_key" "$PREVIEW_URL/api/admin/session")
           test "$admin_status" = "401" || { echo "Unauthenticated lecture-admin route must return HTTP 401; got $admin_status"; exit 1; }
           suggestions_status=$(curl --silent --show-error --output /tmp/preview-suggestions.json --write-out '%{http_code}' -H "apikey: $publishable_key" "$PREVIEW_URL/api/admin/suggestions")

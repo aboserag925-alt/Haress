@@ -30,3 +30,48 @@ test('buildKey: object key shape', async function () {
   assert.equal(buildKey('images', 'abc', 'i.jpg'), 'library/images/abc/i.jpg');
   assert.equal(buildKey('unknown', 'abc', 'x.bin'), 'library/other/abc/x.bin');
 });
+
+test('SupabaseMediaStorage.head reads metadata with HEAD without downloading the object', async function () {
+  const originalFetch = global.fetch;
+  const calls = [];
+  global.fetch = async function (url, options) {
+    calls.push({ url: String(url), method: options.method, headers: options.headers });
+    return new Response(null, {
+      status: 200,
+      headers: { 'content-length': '734003200', 'content-type': 'video/mp4' }
+    });
+  };
+  try {
+    const storage = new SupabaseMediaStorage({
+      bucket: 'haress-media',
+      supabaseUrl: 'https://example.supabase.co',
+      serviceRoleKey: 'test-only'
+    });
+    assert.deepEqual(await storage.head('library/video/abc/lecture.mp4'), {
+      contentType: 'video/mp4',
+      size: 734003200
+    });
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].method, 'HEAD');
+    assert.equal(calls[0].url, 'https://example.supabase.co/storage/v1/object/haress-media/library/video/abc/lecture.mp4');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('SupabaseMediaStorage.head returns null for a missing object without downloading it', async function () {
+  const originalFetch = global.fetch;
+  global.fetch = async function () {
+    return new Response(null, { status: 404 });
+  };
+  try {
+    const storage = new SupabaseMediaStorage({
+      bucket: 'haress-media',
+      supabaseUrl: 'https://example.supabase.co',
+      serviceRoleKey: 'test-only'
+    });
+    assert.equal(await storage.head('library/video/missing.mp4'), null);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});

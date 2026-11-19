@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { resolveStorage, buildKey } = require('./media-storage');
+const { createTelegramAssistant } = require('./telegram-assistant');
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 const MAX_LIBRARY_ITEMS = 500;
@@ -118,6 +119,16 @@ function createMediaLibrary(options) {
   async function initialize() {
     if (initialized) return;
     if (useRemote) {
+      if (typeof storage.loadIndex !== 'function') {
+        throw new Error('Remote media storage does not support durable index reads.');
+      }
+      const stored = await storage.loadIndex();
+      if (!stored || !Array.isArray(stored.items) ||
+          (stored.offset !== null && !Number.isSafeInteger(stored.offset))) {
+        throw new Error('Invalid remote media library index.');
+      }
+      items = stored.items;
+      offset = stored.offset;
       initialized = true;
       return;
     }
@@ -139,7 +150,13 @@ function createMediaLibrary(options) {
   }
 
   async function save() {
-    if (useRemote) return;
+    if (useRemote) {
+      if (typeof storage.saveIndex !== 'function') {
+        throw new Error('Remote media storage does not support durable index writes.');
+      }
+      await storage.saveIndex(items, offset);
+      return;
+    }
     await fs.mkdir(storageDirectory, { recursive: true });
     const temporaryPath = indexPath + '.' + randomUUID() + '.tmp';
     await fs.writeFile(temporaryPath, JSON.stringify({ offset: offset, items: items }), 'utf8');
@@ -186,6 +203,10 @@ function createMediaLibrary(options) {
     }
     return result.result;
   }
+
+  const assistant = createTelegramAssistant({
+    sendMessage: function (payload) { return telegram('sendMessage', payload); }
+  });
 
   async function sendReviewMessage(item) {
     const message = 'ملف جديد للمراجعة قبل نشره في المنصة:\n' +
@@ -272,7 +293,8 @@ function createMediaLibrary(options) {
     try {
       await sendReviewMessage(item);
     } catch (error) {
-      items = items.filter(function (candidate) { return candidate.id !== id; });
+      item.status = 'removed';
+      item.removedAt = new Date().toISOString();
       await save();
       await deleteStoredFile(item);
       throw error;
@@ -397,6 +419,7 @@ function createMediaLibrary(options) {
       const chatId = message.chat?.id;
       if (chatId != null && String(chatId) === String(mediaGroupId)) {
         if (await removeApprovedMedia(message)) return;
+        if (await assistant.handleMessage(message, mediaGroupId)) return;
         await receiveFile(message);
         return;
       }

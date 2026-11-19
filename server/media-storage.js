@@ -1,7 +1,9 @@
 'use strict';
 
 class MemoryStore {
-  constructor() { this.objects = new Map(); this.ops = []; }
+  constructor() { this.objects = new Map(); this.ops = []; this.index = { items: [], offset: null }; }
+  async loadIndex() { return JSON.parse(JSON.stringify(this.index)); }
+  async saveIndex(items, offset) { this.index = JSON.parse(JSON.stringify({ items: items, offset: offset })); this.ops.push('save-index'); }
   async put(key, buffer, contentType) {
     if (!Buffer.isBuffer(buffer)) buffer = Buffer.from(buffer);
     if (this.objects.has(key)) throw new Error('OBJECT_EXISTS');
@@ -64,6 +66,73 @@ async function sbRequest(path, method, opts, supabaseUrl, serviceKey) {
   return data;
 }
 
+async function restRequest(path, method, body, supabaseUrl, serviceKey, prefer) {
+  const headers = { apikey: serviceKey, Authorization: 'Bearer ' + serviceKey };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (prefer) headers.Prefer = prefer;
+  const response = await fetch(supabaseUrl + '/rest/v1/' + path, {
+    method: method,
+    headers: headers,
+    body: body === undefined ? undefined : JSON.stringify(body)
+  });
+  if (!response.ok) throw new Error('Supabase media index request failed with status ' + response.status);
+  if (response.status === 204) return null;
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
+}
+
+SupabaseMediaStorage.prototype.loadIndex = async function () {
+  const u = this.supabaseUrl; const k = this.serviceRoleKey;
+  const rows = await restRequest('media_library_items?select=*&order=uploaded_at.asc', 'GET', undefined, u, k);
+  const state = await restRequest('media_library_state?select=telegram_update_offset&singleton=eq.true&limit=1', 'GET', undefined, u, k);
+  return {
+    items: (Array.isArray(rows) ? rows : []).map(row => ({
+      id: row.id,
+      storedName: row.id,
+      fileName: row.file_name,
+      fileUniqueId: row.file_unique_id,
+      mimeType: row.mime_type,
+      kind: row.kind,
+      category: row.category,
+      title: row.title,
+      status: row.status,
+      uploadedAt: row.uploaded_at,
+      reviewedAt: row.reviewed_at,
+      removedAt: row.removed_at,
+      objectKey: row.object_key
+    })),
+    offset: Array.isArray(state) && state[0] && state[0].telegram_update_offset !== null &&
+      Number.isSafeInteger(Number(state[0].telegram_update_offset))
+      ? Number(state[0].telegram_update_offset) : null
+  };
+};
+
+SupabaseMediaStorage.prototype.saveIndex = async function (items, offset) {
+  const u = this.supabaseUrl; const k = this.serviceRoleKey;
+  const rows = items.map(item => ({
+    id: item.id,
+    title: item.title,
+    category: item.category,
+    kind: item.kind,
+    mime_type: item.mimeType,
+    file_name: item.fileName,
+    file_unique_id: item.fileUniqueId,
+    object_key: item.objectKey || buildKey(item.kind, item.id, item.fileName),
+    status: item.status,
+    uploaded_at: item.uploadedAt,
+    reviewed_at: item.reviewedAt || null,
+    removed_at: item.removedAt || null
+  }));
+  if (rows.length) {
+    await restRequest('media_library_items?on_conflict=id', 'POST', rows, u, k, 'resolution=merge-duplicates,return=minimal');
+  }
+  await restRequest('media_library_state?on_conflict=singleton', 'POST', {
+    singleton: true,
+    telegram_update_offset: offset,
+    updated_at: new Date().toISOString()
+  }, u, k, 'resolution=merge-duplicates,return=minimal');
+};
+
 SupabaseMediaStorage.prototype.put = async function (key, buffer, contentType) {
   const u = this.supabaseUrl; const k = this.serviceRoleKey;
   await sbRequest('/object/' + this.bucket + '/' + encodeURIComponent(key).replace(/%2F/g, '/'), 'POST', {
@@ -82,9 +151,15 @@ SupabaseMediaStorage.prototype.get = async function (key) {
   } catch (e) { if (e.status === 404) return null; throw e; }
 };
 SupabaseMediaStorage.prototype.head = async function (key) {
-  const g = await this.get(key);
-  if (!g) return null;
-  return { contentType: g.contentType, size: g.size };
+  const u = this.supabaseUrl; const k = this.serviceRoleKey;
+  const res = await sbRequest('/object/' + this.bucket + '/' + encodeURIComponent(key).replace(/%2F/g, '/'), 'HEAD', { raw: true }, u, k);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('Supabase storage HEAD ' + res.status);
+  const size = Number(res.headers.get('content-length'));
+  return {
+    contentType: res.headers.get('content-type') || 'application/octet-stream',
+    size: Number.isSafeInteger(size) && size >= 0 ? size : null
+  };
 };
 SupabaseMediaStorage.prototype.exists = async function (key) { return !!(await this.head(key)); };
 SupabaseMediaStorage.prototype.listKeys = async function (prefix) {

@@ -199,6 +199,62 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
     assert.match(captured.body, /اختبار/);
   });
 
+  it('routes approved library listing to the private media-library Function', async () => {
+    let captured = null;
+    const req = makeRequest('https://preview.example/api/library', {
+      headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only' }
+    });
+    const res = await handleRequest(req, env, async (url, init) => {
+      captured = { url: String(url), method: init.method, headers: Object.fromEntries(init.headers.entries()) };
+      return new Response(JSON.stringify({ items: [] }), { status: 200 });
+    });
+    assert.equal(res.status, 200);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/media-library/library');
+    assert.equal(captured.method, 'GET');
+    assert.equal(captured.headers.apikey, 'sb_publishable_test_only');
+  });
+
+  it('routes approved library file reads through the signed-URL Function', async () => {
+    let captured = null;
+    const id = '123e4567-e89b-42d3-a456-426614174000';
+    const req = makeRequest('https://preview.example/api/library/files/' + id, {
+      headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only', range: 'bytes=0-10' }
+    });
+    const res = await handleRequest(req, env, async (url, init) => {
+      captured = { url: String(url), headers: Object.fromEntries(init.headers.entries()) };
+      return new Response(null, { status: 302, headers: { location: 'https://storage.example/signed' } });
+    });
+    assert.equal(res.status, 302);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/media-library/files/' + id);
+    assert.equal(captured.headers.range, 'bytes=0-10');
+  });
+
+  it('routes public question submissions to the fail-closed submit-question Function', async () => {
+    let captured = null;
+    const fetchImpl = async (url, init) => {
+      captured = {
+        url: String(url),
+        method: init.method,
+        headers: Object.fromEntries(init.headers.entries()),
+        body: await new Response(init.body).text()
+      };
+      return new Response(JSON.stringify({ draft: 'مسودة غير معتمدة', telegramSent: true }), { status: 200 });
+    };
+    const payload = { question: 'ما معنى الإخلاص؟', turnstileToken: 'one-time-turnstile-token' };
+    const req = makeRequest('https://preview.example/api/questions', {
+      method: 'POST',
+      headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only', 'content-type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const res = await handleRequest(req, env, fetchImpl);
+    assert.equal(res.status, 200);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/submit-question');
+    assert.equal(captured.method, 'POST');
+    assert.equal(captured.headers.apikey, 'sb_publishable_test_only');
+    assert.equal(captured.headers.origin, 'https://preview.example');
+    assert.deepEqual(JSON.parse(captured.body), payload);
+  });
+
   it('routes public suggestion submissions to the Turnstile-protected test Function', async () => {
     let captured = null;
     const fetchImpl = async (url, init) => {
@@ -241,6 +297,37 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
     assert.equal(captured.headers.apikey, 'sb_publishable_test_only');
   });
 
+  it('routes AI task creation requests to admin-operations', async () => {
+    let captured = null;
+    const req = makeRequest('https://preview.example/api/admin/ai/tasks', {
+      method: 'POST',
+      headers: { apikey: 'sb_publishable_test_only', authorization: 'Bearer user.jwt.token', 'content-type': 'application/json' },
+      body: JSON.stringify({ type: 'suggestion', title: 'Test task', description: 'A valid test task description' })
+    });
+    const res = await handleRequest(req, env, async (url, init) => {
+      captured = { url: String(url), headers: Object.fromEntries(init.headers.entries()) };
+      return new Response(JSON.stringify({ task: { id: 'task-id' } }), { status: 201 });
+    });
+    assert.equal(res.status, 201);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/admin-operations/admin/ai/tasks');
+    assert.equal(captured.headers.authorization, 'Bearer user.jwt.token');
+  });
+
+  it('routes AI artifact reads to admin-operations', async () => {
+    let captured = null;
+    const taskId = '123e4567-e89b-42d3-a456-426614174000';
+    const req = makeRequest(`https://preview.example/api/admin/ai/tasks/${taskId}/artifact`, {
+      headers: { apikey: 'sb_publishable_test_only', authorization: 'Bearer user.jwt.token' }
+    });
+    const res = await handleRequest(req, env, async (url, init) => {
+      captured = { url: String(url), headers: Object.fromEntries(init.headers.entries()) };
+      return new Response(JSON.stringify({ artifact: {} }), { status: 200 });
+    });
+    assert.equal(res.status, 200);
+    assert.equal(captured.url, `https://bevyztwoijjzfngutnys.supabase.co/functions/v1/admin-operations/admin/ai/tasks/${taskId}/artifact`);
+    assert.equal(captured.headers.authorization, 'Bearer user.jwt.token');
+  });
+
   it('routes AI approval requests to admin-operations without changing the signed JWT', async () => {
     let captured = null;
     const fetchImpl = async (url, init) => {
@@ -267,18 +354,22 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
     assert.equal(res.status, 503);
   });
 
-  it('keeps production Supabase routing fail-closed until production Functions and migrations are deployed', async () => {
+  it('routes production requests only to the production Supabase project', async () => {
     const productionEnv = {
       DEPLOYMENT_ENV: 'production',
       SUPABASE_URL: 'https://uzepglfimareggswjzlf.supabase.co'
     };
+    let captured = null;
     const req = makeRequest('https://hares.aboserag925.workers.dev/api/lectures', {
-      headers: { apikey: 'sb_publishable_test_only' }
+      headers: { apikey: 'sb_publishable_production_only' }
     });
-    const res = await handleRequest(req, productionEnv, async () => {
-      throw new Error('production Supabase must not be contacted before its dependencies are deployed');
+    const res = await handleRequest(req, productionEnv, async (url, init) => {
+      captured = { url: String(url), headers: Object.fromEntries(init.headers.entries()) };
+      return new Response(JSON.stringify({ items: [] }), { status: 200 });
     });
-    assert.equal(res.status, 503);
+    assert.equal(res.status, 200);
+    assert.equal(captured.url, 'https://uzepglfimareggswjzlf.supabase.co/functions/v1/lectures-admin/lectures');
+    assert.equal(captured.headers.apikey, 'sb_publishable_production_only');
   });
 
   it('rejects a preview Supabase URL in production without making a network request', async () => {

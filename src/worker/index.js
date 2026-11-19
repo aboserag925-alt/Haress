@@ -5,8 +5,8 @@
  *
  * المسارات:
  * - مسارات المحاضرات وإدارة الاقتراحات وموافقات الذكاء الاصطناعي المحددة: تُوجّه
- *   إلى Supabase Edge Functions في Preview مع تمرير مفتاح publishable القادم من العميل فقط.
- *   يُفرض نطاق مشروع الاختبار المعتمد ولا يُقبل عنوان الإنتاج.
+ *   إلى Supabase Edge Functions في Preview أو Production مع تمرير مفتاح publishable القادم من العميل فقط.
+ *   يُفرض نطاق مشروع Supabase المطابق لكل بيئة ولا يسمح بعبور البيئات.
  * - بقية /api/*: تُوجّه إلى API_BACKEND_URL؛ وعند غيابه تُرفض بأمان (503).
  * - المسارات الأخرى: تُخدم من الأصول الثابتة (دليل ./app) عبر ربط ASSETS.
  *
@@ -81,14 +81,23 @@ function supabaseFunctionRoute(pathname) {
   if (pathname === '/api/admin/session') return { name: 'lectures-admin', path: '/admin/session' };
   if (pathname === '/api/admin/lectures') return { name: 'lectures-admin', path: '/admin/lectures' };
   if (pathname === '/api/suggestions') return { name: 'submit-suggestion', path: '' };
+  if (pathname === '/api/questions') return { name: 'submit-question', path: '' };
+  if (pathname === '/api/library') return { name: 'media-library', path: '/library' };
+  const libraryFilePrefix = '/api/library/files/';
+  if (pathname.startsWith(libraryFilePrefix)) {
+    const fileId = pathname.slice(libraryFilePrefix.length);
+    if (/^[0-9a-f-]{36}$/i.test(fileId)) return { name: 'media-library', path: '/files/' + fileId };
+  }
   if (pathname === '/api/admin/suggestions') return { name: 'admin-operations', path: '/admin/suggestions' };
   if (/^\/api\/admin\/suggestions\/[0-9a-f-]{36}$/i.test(pathname)) return { name: 'admin-operations', path: pathname.slice(4) };
+  if (pathname === '/api/admin/ai/tasks') return { name: 'admin-operations', path: '/admin/ai/tasks' };
+  if (/^\/api\/admin\/ai\/tasks\/[0-9a-f-]{36}\/artifact$/i.test(pathname)) return { name: 'admin-operations', path: pathname.slice(4) };
   if (/^\/api\/admin\/ai\/tasks\/[0-9a-f-]{36}\/approval$/i.test(pathname)) return { name: 'admin-operations', path: pathname.slice(4) };
   return null;
 }
 
 async function proxyToSupabaseFunction(request, env, fetchImpl) {
-  if (!env || env.DEPLOYMENT_ENV !== 'preview') return null;
+  if (!env || !['preview', 'production'].includes(env.DEPLOYMENT_ENV)) return null;
   const requestUrl = new URL(request.url);
   const functionRoute = supabaseFunctionRoute(requestUrl.pathname);
   if (!functionRoute) return null;

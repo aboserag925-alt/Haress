@@ -8,19 +8,31 @@
 
   function setTheme(theme) {
     root.setAttribute('data-theme', theme);
-    if (themeMeta) themeMeta.setAttribute('content', theme === 'dark' ? '#19382f' : '#f4f0e6');
+    if (themeMeta) themeMeta.setAttribute('content', theme === 'dark' ? '#101b16' : '#f5f9f5');
     if (themeButton) {
       themeButton.setAttribute('aria-label', theme === 'dark' ? 'تفعيل المظهر الفاتح' : 'تفعيل المظهر الداكن');
       themeButton.textContent = theme === 'dark' ? '☼' : '◐';
     }
-    try { localStorage.setItem('haress-v3-theme', theme); } catch (error) {}
+    try { localStorage.setItem('haress-identity-v2-theme', theme); } catch (error) {}
   }
 
+  var savedTheme = null;
   try {
-    var saved = localStorage.getItem('haress-v3-theme');
-    if (saved === 'light' || saved === 'dark') setTheme(saved);
-    else setTheme('light');
-  } catch (error) { setTheme('light'); }
+    savedTheme = localStorage.getItem('haress-identity-v2-theme');
+    if (savedTheme !== 'light' && savedTheme !== 'dark') {
+      var legacyTheme = localStorage.getItem('haress-v3-theme');
+      if (legacyTheme === 'light' || legacyTheme === 'dark') {
+        savedTheme = legacyTheme;
+        try {
+          localStorage.setItem('haress-identity-v2-theme', legacyTheme);
+          if (localStorage.getItem('haress-identity-v2-theme') === legacyTheme) {
+            localStorage.removeItem('haress-v3-theme');
+          }
+        } catch (migrationError) {}
+      }
+    }
+  } catch (storageError) {}
+  setTheme(savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : 'light');
 
   if (themeButton) themeButton.addEventListener('click', function () {
     setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');

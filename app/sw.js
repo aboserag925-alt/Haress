@@ -2,12 +2,14 @@
    Authenticated/API and third-party responses are deliberately never cached. */
 'use strict';
 
-var CACHE_NAME = 'ahl-athar-v3';
+var CACHE_NAME = 'ahl-athar-v5';
 var APP_FILES = [
   './',
   './index.html',
   './manifest.json',
-  './icon.svg'
+  './icon.svg',
+  './identity-tokens.css',
+  './identity-v2.css'
 ];
 var STATIC_FILE = /\.(?:css|js|mjs|json|svg|png|jpe?g|webp|ico|woff2?|ttf|eot)$/i;
 /* Mutable frontend assets (JS/CSS) must be revalidated on every load so a

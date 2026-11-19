@@ -1,7 +1,7 @@
 <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" dir="rtl">
   <defs>
     <style>
-      .shield { fill: #0e7a4d; stroke: #c5a04a; stroke-width: 2; stroke-linejoin: round; }
+      .shield { fill: #176b49; stroke: #c5a04a; stroke-width: 2; stroke-linejoin: round; }
       .shield-inner { fill: none; stroke: #ffffff; stroke-width: 1; opacity: 0.35; stroke-linejoin: round; }
       .logo-text { fill: #ffffff; font-family: 'Noto Naskh Arabic', serif; font-size: 12px; font-weight: 700; text-anchor: middle; }
     </style>

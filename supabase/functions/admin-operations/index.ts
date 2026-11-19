@@ -2,12 +2,33 @@ import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 
 const ALLOWED_ORIGINS = new Set([
   "https://hares-preview.aboserag925.workers.dev",
+  "https://feat-visual-identity-v2-mainline-20261119-hares.aboserag925.workers.dev",
   "https://hares.aboserag925.workers.dev",
   "http://localhost:8787",
   "http://127.0.0.1:8787",
 ]);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_BODY_BYTES = 8 * 1024;
+const TASK_RATE_WINDOW_MS = 15 * 60 * 1000;
+const TASK_RATE_LIMIT = 5;
+const taskRateLimits = new Map<string, { count: number; resetAt: number }>();
+
+function allowTaskRequest(userId: string): boolean {
+  const now = Date.now();
+  if (taskRateLimits.size > 10000) {
+    for (const [key, value] of taskRateLimits.entries()) {
+      if (value.resetAt <= now) taskRateLimits.delete(key);
+    }
+  }
+  let entry = taskRateLimits.get(userId);
+  if (!entry || entry.resetAt <= now) {
+    entry = { count: 0, resetAt: now + TASK_RATE_WINDOW_MS };
+    taskRateLimits.set(userId, entry);
+  }
+  if (entry.count >= TASK_RATE_LIMIT) return false;
+  entry.count += 1;
+  return true;
+}
 
 function json(data: unknown, status = 200, headers: HeadersInit = {}, extraHeaders: HeadersInit = {}) {
   return new Response(JSON.stringify(data), {
@@ -91,6 +112,9 @@ Deno.serve(async (req: Request) => {
   const { data: adminRow, error: adminError } = await adminClient.from("admin_users")
     .select("user_id").eq("user_id", user.id).maybeSingle();
   if (adminError || !adminRow) return json({ error: "هذه العملية متاحة للمشرفين المصرح لهم فقط." }, 403, cors);
+  if ((route === "/admin/ai/tasks" || /^\/admin\/ai\/tasks\/[0-9a-f-]{36}\/artifact$/i.test(route)) && !allowTaskRequest(user.id)) {
+    return json({ error: "تجاوزت حد المحاولات. حاول لاحقًا." }, 429, cors);
+  }
 
   if (route === "/admin/suggestions" && req.method === "GET") {
     const { data, error } = await adminClient.from("suggestions").select("*")
@@ -162,6 +186,171 @@ Deno.serve(async (req: Request) => {
     if (error || !approvalId) return json({ error: "تعذر تسجيل القرار. تحقق من حالة المهمة وصلاحيات المشرف." }, 409, cors);
     return json({ approvalId }, 200, cors);
   }
+
+
+  // AI task creation and immutable analysis artifacts are handled here rather than
+  // in the Node server, so Cloudflare can route them directly to this Supabase Function.
+  const taskRoute = route === "/admin/ai/tasks";
+  const artifactMatch = route.match(/^\/admin\/ai\/tasks\/([0-9a-f-]{36})\/artifact$/i);
+  if (taskRoute && req.method === "POST") {
+    let input: Record<string, unknown>;
+    try { input = await readJson(req); }
+    catch (error) {
+      const code = (error as Error).message;
+      return json({ error: code === "CONTENT_TYPE" ? "أرسل البيانات بصيغة JSON." : code === "TOO_LARGE" ? "حجم الطلب أكبر من المسموح." : "بيانات الطلب غير صالحة." }, code === "TOO_LARGE" ? 413 : 400, cors);
+    }
+
+    const allowed = new Set(["type", "title", "description", "affectedAreas"]);
+    const types = ["suggestion", "security", "implementation", "ux", "content", "performance", "product"];
+    const areas = input.affectedAreas;
+    if (Object.keys(input).some((key) => !allowed.has(key)) ||
+        !types.includes(String(input.type)) ||
+        typeof input.title !== "string" || input.title.trim().length < 4 || input.title.length > 120 ||
+        typeof input.description !== "string" || input.description.trim().length < 10 || input.description.length > 3000 ||
+        (areas !== undefined && (!Array.isArray(areas) || areas.length > 30 ||
+          areas.some((value) => typeof value !== "string" || value.length > 80)))) {
+      return json({ error: "بيانات المهمة غير صالحة." }, 400, cors);
+    }
+
+    const taskType = String(input.type);
+    const title = (input.title as string).trim();
+    const description = (input.description as string).trim();
+    const affectedAreas = (Array.isArray(areas) ? areas : []) as string[];
+    const normalizedAreas = affectedAreas.map((value) => value.trim().toLowerCase());
+    const criticalAreas = new Set(["secrets", "deployment", "production_database"]);
+    const highAreas = new Set(["authentication", "authorization", "supabase_rls", "admin_users", "secrets", "deployment", "github_workflows", "telegram_permissions", "production_database"]);
+    const risk = normalizedAreas.some((value) => criticalAreas.has(value)) ? "critical"
+      : normalizedAreas.some((value) => highAreas.has(value)) ? "high"
+      : normalizedAreas.length ? "medium" : "low";
+    const requiresApproval = risk === "high" || risk === "critical";
+
+    const { data: created, error: createError } = await adminClient.rpc("create_ai_task_with_audit", {
+      p_suggestion_id: null,
+      p_actor_user_id: user.id,
+      p_source: "suggestion",
+      p_task_type: taskType,
+      p_title: title,
+      p_description: description,
+      p_risk: risk,
+      p_requires_approval: requiresApproval,
+      p_affected_areas: affectedAreas.slice(0, 30),
+    });
+    const task = Array.isArray(created) ? created[0] : created;
+    if (createError || !task?.id) return json({ error: "تعذر إنشاء المهمة الآن." }, 502, cors);
+
+    const text = [title, description].join("\n").slice(0, 6000);
+    const injectionPatterns = [
+      /\b(ignore|disregard)\s+(all\s+)?(previous|prior|above)\s+instructions\b/i,
+      /\b(reveal|print|expose|exfiltrate)\s+(the\s+)?(system prompt|secret|api key|token)\b/i,
+      /\b(disable|turn off)\s+(rls|row level security|authentication|authorization)\b/i,
+      /\b(bypass|override)\s+(auth|authorization|approval|rls)\b/i,
+      /تجاهل\s+(كل\s+)?(التعليمات|التوجيهات)\s+(السابقة|أعلاه)/u,
+      /اكشف\s+(عن\s+)?(المفتاح|الرمز|التعليمات\s+النظامية)/u,
+      /تجاوز\s+(الموافقة|الصلاحيات|الحماية)/u,
+    ];
+    const promptInjection = injectionPatterns.some((pattern) => pattern.test(text));
+    const secretExposure = /\b(?:sk-[A-Za-z0-9]{20,}|gh[pousr]_[A-Za-z0-9]{20,})\b/.test(text);
+    const prohibitedAreas = new Set(["secrets_exposure", "rls_disabled", "auth_bypass", "prompt_injection", "data_exfiltration"]);
+    const blocked = normalizedAreas.some((value) => prohibitedAreas.has(value)) || promptInjection || secretExposure;
+    const securityReport = {
+      agent: "security",
+      status: blocked ? "BLOCKED" : "PASS",
+      data: { blocked, reviewRequired: true, areas: normalizedAreas, flags: { promptInjection, secretExposure }, tainted: true },
+      issues: blocked ? ["Untrusted or prohibited input detected"] : [],
+    };
+    const routeAgents: Record<string, string[]> = {
+      product: ["product"],
+      suggestion: ["suggestion", "security"],
+      security: ["security"],
+      implementation: ["security", "verifier"],
+      ux: ["ux", "security"],
+      content: ["content", "security"],
+      performance: ["performance", "security"],
+    };
+    const reports = (routeAgents[taskType] || []).map((agent) => {
+      if (agent === "security") return securityReport;
+      return {
+        agent,
+        status: "PASS",
+        data: { taskId: task.id, summary: "Analysis only; no direct repository writes.", inputType: taskType },
+        issues: [],
+      };
+    });
+    const status = blocked ? "FAILED" : "ANALYZED";
+    const artifact = {
+      schemaVersion: 1,
+      taskId: task.id,
+      createdBy: user.id,
+      status,
+      source: { type: taskType, title, description, affectedAreas: affectedAreas.slice(0, 30) },
+      plan: reports.map((report) => report.data || {}),
+      reports,
+    };
+    const canonicalize = (value: unknown): unknown => {
+      if (Array.isArray(value)) return value.map(canonicalize);
+      if (value && typeof value === "object") {
+        const source = value as Record<string, unknown>;
+        return Object.fromEntries(Object.keys(source).sort().map((key) => [key, canonicalize(source[key])]));
+      }
+      return value;
+    };
+    const canonical = JSON.stringify(canonicalize(artifact));
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonical));
+    const sha256 = Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    const normalizedReports = reports.map((report) => ({
+      agent: report.agent,
+      status: report.status,
+      data: report.data,
+      warnings: report.issues.slice(0, 10).map((issue) => String(issue).slice(0, 240)),
+    }));
+    const storedArtifact = { ...artifact, reports: normalizedReports };
+    const storedCanonical = JSON.stringify(canonicalize(storedArtifact));
+    const storedDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(storedCanonical));
+    const storedSha256 = Array.from(new Uint8Array(storedDigest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    const { data: persisted, error: persistError } = await adminClient.rpc("record_ai_task_analysis", {
+      p_task_id: task.id,
+      p_actor_user_id: user.id,
+      p_status: status,
+      p_artifact: storedArtifact,
+      p_artifact_sha256: storedSha256,
+    });
+    const result = Array.isArray(persisted) ? persisted[0] : persisted;
+    if (persistError || !result?.artifact_id || result.artifact_sha256 !== storedSha256 || result.task_status !== status) {
+      return json({ error: "تعذر حفظ تحليل المهمة والتحقق من سلامته." }, 502, cors);
+    }
+    return json({
+      task: { ...task, status: result.task_status },
+      reports,
+      plan: artifact.plan,
+      artifact: { id: result.artifact_id, sha256: result.artifact_sha256 },
+      createdBy: user.id,
+    }, 201, cors);
+  }
+
+  if (taskRoute) return json({ error: "طريقة الطلب غير مدعومة." }, 405, cors, { "Allow": "POST, OPTIONS" });
+
+  if (artifactMatch && UUID_RE.test(artifactMatch[1]) && req.method === "GET") {
+    const { data: artifact, error } = await adminClient.from("ai_task_artifacts")
+      .select("id,task_id,version,schema_version,artifact,sha256,created_by,created_at")
+      .eq("task_id", artifactMatch[1]).eq("artifact_type", "maestro_analysis_plan")
+      .order("version", { ascending: false }).limit(1).maybeSingle();
+    if (error) return json({ error: "تعذر قراءة خطة المهمة." }, 502, cors);
+    if (!artifact) return json({ error: "لم يتم العثور على خطة محفوظة لهذه المهمة." }, 404, cors);
+    const canonicalize = (value: unknown): unknown => {
+      if (Array.isArray(value)) return value.map(canonicalize);
+      if (value && typeof value === "object") {
+        const source = value as Record<string, unknown>;
+        return Object.fromEntries(Object.keys(source).sort().map((key) => [key, canonicalize(source[key])]));
+      }
+      return value;
+    };
+    const canonical = JSON.stringify(canonicalize(artifact.artifact));
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonical));
+    const actual = Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    if (actual !== artifact.sha256) return json({ error: "فشل التحقق من سلامة خطة الذكاء الاصطناعي." }, 503, cors);
+    return json({ artifact }, 200, cors);
+  }
+  if (artifactMatch) return json({ error: "طريقة الطلب غير مدعومة." }, 405, cors, { "Allow": "GET, OPTIONS" });
 
   return json({ error: "المسار غير موجود." }, 404, cors);
 });
