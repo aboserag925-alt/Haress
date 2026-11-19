@@ -4,6 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { resolveStorage, buildKey } = require('./media-storage');
+const { createTelegramAssistant } = require('./telegram-assistant');
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 const MAX_LIBRARY_ITEMS = 500;
@@ -202,6 +203,10 @@ function createMediaLibrary(options) {
     }
     return result.result;
   }
+
+  const assistant = createTelegramAssistant({
+    sendMessage: function (payload) { return telegram('sendMessage', payload); }
+  });
 
   async function sendReviewMessage(item) {
     const message = 'ملف جديد للمراجعة قبل نشره في المنصة:\n' +
@@ -414,6 +419,7 @@ function createMediaLibrary(options) {
       const chatId = message.chat?.id;
       if (chatId != null && String(chatId) === String(mediaGroupId)) {
         if (await removeApprovedMedia(message)) return;
+        if (await assistant.handleMessage(message, mediaGroupId)) return;
         await receiveFile(message);
         return;
       }
