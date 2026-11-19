@@ -45,8 +45,8 @@ test('AI task context migration adds request fields without rewriting existing r
   assert.match(taskContextMigration,/add column if not exists title text/i);
   assert.match(taskContextMigration,/add column if not exists description text/i);
   assert.match(taskContextMigration,/ai_tasks_task_type_check/i);
-  assert.match(taskContextMigration,/begin;[\\s\\S]*commit;/i);
-  assert.doesNotMatch(taskContextMigration,/\\b(drop table|truncate|delete from|update public\\.ai_tasks)\\b/i);
+  assert.match(taskContextMigration,/begin;[\s\S]*commit;/i);
+  assert.doesNotMatch(taskContextMigration,/\b(drop table|truncate|delete from|update public\.ai_tasks)\b/i);
 });
 
 const previewHardening = fs.readFileSync(path.join(__dirname,'migrations','20261119000100_preview_ai_fk_index_and_rpc_hardening.sql'),'utf8');
