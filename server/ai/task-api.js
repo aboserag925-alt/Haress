@@ -20,9 +20,23 @@ function createTaskApi({env,fetch:fetchImpl=global.fetch,taskService,supervisor,
   const rows=await admin.json();return rows.length?user:null;
  }
  return async function handle(req,res,path){
-  if(path!=='/api/admin/ai/tasks')return false;
-  if(req.method!=='POST'){res.setHeader('Allow','POST');send(res,405,{error:'طريقة الطلب غير مدعومة.'});return true;}
+  const artifactMatch=typeof path==='string'?path.match(/^\\/api\\/admin\\/ai\\/tasks\\/([0-9a-f-]{36})\\/artifact$/i):null;
+  if(path!=='/api/admin/ai/tasks'&&!artifactMatch)return false;
   if(!rateLimit(req)){send(res,429,{error:'تجاوزت حد المحاولات. حاول لاحقًا.'});return true;}
+  if(artifactMatch&&req.method==='GET'){
+   try{
+    const user=await authenticate(req);
+    if(!user){send(res,403,{error:'عرض خطط الذكاء الاصطناعي متاح للمشرفين المصرح لهم فقط.'});return true;}
+    const artifact=await taskService.getAnalysisArtifact(artifactMatch[1]);
+    if(!artifact){send(res,404,{error:'لم يتم العثور على خطة محفوظة لهذه المهمة.'});return true;}
+    send(res,200,{artifact});
+   }catch(error){
+    send(res,503,{error:'تعذر قراءة الخطة أو التحقق من سلامتها.'});
+   }
+   return true;
+  }
+  if(artifactMatch){res.setHeader('Allow','GET');send(res,405,{error:'طريقة الطلب غير مدعومة.'});return true;}
+  if(req.method!=='POST'){res.setHeader('Allow','POST');send(res,405,{error:'طريقة الطلب غير مدعومة.'});return true;}
   if(!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type']||'')){send(res,415,{error:'أرسل البيانات بصيغة JSON.'});return true;}
   try{
    const user=await authenticate(req);
