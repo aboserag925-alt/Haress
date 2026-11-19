@@ -193,7 +193,7 @@ test('public question function validates Turnstile and reserves the atomic Cairo
 });
 
 test('media library API lists only approved rows and signs private object URLs',()=>{
-  assert.match(mediaFunction,/eq\\("status", "approved"\\)/);
+  assert.ok(mediaFunction.includes('.eq("status", "approved")'));
   assert.match(mediaFunction,/createSignedUrl/);
   assert.match(mediaFunction,/SUPABASE_STORAGE_BUCKET/);
   assert.match(mediaFunction,/Cache-Control/);
