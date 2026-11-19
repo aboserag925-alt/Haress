@@ -20,7 +20,7 @@ test('Supabase Auth email templates use the approved V2 palette and expected sec
     const html = fs.readFileSync(path.join(root, file), 'utf8');
     assert.ok(html.includes(variable), file + ' must contain the expected Supabase variable');
     assert.ok(html.includes(label), file + ' must contain its Arabic action label');
-    assert.ok(html.includes('border-radius:50% 50% 42% 42%') && html.includes('background:#176b49'), file + ' must render the approved green shield');
+    assert.ok(html.includes('src="https://hares.aboserag925.workers.dev/icon.svg"') && html.includes('alt="حرس الحدود"'), file + ' must use the approved shield asset');
     assert.ok(html.includes('#176b49') && html.includes('#c5a04a') && html.includes('#f5f9f5'),
       file + ' must use the approved V2 palette');
     assert.ok(html.includes('dir="rtl"'), file + ' must support RTL');
