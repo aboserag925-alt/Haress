@@ -3,64 +3,74 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const {createTaskService}=require('./task-service');
 
-test('task creation fails closed when its audit event cannot be persisted',async()=>{
+test('task creation uses one atomic RPC for the task row and provenance audit event',async()=>{
   const calls=[];
   const service=createTaskService({
     env:{SUPABASE_URL:'https://preview.example',SUPABASE_SERVICE_ROLE_KEY:'test-only'},
     fetch:async(url,init)=>{
       calls.push({url,init});
-      if(url.includes('/ai_tasks?')){
-        return {ok:true,status:201,json:async()=>[{id:'task-1',suggestion_id:null,risk:'low',affected_areas:[]}]};
-      }
-      return {ok:false,status:503,json:async()=>({})};
+      return {ok:true,status:200,json:async()=>[{id:'task-atomic',status:'PROPOSED',tainted:true,approved:false}]};
     }
   });
-  await assert.rejects(
-    service.create({source:'suggestion',actorUserId:'preview-admin'}),
-    /Audit event could not be recorded/
-  );
-  assert.equal(calls.length,2);
-  const audit=JSON.parse(calls[1].init.body);
-  assert.equal(audit.event_type,'ai.task.created');
-  assert.equal(audit.actor_user_id,'preview-admin');
-});
-
-test('task creation persists provenance actor on the audit event',async()=>{
-  let auditPayload;
-  const service=createTaskService({
-    env:{SUPABASE_URL:'https://preview.example',SUPABASE_SERVICE_ROLE_KEY:'test-only'},
-    fetch:async(url,init)=>{
-      if(url.includes('/ai_tasks?')) return {ok:true,status:201,json:async()=>[{id:'task-2',suggestion_id:null,risk:'low',affected_areas:[]}]};
-      auditPayload=JSON.parse(init.body);
-      return {ok:true,status:201,json:async()=>[]};
-    }
-  });
-  const task=await service.create({source:'suggestion',actorUserId:'preview-admin'});
-  assert.equal(task.id,'task-2');
-  assert.equal(auditPayload.actor_user_id,'preview-admin');
-});
-
-test('task creation stores the validated request context without changing taint',async()=>{
-  let taskPayload;
-  const service=createTaskService({
-    env:{SUPABASE_URL:'https://preview.example',SUPABASE_SERVICE_ROLE_KEY:'test-only'},
-    fetch:async(url,init)=>{
-      if(url.includes('/ai_tasks?')){
-        taskPayload=JSON.parse(init.body);
-        return {ok:true,status:201,json:async()=>[{id:'task-context',tainted:true}]};
-      }
-      return {ok:true,status:201,json:async()=>[]};
-    }
-  });
-  await service.create({
+  const task=await service.create({
+    source:'suggestion',
     type:'security',
     title:'مراجعة الصلاحيات',
     description:'فحص حدود صلاحيات المشرفين',
+    affectedAreas:['auth','rls'],
     actorUserId:'preview-admin'
   });
-  assert.equal(taskPayload.task_type,'security');
-  assert.equal(taskPayload.title,'مراجعة الصلاحيات');
-  assert.equal(taskPayload.description,'فحص حدود صلاحيات المشرفين');
-  assert.equal(taskPayload.tainted,true);
-  assert.equal(taskPayload.approved,false);
+  assert.equal(task.id,'task-atomic');
+  assert.equal(calls.length,1);
+  assert.match(calls[0].url,/\/rpc\/create_ai_task_with_audit$/);
+  const payload=JSON.parse(calls[0].init.body);
+  assert.equal(payload.p_actor_user_id,'preview-admin');
+  assert.equal(payload.p_source,'suggestion');
+  assert.equal(payload.p_task_type,'security');
+  assert.equal(payload.p_title,'مراجعة الصلاحيات');
+  assert.equal(payload.p_description,'فحص حدود صلاحيات المشرفين');
+  assert.deepEqual(payload.p_affected_areas,['auth','rls']);
+  assert.equal(task.tainted,true);
+  assert.equal(task.approved,false);
+});
+
+test('task creation rejects when atomic task-and-audit RPC fails',async()=>{
+  const calls=[];
+  const service=createTaskService({
+    env:{SUPABASE_URL:'https://preview.example',SUPABASE_SERVICE_ROLE_KEY:'test-only'},
+    fetch:async(url,init)=>{
+      calls.push({url,init});
+      return {ok:false,status:503,json:async()=>({})};
+    }
+  });
+  await assert.rejects(service.create({actorUserId:'preview-admin'}),/AI task storage request failed/);
+  assert.equal(calls.length,1);
+  assert.match(calls[0].url,/\/rpc\/create_ai_task_with_audit$/);
+});
+
+test('task creation keeps user-controlled provenance and trust flags out of the RPC payload',async()=>{
+  let payload;
+  const service=createTaskService({
+    env:{SUPABASE_URL:'https://preview.example',SUPABASE_SERVICE_ROLE_KEY:'test-only'},
+    fetch:async(url,init)=>{
+      payload=JSON.parse(init.body);
+      return {ok:true,status:200,json:async()=>[{id:'task-safe',tainted:true,approved:false}]};
+    }
+  });
+  const task=await service.create({
+    source:'untrusted-source',
+    type:'suggestion',
+    trustedSource:true,
+    tainted:false,
+    approved:true,
+    status:'APPROVED',
+    actorUserId:'preview-admin'
+  });
+  assert.equal(payload.p_source,'internal');
+  assert.equal(Object.hasOwn(payload,'p_trusted_source'),false);
+  assert.equal(Object.hasOwn(payload,'p_tainted'),false);
+  assert.equal(Object.hasOwn(payload,'p_approved'),false);
+  assert.equal(Object.hasOwn(payload,'p_status'),false);
+  assert.equal(task.tainted,true);
+  assert.equal(task.approved,false);
 });
