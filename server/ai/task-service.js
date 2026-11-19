@@ -13,24 +13,18 @@ function createTaskService({env,fetch:fetchImpl=global.fetch}) {
   return Object.freeze({
     async create(input={}) {
       const risk=assess({affectedAreas:Array.isArray(input.affectedAreas)?input.affectedAreas:[]});
-      const rows=await request('/rest/v1/ai_tasks?select=*',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({
-        suggestion_id:input.suggestionId||null,status:'PROPOSED',risk:risk.risk,confidence:null,
-        task_type:['suggestion','security','implementation','ux','content','performance','product'].includes(input.type)?input.type:null,
-        title:typeof input.title==='string'?input.title.slice(0,120):null,
-        description:typeof input.description==='string'?input.description.slice(0,3000):null,
-        requires_approval:risk.requiresApproval,approved:false,tainted:true,
-        source:input.source==='suggestion'?'suggestion':'internal',
-        affected_areas:Array.isArray(input.affectedAreas)?input.affectedAreas.filter(x=>typeof x==='string').slice(0,30):[]
+      const rows=await request('/rest/v1/rpc/create_ai_task_with_audit',{method:'POST',body:JSON.stringify({
+        p_suggestion_id:input.suggestionId||null,
+        p_actor_user_id:input.actorUserId||null,
+        p_source:input.source==='suggestion'?'suggestion':'internal',
+        p_task_type:['suggestion','security','implementation','ux','content','performance','product'].includes(input.type)?input.type:null,
+        p_title:typeof input.title==='string'?input.title.slice(0,120):null,
+        p_description:typeof input.description==='string'?input.description.slice(0,3000):null,
+        p_risk:risk.risk,
+        p_requires_approval:risk.requiresApproval,
+        p_affected_areas:Array.isArray(input.affectedAreas)?input.affectedAreas.filter(x=>typeof x==='string').slice(0,30):[]
       })});
       const task=rows[0];
-      // Audit is part of the task-creation security boundary: do not report success
-      // or continue into analysis when provenance could not be durably recorded.
-      await audit.record({
-        event:'ai.task.created',
-        suggestionId:task.suggestion_id,
-        actorUserId:input.actorUserId||null,
-        metadata:{task_id:task.id,risk:task.risk,affected_areas:task.affected_areas}
-      });
       return task;
     },
     async get(id) {
