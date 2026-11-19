@@ -37,3 +37,16 @@ test('PWA manifest and offline-cache shell files exist', function () {
   }
   assert.equal(fs.existsSync(path.join(appDirectory, 'apple-touch-icon.png')), false);
 });
+
+test('main app exposes and wires the complete password recovery flow', function () {
+  const runtime = fs.readFileSync(path.join(appDirectory, 'app.js'), 'utf8');
+  const authClient = fs.readFileSync(path.join(appDirectory, '..', 'src', 'auth-client.js'), 'utf8');
+  for (const id of ['resetPasswordBtn', 'passwordResetPanel', 'newAuthPassword', 'updatePasswordBtn']) {
+    assert.ok(html.includes('id="' + id + '"'), 'missing recovery UI element: ' + id);
+  }
+  assert.match(runtime, /state\.event === 'PASSWORD_RECOVERY'/);
+  assert.match(runtime, /ahlAuth\.requestPasswordReset\(email\)/);
+  assert.match(runtime, /ahlAuth\.updatePassword\(password\)/);
+  assert.match(authClient, /auth\.resetPasswordForEmail\(email,\s*\{\s*redirectTo:\s*redirectTo\s*\}\)/);
+  assert.match(authClient, /auth\.updateUser\(\{\s*password:\s*password\s*\}\)/);
+});
