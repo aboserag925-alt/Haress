@@ -151,9 +151,15 @@ SupabaseMediaStorage.prototype.get = async function (key) {
   } catch (e) { if (e.status === 404) return null; throw e; }
 };
 SupabaseMediaStorage.prototype.head = async function (key) {
-  const g = await this.get(key);
-  if (!g) return null;
-  return { contentType: g.contentType, size: g.size };
+  const u = this.supabaseUrl; const k = this.serviceRoleKey;
+  const res = await sbRequest('/object/' + this.bucket + '/' + encodeURIComponent(key).replace(/%2F/g, '/'), 'HEAD', { raw: true }, u, k);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('Supabase storage HEAD ' + res.status);
+  const size = Number(res.headers.get('content-length'));
+  return {
+    contentType: res.headers.get('content-type') || 'application/octet-stream',
+    size: Number.isSafeInteger(size) && size >= 0 ? size : null
+  };
 };
 SupabaseMediaStorage.prototype.exists = async function (key) { return !!(await this.head(key)); };
 SupabaseMediaStorage.prototype.listKeys = async function (prefix) {
