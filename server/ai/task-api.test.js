@@ -45,3 +45,19 @@ test('AI task endpoint persists failed required reviews as FAILED',async()=>{
  const res=response();await api(request({type:'security',title:'مراجعة الصلاحيات',description:'تحقق من إعدادات الصلاحيات الحالية'}),res,'/api/admin/ai/tasks');
  assert.equal(res.status,201);assert.equal(savedStatus,'FAILED');
 });
+
+test('AI analysis artifact retrieval is restricted to authenticated administrators',async()=>{
+ const artifact={id:'artifact-1',task_id:'123e4567-e89b-42d3-a456-426614174000',sha256:'d'.repeat(64),artifact:{plan:[{step:'review'}]}};
+ const api=createTaskApi({env,fetch:authFetch,taskService:{getAnalysisArtifact:async()=>artifact},supervisor:{}});
+ const req=request({});req.method='GET';
+ const res=response();
+ await api(req,res,'/api/admin/ai/tasks/123e4567-e89b-42d3-a456-426614174000/artifact');
+ assert.equal(res.status,200);
+ assert.equal(JSON.parse(res.body).artifact.id,'artifact-1');
+
+ const denied=createTaskApi({env,fetch:async()=>({ok:false}),taskService:{getAnalysisArtifact:async()=>{throw Error('must not read');}},supervisor:{}});
+ const deniedReq=request({},{authorization:'Bearer invalid'});deniedReq.method='GET';
+ const deniedRes=response();
+ await denied(deniedReq,deniedRes,'/api/admin/ai/tasks/123e4567-e89b-42d3-a456-426614174000/artifact');
+ assert.equal(deniedRes.status,403);
+});
