@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -144,7 +144,7 @@ jobs:
       name: Preview
     steps:
       - name: Check out pull request source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
@@ -204,7 +204,7 @@ jobs:
       url: https://hares.aboserag925.workers.dev
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download tested application assets
         uses: actions/download-artifact@v4
