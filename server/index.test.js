@@ -736,3 +736,79 @@ test('adds allowlisted CORS headers to library and media responses', async funct
     assert.match(file.headers.get('access-control-expose-headers'), /Content-Range/i);
   });
 });
+
+
+test('HTTP server wires admin AI task creation through authenticated TaskService and Maestro', async function () {
+  const env = {
+    ...configuredEnv,
+    SUPABASE_URL: 'https://project.example',
+    SUPABASE_ANON_KEY: 'public-key',
+    SUPABASE_SERVICE_ROLE_KEY: 'service-key'
+  };
+  const provider = mockFetch();
+  provider.fetch = async function (url, options) {
+    provider.calls.push({ url: url, options: options });
+    if (url.endsWith('/auth/v1/user')) {
+      return { ok: true, status: 200, json: async function () { return { id: 'verified-admin' }; } };
+    }
+    if (url.includes('/rest/v1/admin_users?')) {
+      return { ok: true, status: 200, json: async function () { return [{ user_id: 'verified-admin' }]; } };
+    }
+    throw new Error('Unexpected upstream request');
+  };
+  const created = [];
+  const reviews = [];
+  const taskService = {
+    create: async function (input) {
+      created.push(input);
+      return { id: '123e4567-e89b-42d3-a456-426614174000', status: 'PROPOSED', tainted: true };
+    },
+    recordReviews: async function (taskId, reports) { reviews.push({ taskId, reports }); },
+    updateStatus: async function (taskId, status) { return { id: taskId, status, tainted: true }; },
+    recordHumanApproval: async function () { throw new Error('Unexpected approval'); }
+  };
+  const supervisor = {
+    analyze: async function (input) {
+      assert.equal(input.id, '123e4567-e89b-42d3-a456-426614174000');
+      return {
+        task: { id: input.id, status: 'ANALYZED', tainted: true },
+        reports: [{ agent: 'security', status: 'PASS', data: { checked: true }, warnings: [] }],
+        plan: [{ checked: true }]
+      };
+    }
+  };
+
+  await withServer({
+    env: env,
+    fetch: provider.fetch,
+    taskService: taskService,
+    supervisor: supervisor
+  }, async function (baseUrl) {
+    const response = await fetch(baseUrl + '/api/admin/ai/tasks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: baseUrl,
+        Authorization: 'Bearer valid-admin-token'
+      },
+      body: JSON.stringify({
+        type: 'suggestion',
+        title: 'تحسين المكتبة',
+        description: 'إضافة تصنيف جديد إلى مكتبة المواد',
+        affectedAreas: ['library']
+      })
+    });
+    assert.equal(response.status, 201);
+    assert.deepEqual(created, [{
+      source: 'suggestion',
+      type: 'suggestion',
+      title: 'تحسين المكتبة',
+      description: 'إضافة تصنيف جديد إلى مكتبة المواد',
+      affectedAreas: ['library'],
+      actorUserId: 'verified-admin'
+    }]);
+    assert.equal(reviews.length, 1);
+    assert.equal(reviews[0].taskId, '123e4567-e89b-42d3-a456-426614174000');
+    assert.equal((await response.json()).task.status, 'ANALYZED');
+  });
+});
