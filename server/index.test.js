@@ -757,14 +757,13 @@ test('HTTP server wires admin AI task creation through authenticated TaskService
     throw new Error('Unexpected upstream request');
   };
   const created = [];
-  const reviews = [];
+  const persisted = [];
   const taskService = {
     create: async function (input) {
       created.push(input);
       return { id: '123e4567-e89b-42d3-a456-426614174000', status: 'PROPOSED', tainted: true };
     },
-    recordReviews: async function (taskId, reports) { reviews.push({ taskId, reports }); },
-    updateStatus: async function (taskId, status) { return { id: taskId, status, tainted: true }; },
+    recordAnalysis: async function (input) { persisted.push(input); return { task_status: input.status, artifact_id: 'artifact-123', artifact_sha256: 'c'.repeat(64) }; },
     recordHumanApproval: async function () { throw new Error('Unexpected approval'); }
   };
   const supervisor = {
@@ -807,8 +806,12 @@ test('HTTP server wires admin AI task creation through authenticated TaskService
       affectedAreas: ['library'],
       actorUserId: 'verified-admin'
     }]);
-    assert.equal(reviews.length, 1);
-    assert.equal(reviews[0].taskId, '123e4567-e89b-42d3-a456-426614174000');
-    assert.equal((await response.json()).task.status, 'ANALYZED');
+    assert.equal(persisted.length, 1);
+    assert.equal(persisted[0].taskId, '123e4567-e89b-42d3-a456-426614174000');
+    assert.equal(persisted[0].actorUserId, 'verified-admin');
+    assert.deepEqual(persisted[0].plan, [{ checked: true }]);
+    const payload = await response.json();
+    assert.equal(payload.task.status, 'ANALYZED');
+    assert.equal(payload.artifact.id, 'artifact-123');
   });
 });
