@@ -107,6 +107,7 @@ test('all Supabase Edge Functions allow only the approved Preview and Production
   ]){
     const source=fs.readFileSync(file,'utf8');
     assert.match(source,/https:\/\/hares-preview\.aboserag925\.workers\.dev/);
+    assert.match(source,/https:\/\/feat-visual-identity-v2-mainline-20261119-hares\.aboserag925\.workers\.dev/);
     assert.match(source,/https:\/\/hares\.aboserag925\.workers\.dev/);
   }
 });
