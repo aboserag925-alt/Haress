@@ -38,6 +38,17 @@ test('migration is transactional and does not destructively drop existing data',
   assert.doesNotMatch(migration,/\b(drop table|truncate|delete from)\b/i);
 });
 
+const taskContextMigration = fs.readFileSync(path.join(__dirname,'migrations','20261119000200_ai_task_request_context.sql'),'utf8');
+
+test('AI task context migration adds request fields without rewriting existing rows',()=>{
+  assert.match(taskContextMigration,/add column if not exists task_type text/i);
+  assert.match(taskContextMigration,/add column if not exists title text/i);
+  assert.match(taskContextMigration,/add column if not exists description text/i);
+  assert.match(taskContextMigration,/ai_tasks_task_type_check/i);
+  assert.match(taskContextMigration,/begin;[\\s\\S]*commit;/i);
+  assert.doesNotMatch(taskContextMigration,/\\b(drop table|truncate|delete from|update public\\.ai_tasks)\\b/i);
+});
+
 const previewHardening = fs.readFileSync(path.join(__dirname,'migrations','20261119000100_preview_ai_fk_index_and_rpc_hardening.sql'),'utf8');
 
 test('Preview follow-up hardens legacy quota RPC and removes duplicate index safely',()=>{
