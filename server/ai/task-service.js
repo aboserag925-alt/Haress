@@ -1,8 +1,6 @@
 'use strict';
 const {assess}=require('./risk-engine');
-const {createAuditLogger}=require('./audit-log');
 function createTaskService({env,fetch:fetchImpl=global.fetch}) {
-  const audit=createAuditLogger({env,fetch:fetchImpl});
   async function request(path,init={}) {
     if(!env.SUPABASE_URL||!env.SUPABASE_SERVICE_ROLE_KEY) throw new Error('AI task storage is not configured');
     const key=env.SUPABASE_SERVICE_ROLE_KEY;
