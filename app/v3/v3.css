@@ -309,6 +309,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--bronze);outline-off
 
 /* V3.1 design system — tokens and refinement layer; no component contract changes. */
 :root{
+  --v31-space-1:4px;
   --v31-text-xs:clamp(10px,.72rem,11px);--v31-text-sm:clamp(12px,.84rem,13px);
   --v31-text-md:clamp(14px,.96rem,16px);--v31-text-lg:clamp(18px,1.35rem,22px);
   --v31-text-display:clamp(48px,8vw,88px);
