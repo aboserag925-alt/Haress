@@ -8,6 +8,26 @@ const ALLOWED_ORIGINS = new Set([
 ]);
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_BODY_BYTES = 8 * 1024;
+const TASK_RATE_WINDOW_MS = 15 * 60 * 1000;
+const TASK_RATE_LIMIT = 5;
+const taskRateLimits = new Map<string, { count: number; resetAt: number }>();
+
+function allowTaskRequest(userId: string): boolean {
+  const now = Date.now();
+  if (taskRateLimits.size > 10000) {
+    for (const [key, value] of taskRateLimits.entries()) {
+      if (value.resetAt <= now) taskRateLimits.delete(key);
+    }
+  }
+  let entry = taskRateLimits.get(userId);
+  if (!entry || entry.resetAt <= now) {
+    entry = { count: 0, resetAt: now + TASK_RATE_WINDOW_MS };
+    taskRateLimits.set(userId, entry);
+  }
+  if (entry.count >= TASK_RATE_LIMIT) return false;
+  entry.count += 1;
+  return true;
+}
 
 function json(data: unknown, status = 200, headers: HeadersInit = {}, extraHeaders: HeadersInit = {}) {
   return new Response(JSON.stringify(data), {
@@ -91,6 +111,9 @@ Deno.serve(async (req: Request) => {
   const { data: adminRow, error: adminError } = await adminClient.from("admin_users")
     .select("user_id").eq("user_id", user.id).maybeSingle();
   if (adminError || !adminRow) return json({ error: "هذه العملية متاحة للمشرفين المصرح لهم فقط." }, 403, cors);
+  if ((route === "/admin/ai/tasks" || /^\/admin\/ai\/tasks\/[0-9a-f-]{36}\/artifact$/i.test(route)) && !allowTaskRequest(user.id)) {
+    return json({ error: "تجاوزت حد المحاولات. حاول لاحقًا." }, 429, cors);
+  }
 
   if (route === "/admin/suggestions" && req.method === "GET") {
     const { data, error } = await adminClient.from("suggestions").select("*")
