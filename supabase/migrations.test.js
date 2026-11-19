@@ -169,9 +169,9 @@ const mediaFunction = fs.readFileSync(path.join(__dirname,'functions','media-lib
 
 test('durable media index keeps object storage private and closes metadata to browser roles',()=>{
   for(const table of ['media_library_items','media_library_state']){
-    assert.match(mediaIndex,new RegExp('create table if not exists public\\\\.'+table+'\\\\b','i'));
-    assert.match(mediaIndex,new RegExp('alter table public\\\\.'+table+' enable row level security','i'));
-    assert.match(mediaIndex,new RegExp('revoke all on public\\\\.'+table+' from public, anon, authenticated','i'));
+    assert.ok(mediaIndex.includes('create table if not exists public.'+table));
+    assert.ok(mediaIndex.includes('alter table public.'+table+' enable row level security'));
+    assert.ok(mediaIndex.includes('revoke all on public.'+table+' from public, anon, authenticated'));
   }
   assert.match(mediaIndex,/file_unique_id text not null unique/i);
   assert.match(mediaIndex,/object_key text not null unique/i);
