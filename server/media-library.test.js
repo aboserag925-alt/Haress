@@ -472,6 +472,12 @@ test('Supabase storage: upload verifies via injected MemoryStore', async functio
     const f = await library.getApprovedFile(id);
     assert.equal(f.data.toString('utf8'), 'audio bytes');
     assert.deepEqual(await storage.listKeys(''), [keys[0]]);
+    const storedIndex = await storage.loadIndex();
+    assert.equal(storedIndex.items.length, 1);
+    assert.equal(storedIndex.items[0].status, 'approved');
+    const restarted = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
+    assert.equal((await restarted.listApproved()).length, 1);
+    assert.equal((await restarted.getApprovedFile(id)).data.toString('utf8'), 'audio bytes');
   } finally {
     await fs.rm(storageDirectory, { recursive: true, force: true });
   }
