@@ -199,6 +199,36 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
     assert.match(captured.body, /اختبار/);
   });
 
+  it('routes approved library listing to the private media-library Function', async () => {
+    let captured = null;
+    const req = makeRequest('https://preview.example/api/library', {
+      headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only' }
+    });
+    const res = await handleRequest(req, env, async (url, init) => {
+      captured = { url: String(url), method: init.method, headers: Object.fromEntries(init.headers.entries()) };
+      return new Response(JSON.stringify({ items: [] }), { status: 200 });
+    });
+    assert.equal(res.status, 200);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/media-library/library');
+    assert.equal(captured.method, 'GET');
+    assert.equal(captured.headers.apikey, 'sb_publishable_test_only');
+  });
+
+  it('routes approved library file reads through the signed-URL Function', async () => {
+    let captured = null;
+    const id = '123e4567-e89b-42d3-a456-426614174000';
+    const req = makeRequest('https://preview.example/api/library/files/' + id, {
+      headers: { origin: 'https://preview.example', apikey: 'sb_publishable_test_only', range: 'bytes=0-10' }
+    });
+    const res = await handleRequest(req, env, async (url, init) => {
+      captured = { url: String(url), headers: Object.fromEntries(init.headers.entries()) };
+      return new Response(null, { status: 302, headers: { location: 'https://storage.example/signed' } });
+    });
+    assert.equal(res.status, 302);
+    assert.equal(captured.url, 'https://bevyztwoijjzfngutnys.supabase.co/functions/v1/media-library/files/' + id);
+    assert.equal(captured.headers.range, 'bytes=0-10');
+  });
+
   it('routes public question submissions to the fail-closed submit-question Function', async () => {
     let captured = null;
     const fetchImpl = async (url, init) => {
