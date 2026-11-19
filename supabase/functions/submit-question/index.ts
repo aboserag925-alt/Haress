@@ -38,7 +38,7 @@ function secret(name: string): string {
 }
 
 async function readInput(req: Request) {
-  if (!/^application\\/json(?:\\s*;|$)/i.test(req.headers.get("content-type") || "")) {
+  if (!/^application\/json(?:\s*;|$)/i.test(req.headers.get("content-type") || "")) {
     throw new Error("CONTENT_TYPE");
   }
   const bytes = new Uint8Array(await req.arrayBuffer());
@@ -104,7 +104,7 @@ async function sendToTelegram(question: string, draft: string, botToken: string,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: chatId,
-      text: "سؤال للمراجعة من التطبيق:\\n\\n" + question +
+      text: "سؤال للمراجعة من التطبيق:\n\n" + question +
         "\\n\\nمسودة Gemini غير معتمدة:\\n" + draft,
     }),
     signal: AbortSignal.timeout(15000),
