@@ -4,9 +4,9 @@
  * Haress Cloudflare Worker.
  *
  * المسارات:
- * - مسارات المحاضرات وإدارة الاقتراحات وموافقات الذكاء الاصطناعي المحددة: تُوجّه
- *   إلى Supabase Edge Functions في بيئتي Preview وProduction مع تمرير مفتاح publishable القادم من العميل فقط.
- *   يُفرض نطاق مشروع Supabase المعتمد لكل بيئة.
+ * - مسارات المحاضرات وإدارة الاقتراحات ومهام/موافقات الذكاء الاصطناعي المحددة: تُوجّه
+ *   إلى Supabase Edge Functions في Preview مع تمرير مفتاح publishable القادم من العميل فقط.
+ *   يُفرض نطاق مشروع الاختبار المعتمد؛ يظل Production fail-closed حتى تجهيز قاعدة الإنتاج ووظائفها.
  * - بقية /api/*: تُوجّه إلى API_BACKEND_URL؛ وعند غيابه تُرفض بأمان (503).
  * - المسارات الأخرى: تُخدم من الأصول الثابتة (دليل ./app) عبر ربط ASSETS.
  *
@@ -90,7 +90,7 @@ function supabaseFunctionRoute(pathname) {
 }
 
 async function proxyToSupabaseFunction(request, env, fetchImpl) {
-  if (!env || !['preview', 'production'].includes(env.DEPLOYMENT_ENV)) return null;
+  if (!env || env.DEPLOYMENT_ENV !== 'preview') return null;
   const requestUrl = new URL(request.url);
   const functionRoute = supabaseFunctionRoute(requestUrl.pathname);
   if (!functionRoute) return null;
