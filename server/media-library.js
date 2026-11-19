@@ -288,7 +288,8 @@ function createMediaLibrary(options) {
     try {
       await sendReviewMessage(item);
     } catch (error) {
-      items = items.filter(function (candidate) { return candidate.id !== id; });
+      item.status = 'removed';
+      item.removedAt = new Date().toISOString();
       await save();
       await deleteStoredFile(item);
       throw error;
