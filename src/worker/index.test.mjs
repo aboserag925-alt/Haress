@@ -267,18 +267,22 @@ describe('Haress Worker: Supabase Edge Function preview routing', () => {
     assert.equal(res.status, 503);
   });
 
-  it('keeps production Supabase routing fail-closed until production Functions and migrations are deployed', async () => {
+  it('routes production requests only to the production Supabase project', async () => {
     const productionEnv = {
       DEPLOYMENT_ENV: 'production',
       SUPABASE_URL: 'https://uzepglfimareggswjzlf.supabase.co'
     };
+    let captured = null;
     const req = makeRequest('https://hares.aboserag925.workers.dev/api/lectures', {
-      headers: { apikey: 'sb_publishable_test_only' }
+      headers: { apikey: 'sb_publishable_production_only' }
     });
-    const res = await handleRequest(req, productionEnv, async () => {
-      throw new Error('production Supabase must not be contacted before its dependencies are deployed');
+    const res = await handleRequest(req, productionEnv, async (url, init) => {
+      captured = { url: String(url), headers: Object.fromEntries(init.headers.entries()) };
+      return new Response(JSON.stringify({ items: [] }), { status: 200 });
     });
-    assert.equal(res.status, 503);
+    assert.equal(res.status, 200);
+    assert.equal(captured.url, 'https://uzepglfimareggswjzlf.supabase.co/functions/v1/lectures-admin/lectures');
+    assert.equal(captured.headers.apikey, 'sb_publishable_production_only');
   });
 
   it('rejects a preview Supabase URL in production without making a network request', async () => {
