@@ -173,3 +173,53 @@ invent or renumber migration versions.
 Only the documentation and recovered historical SQL source were changed on
 `fix/security-invoker-member-views`. No production SQL, migration, RLS, Auth,
 Edge Function, Cloudflare, deployment, or `main`-branch changes were made.
+
+
+## Follow-up: full migration-ledger restoration verification
+
+The nine missing 2026-11-19 migration sources were recovered from the production
+`supabase_migrations.schema_migrations.statements` records and written to this
+branch. The six earlier missing migration sources were also restored directly
+from those same ledger statement bodies, rather than copying recovery-branch
+files whose headers/formatting differed from the ledger.
+
+The attendance/rewards migration file was corrected to match its exact
+production ledger statement body; an earlier manually reconstructed draft was
+not retained.
+
+A fresh comparison was then performed for all 16 production ledger entries:
+**16 of 16 files match their stored migration statement bodies byte-for-byte**
+after joining the one statement in each record. The 16 canonical files are now
+present on `fix/security-invoker-member-views`.
+
+### Remaining four legacy files on the original main tree
+
+The four original files that were present on `main` are additional to the
+16 canonical production ledger files. They do not correspond to distinct
+version entries in the current production ledger:
+
+| Existing file | Comparison with canonical ledger |
+|---|---|
+| `002_question_daily_cap.sql` | Byte-identical to `20261119060706_question_daily_cap_sync.sql` |
+| `20261118203913_set_updated_at_search_path.sql` | Byte-identical to `20261119060209_set_updated_at_search_path_sync.sql` |
+| `20261118204702_suggestion_daily_cap.sql` | Byte-identical to `20261119060211_suggestion_daily_cap_sync.sql` |
+| `202611140001_suggestions_ai_storage.sql` | Differs from `20261119060202_suggestions_ai_storage_sync.sql`; its PL/pgSQL dollar-quote opener is `do $` rather than `do $$`, making the old file syntactically suspect/invalid. |
+
+These legacy files have **not** been deleted, renamed, or edited. Their presence
+must be reconciled before the restored branch can be considered safe to merge
+or used as a fresh database bootstrap: duplicate versioned migrations may be
+replayed under different version IDs, and the older suggestions file contains
+the malformed dollar-quote delimiter. Preserve them as evidence until their
+deployment history is confirmed; do not silently discard or re-version them.
+
+### Current migration recovery status
+
+- Production ledger: 16 entries.
+- Canonical migration files matching ledger exactly on this branch: 16/16.
+- Additional legacy files inherited from main: 4, including 3 byte-identical
+  duplicates and 1 malformed/near-duplicate source.
+- Supabase production was read only; no migration was applied.
+- No automated PostgreSQL migration test or application regression test has
+  been run yet.
+- The security hardening migration using `security_invoker` remains a separate
+  proposed change and has not been created/applied pending isolated testing.
