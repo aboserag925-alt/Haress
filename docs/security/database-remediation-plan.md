@@ -58,3 +58,26 @@ Preserve the existing Arabic/RTL app, authentication, admin authorization, RLS, 
 - [ ] Run tests and isolated-branch verification.
 - [ ] Open a draft PR for review.
 - [ ] Production SQL / merge / deployment: requires separate explicit approval.
+
+
+## Repository tracing update (2026-11-20)
+
+### AI lifecycle wiring: concrete source inspection
+
+- `server/index.js` constructs `createTaskService()` and passes it to `createApprovalApi()`. In the inspected server routing, the approval API is mounted, but there is no corresponding route that creates persisted AI tasks or records analysis.
+- `server/ai/supervisor.js` is referenced by `server/ai/ai.test.js`; no production import from `server/index.js` was found in the repository search.
+- `createTaskService` is referenced by `server/index.js` and its unit tests. The server's current use is through the approval API's `recordHumanApproval` operation.
+- The service writes new `ai_tasks` rows directly through PostgREST and records the audit event separately on a best-effort basis. It does not call an atomic create-with-audit RPC.
+- Repository code search did not locate a caller of `record_ai_task_analysis`. This is a search result, not proof that no dynamic or external caller exists.
+- `trustedSource: true` is accepted by the task service and in-memory task factory. The supervisor explicitly forces `trustedSource: false` for analysis input. Before any wiring is added, trusted-source creation must be confined to a private server-controlled path; it must never be set from request JSON or user metadata.
+- The SQL definition of `record_ai_approval` checks the supplied actor ID against `admin_users`, rejects tainted tasks, checks task state, and records approval plus audit event transactionally. Its EXECUTE privilege is restricted to `service_role`. Keep these protections.
+
+### Member view references
+
+Repository code search for `member_discipline`, `member_progress`, `attendance`, and `reward_points` did not return application references. This does **not** establish that the views are unused: the search index may omit files, and there may be dynamically constructed queries or external consumers. Do not change the view contract until the full repository tree and runtime dependencies are checked.
+
+### Next implementation gate
+
+- Treat the view consumer inventory as incomplete.
+- Do not draft the production-facing view migration until consumers are identified or the views are confirmed unused through a complete source inventory and application smoke tests.
+- The AI workflow gap is a separate code change from the default-privilege/view migration. Keep the PR focused; do not combine unrelated workflow refactoring with a database security patch.
