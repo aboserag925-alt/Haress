@@ -103,6 +103,40 @@ present in that directory. Reconcile and restore the missing migration source
 history before adding a new numbered migration; do not invent or renumber
 migration files to conceal this drift.
 
+### Additional read-only recovery-branch investigation
+
+Inspected `recovery/restore-production-migrations-2026-11-19` and compared it
+with `main`. This branch is six commits ahead and two behind the inspected
+`main` baseline. Its migration directory contains ten SQL files, including
+six recovered migration sources from production statement logs:
+
+- `20261109204441_create_haress_core_tables.sql`
+- `20261118172423_haress_ai_workflow_storage_hardening.sql`
+- `20261118172446_haress_ai_workflow_fk_indexes.sql`
+- `20261118172518_haress_ai_approval_state_alignment.sql`
+- `20261118172523_haress_ai_approval_state_preservation.sql`
+- `20261118232154_create_agents_hub_schema.sql`
+
+The recovered core migration defines `user_data`, `admin_users`, and
+`lectures`; it does not define `lecture_attendance`, `reward_points`,
+`member_discipline`, or `member_progress`. The recovered AI migrations
+cover AI workflow tables/functions and do not supply the missing
+attendance/rewards migration. The branch's `supabase/schema.sql` and
+`supabase/migrations.test.js` also contain no references to those four
+attendance/rewards objects.
+
+The `agents_hub` migration only creates a separate `agents_hub` schema and
+grants schema usage to `service_role`. Its presence in the recovery branch
+is not evidence that the production project should be treated as an Agents Hub
+database or that this schema should be changed.
+
+Therefore, the recovery branch is useful evidence for part of the production
+migration history, but it does **not** resolve the attendance/rewards source
+gap. Do not merge that branch wholesale as part of this security fix. The
+remaining production ledger entries and the original
+`20261120001719_lecture_attendance_and_rewards` source still need exact
+reconciliation against the production migration ledger / statement logs.
+
 ## Safety boundary
 
 No production SQL, migration, RLS, Auth, Edge Function, GitHub main-branch,
