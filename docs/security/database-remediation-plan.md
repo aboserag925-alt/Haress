@@ -81,3 +81,40 @@ Repository code search for `member_discipline`, `member_progress`, `attendance`,
 - Treat the view consumer inventory as incomplete.
 - Do not draft the production-facing view migration until consumers are identified or the views are confirmed unused through a complete source inventory and application smoke tests.
 - The AI workflow gap is a separate code change from the default-privilege/view migration. Keep the PR focused; do not combine unrelated workflow refactoring with a database security patch.
+
+
+## Cloudflare + Supabase integration review (2026-11-20; read-only)
+
+### Supabase production project identity and current state
+
+- The repository's `wrangler.jsonc` production `SUPABASE_URL` points to `https://uzepglfimareggswjzlf.supabase.co`; this matches the active Supabase project named `doc` (PostgreSQL 17.11, region `eu-west-3`). This confirms `doc` is the database project currently wired to Haress; do not assume the separate `agents_hub` schema is the product database.
+- The production project reports `ACTIVE_HEALTHY`.
+- The database reports the same 16 applied migrations previously inventoried.
+- Three Edge Functions are active: `lectures-admin` v2 (`verify_jwt=false`), `admin-operations` v4 (`verify_jwt=true`), and `submit-suggestion` v2 (`verify_jwt=false`). The two JWT-disabled functions require continued source-level internal authentication/validation checks; their setting alone is not proof of a vulnerability.
+- Current Security Advisor still reports the two owner-rights member views, nine RLS-enabled tables without policies, and disabled leaked-password protection. The nine tables were previously checked for direct browser-role SQL privileges and were found not directly accessible to `anon` or `authenticated`; do not add permissive policies just to silence the INFO warning.
+- A fresh read-only catalog query confirmed `postgres` default ACLs in `public`: sequences (`S`) grant `rwU` to anon/authenticated/service_role; functions (`f`) grant EXECUTE (`X`) to those roles; relations (`r`) grant `arwdDxtm` to those roles. Both member views still have broad ACLs including anon/authenticated and have no `security_invoker=true` reloption.
+- The view definitions aggregate attendance, discipline percentages, points, rank names/codes and badge codes grouped by `user_id`. Treat this as member-related data and maintain a deny-by-default posture.
+
+### Cloudflare Worker wiring and deployment controls
+
+- Production `wrangler.jsonc` identifies Worker `hares`, assets directory `./app`, and the production Supabase URL above. It contains `previews: {}`; the preview config is a separate Worker `hares-preview` targeting the separate test Supabase project `bevyztwoijjzfngutnys`.
+- The Worker source routes static assets through Cloudflare Assets. In Preview only, selected API paths are proxied to Supabase Edge Functions. In production, those paths are not sent through that Preview-only Supabase function proxy; other `/api/*` paths require `API_BACKEND_URL`, otherwise they fail closed with HTTP 503.
+- The production Wrangler config does not declare `API_BACKEND_URL`. It may be configured externally in Cloudflare Dashboard, but that could not be verified with the connected tools in this session. The Cloudflare account/Worker settings and live production HTTP status also could not be read directly because no Cloudflare connector is available here.
+- The repository's `.github/workflows/cloudflare-worker.yml` runs build, `wrangler deploy --dry-run`, and tests on PR/push; its actual production deploy job runs only on manual `workflow_dispatch`, only from `main`, and only when `confirm_production == true`. It requires Cloudflare secrets in GitHub Actions. This is a useful production gate; do not bypass it.
+- The workflow's PR build intentionally points at the separate test Supabase project, while main validates the production project URL. Preserve that isolation.
+- `docs/BACKEND_PRODUCTION.md` states that Cloudflare Workers static assets do not run the Node `server/index.js` API server; the Node server requires a separate Node-capable HTTPS host and persistent storage if media storage is used. This is a major readiness dependency, not a database migration issue.
+
+### External deployment status and limits
+
+- The Vercel preview for the documentation-only branch commit was BLOCKED because the Vercel project was paused. This is not a build failure and does not establish Cloudflare deployment health.
+- No Cloudflare production deployment was triggered, no Worker vars/secrets were changed, and no Supabase production schema, data, RLS, grants, Edge Functions, or Auth settings were modified.
+- The Supabase development branch named `main` remains `MIGRATIONS_FAILED` while its preview project status is `ACTIVE_HEALTHY`. The original migration failure remains unknown; do not reset/rebase/retry without the original error.
+
+### Work remaining before implementation
+
+1. Verify Cloudflare Dashboard production Worker variables/bindings, especially `API_BACKEND_URL`, and inspect latest deployment plus live HTTP/API smoke results. This needs a Cloudflare account connection or owner-provided dashboard evidence.
+2. Decide whether production API traffic should be routed to the existing Node host or to specific Supabase Edge Functions. Do not make the Worker route production traffic to preview/test functions.
+3. Verify the Node API host, HTTPS health endpoint, persistent storage, CORS allowlist, and frontend `AHL_API_BASE_URL` integration.
+4. Complete view-consumer inventory and design the isolated database branch test before preparing executable SQL.
+5. Obtain the original Supabase preview-branch migration failure details.
+
