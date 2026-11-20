@@ -1,8 +1,3 @@
--- Recovered from the production PostgreSQL statement log for migration
--- 20261120001719 (2026-11-20 00:17:19.873 UTC, SQLSTATE 00000).
--- Source: Supabase project doc, supabase_migrations.schema_migrations.statements
--- and matching postgres_logs statement. This is historical source recovery only.
--- Do not reapply to production.
 
 alter table public.lectures
   add column if not exists ends_at timestamptz,
