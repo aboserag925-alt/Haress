@@ -223,3 +223,30 @@ deployment history is confirmed; do not silently discard or re-version them.
   been run yet.
 - The security hardening migration using `security_invoker` remains a separate
   proposed change and has not been created/applied pending isolated testing.
+
+
+## Read-only assessment of the separate `haress-test` Supabase project
+
+The connected Supabase organization also contains an active project named
+`haress-test` (`bevyztwoijjzfngutnys`). It is separate from production
+project `doc` and has 17 migrations; its attendance/rewards migration is
+version `20261120001656`, not production's `20261120001719`.
+
+Read-only catalog inspection found:
+
+- Both `member_discipline` and `member_progress` still have no
+  `security_invoker` reloption and allow SELECT to `anon` and
+  `authenticated`.
+- `lecture_attendance` and `reward_points` allow SELECT privileges to
+  `anon` and `authenticated`, with RLS policies present.
+- Unlike production `doc`, test project `admin_users` grants SELECT to
+  `authenticated` and has a self-row policy named
+  `Users can read their own admin membership`.
+- The test project's view definitions and policy names are not identical to
+  production's migration source.
+
+This confirms that `haress-test` is not an exact clone of production and
+cannot be treated as a drop-in migration rehearsal without further
+reconciliation. No SQL changes or test data writes were made to it. It may be
+a candidate for a future isolated test only after confirming it contains no
+production data and obtaining approval for the test changes.
