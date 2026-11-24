@@ -100,6 +100,11 @@ function createMediaLibrary(options) {
   const indexPath = path.join(storageDirectory, 'media-index.json');
   const botToken = env.TELEGRAM_BOT_TOKEN;
   const mediaGroupId = env.TELEGRAM_MEDIA_GROUP_ID || env.TELEGRAM_CHAT_ID;
+  // Optional router for bot commands. It runs inside this single getUpdates loop; no second poller exists.
+  const updateHandler = typeof options.updateHandler === 'function' ? options.updateHandler : null;
+  const mediaEnabled = env.TELEGRAM_MEDIA_ENABLED === 'true';
+  const botOnly = Boolean(updateHandler) && env.TELEGRAM_BOT_ENABLED === 'true' && !mediaEnabled;
+  const loopEnabled = mediaEnabled || (updateHandler && env.TELEGRAM_BOT_ENABLED === 'true');
   let items = [];
   let offset = null;
   let initialized = false;
@@ -359,6 +364,8 @@ function createMediaLibrary(options) {
 
   async function processUpdate(update) {
     await initialize();
+    if (updateHandler && await updateHandler(update)) return;
+    if (botOnly) return;
     const message = update.message;
     if (message && String(message.chat.id) === String(mediaGroupId)) {
       if (await removeApprovedMedia(message)) return;
@@ -390,8 +397,8 @@ function createMediaLibrary(options) {
   }
 
   async function start() {
-    if (env.TELEGRAM_MEDIA_ENABLED !== 'true') return;
-    if (!botToken || !mediaGroupId) {
+    if (!loopEnabled) return;
+    if (!botToken || (mediaEnabled && !mediaGroupId)) {
       throw new Error('Telegram media requires a bot token and a group ID.');
     }
     await initialize();

@@ -5,6 +5,7 @@ const http = require('node:http');
 const path = require('node:path');
 const { createMediaLibrary } = require('./media-library');
 const { createAdminApi } = require('./lecture-api');
+const { createBot } = require('./bot/bot');
 
 const PUBLIC_ROOT = path.resolve(__dirname, '..');
 const MAX_BODY_BYTES = 16 * 1024;
@@ -270,6 +271,17 @@ async function sendToTelegram(question, draft, env, fetchImpl) {
   }
 }
 
+function createQuestionSubmitter(env, fetchImpl) {
+  return async function submitQuestion(question) {
+    if (!env.GEMINI_API_KEY || !env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
+      throw new Error('Question intake is not configured');
+    }
+    const draft = await createQuestionDraft(question, env, fetchImpl);
+    await sendToTelegram(question, draft, env, fetchImpl);
+    return { draft: draft };
+  };
+}
+
 function createServer(options) {
   options = options || {};
   const env = options.env || process.env;
@@ -469,10 +481,22 @@ if (require.main === module) {
     throw new Error('PORT must be a valid TCP port.');
   }
   const host = process.env.HOST || '127.0.0.1';
-  const mediaLibrary = createMediaLibrary({ env: process.env });
+  let bot = null;
+  const mediaLibrary = createMediaLibrary({
+    env: process.env,
+    updateHandler: function (update) { return bot ? bot.handleUpdate(update) : false; }
+  });
+  if (process.env.TELEGRAM_BOT_ENABLED === 'true' && process.env.TELEGRAM_BOT_TOKEN) {
+    bot = createBot({
+      env: process.env,
+      mediaLibrary: mediaLibrary,
+      submitQuestion: createQuestionSubmitter(process.env, global.fetch)
+    });
+  }
   const server = createServer({ mediaLibrary: mediaLibrary });
   server.listen(port, host, function () {
     console.log('Ahl Athar server listening on port ' + port);
+    if (bot) bot.start().catch(function () { console.error('Telegram bot setup failed.'); });
     mediaLibrary.start().catch(function () {
       console.error('Telegram media intake could not be started.');
       server.close(function () {});
@@ -480,4 +504,8 @@ if (require.main === module) {
   });
 }
 
-module.exports = { createServer: createServer, loadEnvFile: loadEnvFile };
+module.exports = {
+  createQuestionSubmitter: createQuestionSubmitter,
+  createServer: createServer,
+  loadEnvFile: loadEnvFile
+};
