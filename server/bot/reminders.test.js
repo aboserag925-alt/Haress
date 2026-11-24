@@ -6,7 +6,7 @@ const { createBot } = require('./bot');
 const { runReminderCycle } = require('./features/reminders');
 const { createFakeNetwork, createFakeSupabase, baseEnv, textMessage } = require('./test-helpers');
 
-const KEYS = { sent_reminders: ['lecture_id', 'kind', 'starts_at'], subscribers: ['telegram_user_id'] };
+const KEYS = { sent_reminders: ['lecture_id', 'kind', 'starts_at', 'target'], subscribers: ['telegram_user_id'] };
 
 function setup(lectures, options) {
   options = options || {};
@@ -62,7 +62,7 @@ test('sends one reminder an hour before and one at start with the stream link', 
 test('a restart does not duplicate reminders already recorded', async function () {
   const env = setup([lecture], {
     now: T0,
-    sent: [{ lecture_id: 'L1', kind: 'hour', starts_at: '2026-12-01T17:00:00Z', state: 'sent' }]
+    sent: [{ lecture_id: 'L1', kind: 'hour', starts_at: '2026-12-01T17:00:00Z', target: 'group', state: 'sent' }]
   });
   const result = await runReminderCycle(env.bot.ctx);
   assert.equal(result.sent, 0);
@@ -83,7 +83,7 @@ test('drafts, archived lectures and lectures outside the window are ignored', as
 test('a rescheduled lecture is reminded again for the new time and flagged as updated', async function () {
   const env = setup([Object.assign({}, lecture, { starts_at: '2026-12-01T17:30:00Z' })], {
     now: T0 + 40 * 60 * 1000,
-    sent: [{ lecture_id: 'L1', kind: 'hour', starts_at: '2026-12-01T17:00:00Z' }]
+    sent: [{ lecture_id: 'L1', kind: 'hour', starts_at: '2026-12-01T17:00:00Z', target: 'group', state: 'sent' }]
   });
   await runReminderCycle(env.bot.ctx);
   const messages = groupMessages(env.network);
@@ -151,6 +151,53 @@ test('subscribers receive private reminders and a blocked subscriber is flagged'
   assert.deepEqual(targets, [baseEnv.TELEGRAM_CHAT_ID, 501, 601]);
   assert.equal(env.db.tables.subscribers.find(function (s) { return s.telegram_user_id === 6; }).blocked, true);
   assert.equal(env.db.tables.subscribers.find(function (s) { return s.telegram_user_id === 5; }).blocked, false);
+  // A forbidden recipient is closed out, not retried forever.
+  await runReminderCycle(env.bot.ctx);
+  assert.equal(groupMessages(env.network).length, 3);
+});
+
+test('per-recipient tracking: a crash after the group message still delivers each subscriber exactly once', async function () {
+  const env = setup([lecture], {
+    now: T0,
+    subscribers: [
+      { telegram_user_id: 5, chat_id: 501, blocked: false },
+      { telegram_user_id: 6, chat_id: 601, blocked: false }
+    ],
+    // The group message was sent and recorded before the process died.
+    sent: [{ lecture_id: 'L1', kind: 'hour', starts_at: '2026-12-01T17:00:00Z', target: 'group', state: 'sent' }]
+  });
+  await runReminderCycle(env.bot.ctx);
+  assert.deepEqual(groupMessages(env.network).map(function (c) { return c.payload.chat_id; }), [501, 601]);
+  await runReminderCycle(env.bot.ctx);
+  assert.equal(groupMessages(env.network).length, 2);
+});
+
+test('a subscriber whose DM outcome is unknown is retried alone after the timeout', async function () {
+  let failFor = 601;
+  const env = setup([lecture], {
+    now: T0,
+    subscribers: [
+      { telegram_user_id: 5, chat_id: 501, blocked: false },
+      { telegram_user_id: 6, chat_id: 601, blocked: false }
+    ],
+    telegram: {
+      sendMessage: function (payload) {
+        if (payload.chat_id === failFor) throw new Error('socket hang up');
+        return null;
+      }
+    }
+  });
+  await runReminderCycle(env.bot.ctx);
+  failFor = null;
+  env.setNow(T0 + 30 * 1000);
+  await runReminderCycle(env.bot.ctx);
+  assert.deepEqual(groupMessages(env.network).map(function (c) { return c.payload.chat_id; }),
+    [baseEnv.TELEGRAM_CHAT_ID, 501, 601]);
+  env.setNow(T0 + 3 * 60 * 1000);
+  await runReminderCycle(env.bot.ctx);
+  assert.deepEqual(groupMessages(env.network).map(function (c) { return c.payload.chat_id; }),
+    [baseEnv.TELEGRAM_CHAT_ID, 501, 601, 601]);
+  assert.equal(env.db.tables.sent_reminders.every(function (r) { return r.state === 'sent'; }), true);
 });
 
 test('reminders use the service role only through the server store', async function () {
@@ -170,7 +217,7 @@ test('crash recovery: an abandoned claim is not retried early but is retried aft
   const claimedAt = new Date(T0 - 10 * 1000).toISOString();
   const env = setup([lecture], {
     now: T0,
-    sent: [{ lecture_id: 'L1', kind: 'hour', starts_at: '2026-12-01T17:00:00Z',
+    sent: [{ lecture_id: 'L1', kind: 'hour', starts_at: '2026-12-01T17:00:00Z', target: 'group',
       state: 'claiming', claimed_at: claimedAt }]
   });
   await runReminderCycle(env.bot.ctx);

@@ -7,11 +7,14 @@ create table if not exists public.sent_reminders (
   -- The lecture start time the reminder was sent for. A changed start time produces a new row,
   -- so a rescheduled lecture is reminded again for the new time.
   starts_at timestamptz not null,
+  -- 'group' for the moderators/members chat, or the Telegram user id of a private subscriber.
+  -- Every recipient has its own row, so a crash never skips or repeats other recipients.
+  target text not null default 'group',
   -- 'claiming' while a send is in flight or if the server stopped mid-send; 'sent' once Telegram accepted it.
   state text not null default 'claiming' check (state in ('claiming', 'sent')),
   claimed_at timestamptz not null default now(),
   sent_at timestamptz,
-  primary key (lecture_id, kind, starts_at)
+  primary key (lecture_id, kind, starts_at, target)
 );
 
 create table if not exists public.subscribers (
