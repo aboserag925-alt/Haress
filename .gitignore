@@ -1,9 +1,6 @@
-<<<<<<< HEAD
 .andromity/
-=======
 node_modules/
 storage/
 .env
 .env.*
 !.env.example
->>>>>>> origin/fix/istirahat-ahl-athar
