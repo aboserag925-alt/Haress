@@ -139,7 +139,7 @@ describe('Haress Worker: توجيه /api/*', () => {
   });
 
   it('لا يوجّه المسارات غير /api/* (يعود 404 عند غياب الأصول)', async () => {
-    const req = makeRequest('https://worker.example/index.html');
+    const req = makeRequest('https://worker.example/other.html');
     const res = await handleRequest(req, env, globalThis.fetch);
     assert.equal(res.status, 404);
   });
