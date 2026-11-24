@@ -252,6 +252,17 @@ async function publicDiscovery(request, env) {
 export async function handleRequest(request, env, fetchImpl = globalThis.fetch) {
   const discovery = await publicDiscovery(request, env);
   if (discovery) return discovery;
+  // Keep V3 assets and service-worker scope isolated, with a reversible entry redirect.
+  const entryUrl = new URL(request.url);
+  if (['GET', 'HEAD'].includes(request.method) &&
+      ['/', '/index.html'].includes(entryUrl.pathname)) {
+    entryUrl.pathname = '/v3/';
+    return new Response(null, { status: 307, headers: {
+      ...SECURITY_HEADERS, Location: entryUrl.href, 'Cache-Control': 'no-store',
+      Vary: 'Accept, Authorization, Cookie',
+      Link: '</.well-known/api-catalog>; rel="api-catalog", </docs/api.md>; rel="service-doc"; type="text/markdown", </index.md>; rel="alternate"; type="text/markdown"'
+    }});
+  }
   const supabaseProxied = await proxyToSupabaseFunction(request, env, fetchImpl);
   if (supabaseProxied) return supabaseProxied;
 
