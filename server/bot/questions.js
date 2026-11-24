@@ -235,7 +235,7 @@ function createQuestionService(options) {
     const links = await store.admin('question_messages?select=question_id,kind&chat_id=eq.' +
       encodeURIComponent(message.chat.id) + '&message_id=eq.' + encodeURIComponent(replied.message_id));
     if (!links || !links.length) return false;
-    if (!await ctx.isAdmin(message.from.id)) return false;
+    if (!await ctx.isAdmin(message.from.id, { fresh: true })) return false;
 
     const answer = message.text.trim();
     if (answer.length > MAX_ANSWER) {

@@ -169,7 +169,7 @@ function register(bot) {
     if (!enabled(ctx.env, 'BOT_LINK_FILTER_ENABLED')) return false;
     if (!message.from || message.from.is_bot || message.sender_chat) return false;
     if (!containsLink(ctx, message)) return false;
-    if (await ctx.isAdmin(message.from.id)) return false;
+    if (await ctx.isAdmin(message.from.id, { fresh: true })) return false;
     await safeModerate(function () {
       return ctx.client.call('deleteMessage', { chat_id: message.chat.id, message_id: message.message_id });
     });
@@ -188,7 +188,7 @@ function register(bot) {
       await c.reply(message, 'استخدم الأمر كردّ (Reply) على رسالة العضو.');
       return null;
     }
-    if (await c.isAdmin(replied.from.id)) {
+    if (await c.isAdmin(replied.from.id, { fresh: true })) {
       await c.reply(message, 'لا يمكن تطبيق هذا الأمر على مشرف.');
       return null;
     }

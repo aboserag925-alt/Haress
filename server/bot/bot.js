@@ -132,7 +132,7 @@ function createBot(options) {
       }
       return true;
     }
-    if (definition.adminOnly && !await ctx.isAdmin(sender.id)) {
+    if (definition.adminOnly && !await ctx.isAdmin(sender.id, { fresh: true })) {
       await client.sendMessage(message.chat.id, 'هذا الأمر لمشرفي المجموعة فقط.');
       return true;
     }
