@@ -79,7 +79,7 @@ function createFakeSupabase(seed, keys) {
     if (method === 'GET') return json(200, filterRows(tables[table], query));
     if (method === 'POST') {
       const prefer = (init.headers && init.headers.Prefer) || '';
-      const row = Object.assign({}, body);
+      const row = Object.assign({}, keys[table + ':defaults'] || {}, body);
       const key = keys[table] || [];
       const existing = key.length
         ? tables[table].find(function (r) { return key.every(function (k) { return String(r[k]) === String(row[k]); }); })
@@ -89,7 +89,7 @@ function createFakeSupabase(seed, keys) {
         return json(prefer.includes('return=representation') ? 200 : 201,
           prefer.includes('ignore-duplicates') ? [] : [existing]);
       }
-      if (!row.id && keys[table + ':autoid']) row.id = 'row-' + (tables[table].length + 1);
+      if (!row.id && keys[table + ':autoid']) row.id = '00000000-0000-4000-8000-' + String(tables[table].length + 1).padStart(12, '0');
       tables[table].push(row);
       return json(201, [row]);
     }

@@ -142,7 +142,7 @@ test('rejects question bodies that are not valid UTF-8', async function () {
   });
 });
 
-test('sends an Arabic question to Gemini and the draft to the configured Telegram chat', async function () {
+test('sends an Arabic question to Gemini and the draft to the moderators chat only', async function () {
   const provider = mockFetch();
   await withServer({ env: configuredEnv, fetch: provider.fetch }, async function (baseUrl) {
     const response = await fetch(baseUrl + '/api/questions', {
@@ -155,10 +155,10 @@ test('sends an Arabic question to Gemini and the draft to the configured Telegra
     });
 
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), {
-      draft: 'هذه مسودة للمراجعة.',
-      telegramSent: true
-    });
+    const body = await response.text();
+    // Rule: an unapproved draft is never returned to the asker.
+    assert.doesNotMatch(body, /هذه مسودة للمراجعة/);
+    assert.deepEqual(JSON.parse(body), { telegramSent: true, status: 'pending_review' });
     assert.equal(provider.calls.length, 2);
     assert.equal(provider.calls[0].options.headers['x-goog-api-key'], configuredEnv.GEMINI_API_KEY);
     assert.equal(provider.calls[0].options.headers.Accept, 'application/json; charset=utf-8');
@@ -197,7 +197,7 @@ test('rejects provider responses that are not valid UTF-8', async function () {
   });
 });
 
-test('reports Telegram delivery failure while preserving the generated draft', async function () {
+test('reports Telegram delivery failure without exposing the generated draft', async function () {
   const provider = mockFetch();
   provider.fetch = async function (url) {
     if (url.includes('generativelanguage.googleapis.com')) {
@@ -223,9 +223,10 @@ test('reports Telegram delivery failure while preserving the generated draft', a
       body: JSON.stringify({ question: 'ما حكم هذا السؤال؟' })
     });
     assert.equal(response.status, 502);
-    assert.deepEqual(await response.json(), {
+    const body = await response.text();
+    assert.doesNotMatch(body, /مسودة صالحة للمراجعة/);
+    assert.deepEqual(JSON.parse(body), {
       error: 'تعذر تأكيد إرسال السؤال إلى Telegram.',
-      draft: 'مسودة صالحة للمراجعة.',
       telegramSent: false
     });
   });

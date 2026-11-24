@@ -6,6 +6,9 @@ const path = require('node:path');
 const { createMediaLibrary } = require('./media-library');
 const { createAdminApi } = require('./lecture-api');
 const { createBot } = require('./bot/bot');
+const { createStore } = require('./bot/store');
+const { createTelegramClient } = require('./bot/telegram-client');
+const { createQuestionService: createQuestionServiceCore } = require('./bot/questions');
 
 const PUBLIC_ROOT = path.resolve(__dirname, '..');
 const MAX_BODY_BYTES = 16 * 1024;
@@ -271,15 +274,28 @@ async function sendToTelegram(question, draft, env, fetchImpl) {
   }
 }
 
-function createQuestionSubmitter(env, fetchImpl) {
-  return async function submitQuestion(question) {
+// Builds the shared question pipeline. With Supabase configured, questions are stored and moderators get
+// review buttons. Without it, the question and draft are still posted to the moderators' chat as plain text.
+// In both modes the draft is only ever shown to moderators, never returned to the asker.
+function createQuestionService(env, fetchImpl) {
+  const client = createTelegramClient({ token: env.TELEGRAM_BOT_TOKEN, fetch: fetchImpl });
+  const store = createStore({ env: env, fetch: fetchImpl });
+  const service = createQuestionServiceCore({
+    env: env,
+    store: store,
+    client: client,
+    createDraft: function (question) { return createQuestionDraft(question, env, fetchImpl); }
+  });
+  const submit = async function submit(question, meta) {
     if (!env.GEMINI_API_KEY || !env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
       throw new Error('Question intake is not configured');
     }
+    if (service.enabled()) return service.submit(question, meta);
     const draft = await createQuestionDraft(question, env, fetchImpl);
     await sendToTelegram(question, draft, env, fetchImpl);
-    return { draft: draft };
+    return {};
   };
+  return Object.assign({}, service, { submit: submit });
 }
 
 function createServer(options) {
@@ -288,6 +304,7 @@ function createServer(options) {
   const fetchImpl = options.fetch || global.fetch;
   const limits = new Map();
   const adminApi = createAdminApi({ env: env, fetch: fetchImpl });
+  const questionService = options.questionService || createQuestionService(env, fetchImpl);
   const mediaLibrary = options.mediaLibrary || createMediaLibrary({
     env: env,
     fetch: fetchImpl,
@@ -381,6 +398,19 @@ function createServer(options) {
       }
       return;
     }
+    if (requestUrl.pathname === '/api/answers' && request.method === 'GET') {
+      if (!questionService.enabled()) {
+        sendJson(response, 503, { error: 'الإجابات المعتمدة غير متاحة الآن.' });
+        return;
+      }
+      try {
+        sendJson(response, 200, { items: await questionService.listPublished() });
+      } catch {
+        console.error('Published answers could not be loaded');
+        sendJson(response, 502, { error: 'تعذر تحميل الإجابات الآن.' });
+      }
+      return;
+    }
     if (requestUrl.pathname === '/api/questions') {
       if (request.method !== 'POST') {
         response.setHeader('Allow', 'POST');
@@ -418,18 +448,23 @@ function createServer(options) {
       }
 
       try {
-        const draft = await createQuestionDraft(question, env, fetchImpl);
+        let result;
         try {
-          await sendToTelegram(question, draft, env, fetchImpl);
+          result = await questionService.submit(question, { source: 'web' });
         } catch (error) {
-          sendJson(response, 502, {
-            error: error.message,
-            draft: draft,
-            telegramSent: false
-          });
-          return;
+          if (error.name === 'TelegramError' || error.message === 'تعذر تأكيد إرسال السؤال إلى Telegram.') {
+            // The draft is never exposed, even on failure. The asker can simply retry.
+            sendJson(response, 502, {
+              error: 'تعذر تأكيد إرسال السؤال إلى Telegram.',
+              telegramSent: false
+            });
+            return;
+          }
+          throw error;
         }
-        sendJson(response, 200, { draft: draft, telegramSent: true });
+        const payload = { telegramSent: true, status: 'pending_review' };
+        if (result && result.id) payload.questionId = result.id;
+        sendJson(response, 200, payload);
       } catch (error) {
         if (error.name === 'TimeoutError' || error.name === 'AbortError') {
           sendJson(response, 504, { error: 'انتهت مهلة الاتصال بالخدمة. حاول لاحقًا.' });
@@ -486,14 +521,15 @@ if (require.main === module) {
     env: process.env,
     updateHandler: function (update) { return bot ? bot.handleUpdate(update) : false; }
   });
+  const questionService = createQuestionService(process.env, global.fetch);
   if (process.env.TELEGRAM_BOT_ENABLED === 'true' && process.env.TELEGRAM_BOT_TOKEN) {
     bot = createBot({
       env: process.env,
       mediaLibrary: mediaLibrary,
-      submitQuestion: createQuestionSubmitter(process.env, global.fetch)
+      questionService: questionService
     });
   }
-  const server = createServer({ mediaLibrary: mediaLibrary });
+  const server = createServer({ mediaLibrary: mediaLibrary, questionService: questionService });
   server.listen(port, host, function () {
     console.log('Ahl Athar server listening on port ' + port);
     if (bot) bot.start().catch(function () { console.error('Telegram bot setup failed.'); });
@@ -505,7 +541,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-  createQuestionSubmitter: createQuestionSubmitter,
+  createQuestionService: createQuestionService,
   createServer: createServer,
   loadEnvFile: loadEnvFile
 };

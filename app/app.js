@@ -205,6 +205,7 @@ function show(sectionId) {
   if (sectionId === 'qibla') updateQibla();
   if (sectionId === 'adhkar') renderAdhkar();
   if (sectionId === 'media') loadMediaLibrary();
+  if (sectionId === 'q') loadAnswers();
 }
 
 function renderMediaLibrary() {
@@ -978,12 +979,41 @@ function copyQ() {
   });
 }
 
+async function loadAnswers() {
+  var container = document.getElementById('answersList');
+  var status = document.getElementById('answersStatus');
+  if (!container || !status) return;
+  status.className = 'status';
+  status.textContent = 'جارٍ تحميل الإجابات المعتمدة…';
+  try {
+    var response = await fetch(apiUrl('/api/answers'), { cache: 'no-store' });
+    var text = new TextDecoder('utf-8', { fatal: true }).decode(await response.arrayBuffer());
+    var result = JSON.parse(text);
+    if (!response.ok || !Array.isArray(result.items)) throw new Error('invalid');
+    container.textContent = '';
+    result.items.forEach(function (item) {
+      var card = document.createElement('div');
+      card.className = 'notice';
+      var question = document.createElement('h3');
+      question.textContent = String(item.question);
+      var answer = document.createElement('p');
+      answer.textContent = String(item.answer);
+      card.appendChild(question);
+      card.appendChild(answer);
+      container.appendChild(card);
+    });
+    status.textContent = result.items.length ? '' : 'لا توجد إجابات معتمدة بعد.';
+  } catch (error) {
+    status.textContent = 'تعذر تحميل الإجابات المعتمدة الآن.';
+    status.classList.add('error');
+  }
+}
+
 async function sendQuestion() {
   var question = document.getElementById('qt').value.trim();
   var consent = document.getElementById('questionConsent').checked;
   var button = document.getElementById('sendQuestionBtn');
   var status = document.getElementById('qm');
-  var draftBox = document.getElementById('questionDraft');
 
   if (question.length < 5 || question.length > 1600) {
     setStatus(status, 'اكتب سؤالًا بين 5 و1600 حرف.', true);
@@ -995,8 +1025,7 @@ async function sendQuestion() {
   }
 
   button.disabled = true;
-  draftBox.hidden = true;
-  setStatus(status, 'جارٍ إعداد المسودة وإرسال السؤال للمراجعة…');
+  setStatus(status, 'جارٍ إرسال السؤال للمراجعة…');
   try {
     var response = await fetch(apiUrl('/api/questions'), {
       method: 'POST',
@@ -1012,12 +1041,8 @@ async function sendQuestion() {
       throw new Error('استجابة الخادم غير صالحة. حاول لاحقًا.');
     }
 
-    if (typeof result.draft === 'string') {
-      document.getElementById('questionDraftText').textContent = result.draft;
-      draftBox.hidden = false;
-    }
     if (!response.ok) throw new Error(result.error || 'تعذر إرسال السؤال. حاول لاحقًا.');
-    setStatus(status, 'وصل السؤال والمسودة إلى Telegram للمراجعة. المسودة ليست فتوى معتمدة.');
+    setStatus(status, 'وصل سؤالك للمراجعة. لن تظهر إجابة قبل اعتماد المشرف.');
   } catch (error) {
     var message = error instanceof TypeError
       ? 'تعذر الاتصال بالخادم الخلفي. تأكد من تشغيل الخادم ثم حاول مجددًا.'

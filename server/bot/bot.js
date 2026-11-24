@@ -50,7 +50,9 @@ function createBot(options) {
     siteUrl: env.BOT_SITE_URL || DEFAULT_SITE_URL,
     escape: escapeHtml,
     mediaLibrary: options.mediaLibrary || null,
-    submitQuestion: options.submitQuestion || null,
+    questionService: options.questionService || null,
+    submitQuestion: options.submitQuestion ||
+      (options.questionService ? function (text, meta) { return options.questionService.submit(text, meta); } : null),
     blockedUsers: blockedUsers,
     onUserBlocked: function () {}
   };
