@@ -7,6 +7,7 @@ module.exports = {
     require('./reminders'),
     require('./questions'),
     require('./daily'),
-    require('./moderation')
+    require('./moderation'),
+    require('./quiz')
   ]
 };
