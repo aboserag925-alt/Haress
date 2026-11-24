@@ -65,7 +65,7 @@ module.exports = { baseEnv, createFakeNetwork, json, textMessage };
 // Tiny in-memory PostgREST stand-in: enough for the tables the bot uses.
 function createFakeSupabase(seed, keys) {
   const tables = {};
-  Object.keys(seed || {}).forEach(function (name) { tables[name] = seed[name].slice(); });
+  Object.keys(seed || {}).forEach(function (name) { tables[name] = JSON.parse(JSON.stringify(seed[name])); });
   keys = keys || {};
   const log = [];
 
