@@ -55,13 +55,14 @@ test('sends one reminder an hour before and one at start with the stream link', 
   assert.equal(messages.length, 2);
   assert.match(messages[1].payload.text, /بدأت الآن/);
   assert.match(messages[1].payload.text, /href="https:\/\/live\.example\.test\/x"/);
-  assert.deepEqual(env.db.tables.sent_reminders.map(function (r) { return r.kind; }).sort(), ['hour', 'start']);
+  assert.deepEqual(env.db.tables.sent_reminders.map(function (r) { return r.kind + ':' + r.state; }).sort(),
+    ['hour:sent', 'start:sent']);
 });
 
 test('a restart does not duplicate reminders already recorded', async function () {
   const env = setup([lecture], {
     now: T0,
-    sent: [{ lecture_id: 'L1', kind: 'hour', starts_at: '2026-12-01T17:00:00Z' }]
+    sent: [{ lecture_id: 'L1', kind: 'hour', starts_at: '2026-12-01T17:00:00Z', state: 'sent' }]
   });
   const result = await runReminderCycle(env.bot.ctx);
   assert.equal(result.sent, 0);
@@ -163,4 +164,48 @@ test('reminders use the service role only through the server store', async funct
   groupMessages(env.network).forEach(function (c) {
     assert.doesNotMatch(JSON.stringify(c.payload), /service-test-key/);
   });
+});
+
+test('crash recovery: an abandoned claim is not retried early but is retried after the timeout', async function () {
+  const claimedAt = new Date(T0 - 10 * 1000).toISOString();
+  const env = setup([lecture], {
+    now: T0,
+    sent: [{ lecture_id: 'L1', kind: 'hour', starts_at: '2026-12-01T17:00:00Z',
+      state: 'claiming', claimed_at: claimedAt }]
+  });
+  await runReminderCycle(env.bot.ctx);
+  assert.equal(groupMessages(env.network).length, 0);
+
+  env.setNow(T0 + 3 * 60 * 1000);
+  await runReminderCycle(env.bot.ctx);
+  assert.equal(groupMessages(env.network).length, 1);
+  assert.equal(env.db.tables.sent_reminders[0].state, 'sent');
+
+  env.setNow(T0 + 6 * 60 * 1000);
+  await runReminderCycle(env.bot.ctx);
+  assert.equal(groupMessages(env.network).length, 1);
+});
+
+test('ambiguous send (response lost) keeps the claim and may repeat after the timeout, by design', async function () {
+  let first = true;
+  const env = setup([lecture], {
+    now: T0,
+    telegram: {
+      sendMessage: function () {
+        if (first) { first = false; throw new Error('socket hang up'); }
+        return null;
+      }
+    }
+  });
+  await runReminderCycle(env.bot.ctx);
+  assert.equal(env.db.tables.sent_reminders.length, 1);
+  assert.equal(env.db.tables.sent_reminders[0].state, 'claiming');
+  env.setNow(T0 + 30 * 1000);
+  await runReminderCycle(env.bot.ctx);
+  assert.equal(groupMessages(env.network).length, 1);
+  env.setNow(T0 + 3 * 60 * 1000);
+  await runReminderCycle(env.bot.ctx);
+  // The second attempt is the retry. The first may or may not have reached Telegram.
+  assert.equal(groupMessages(env.network).length, 2);
+  assert.equal(env.db.tables.sent_reminders[0].state, 'sent');
 });

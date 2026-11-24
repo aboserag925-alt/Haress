@@ -76,20 +76,53 @@ async function deliver(ctx, text) {
   }
 }
 
-// Claims the (lecture, kind, start time) row first, then sends. A failed send releases the claim,
-// so a crash or restart never duplicates a reminder and a failed send is retried on the next cycle.
+// Delivery guarantee: at-least-once with a small chance of a duplicate, never exactly-once.
+// 1. A 'claiming' row is written first, so concurrent cycles and restarts do not double-send.
+// 2. After Telegram accepts the message the row becomes 'sent' and is never sent again.
+// 3. If Telegram answers with an error, the send definitely failed: the claim is released and retried.
+// 4. If the process dies or the response is lost (timeout, crash after send), the outcome is unknown.
+//    The claim is kept and taken over after CLAIM_TIMEOUT_MS, which may duplicate a reminder that
+//    Telegram had in fact delivered. A missed reminder is judged worse than a repeated one.
+const CLAIM_TIMEOUT_MS = 2 * 60 * 1000;
+
+function rowFilter(lecture, kind) {
+  return 'sent_reminders?lecture_id=eq.' + encodeURIComponent(lecture.id) +
+    '&kind=eq.' + kind + '&starts_at=eq.' + encodeURIComponent(lecture.starts_at);
+}
+
 async function claim(ctx, lecture, kind) {
+  const nowIso = new Date(ctx.now()).toISOString();
   const rows = await ctx.store.admin('sent_reminders', {
     method: 'POST',
     headers: { Prefer: 'resolution=ignore-duplicates,return=representation' },
-    body: JSON.stringify({ lecture_id: lecture.id, kind: kind, starts_at: lecture.starts_at })
+    body: JSON.stringify({
+      lecture_id: lecture.id, kind: kind, starts_at: lecture.starts_at,
+      state: 'claiming', claimed_at: nowIso
+    })
   });
-  return Array.isArray(rows) && rows.length > 0;
+  if (Array.isArray(rows) && rows.length > 0) return true;
+
+  const existing = ((await ctx.store.admin(rowFilter(lecture, kind) + '&select=state,claimed_at')) || [])[0];
+  if (!existing || existing.state !== 'claiming') return false;
+  if (ctx.now() - Date.parse(existing.claimed_at) < CLAIM_TIMEOUT_MS) return false;
+  const taken = await ctx.store.admin(rowFilter(lecture, kind) + '&state=eq.claiming&claimed_at=eq.' +
+    encodeURIComponent(existing.claimed_at), {
+    method: 'PATCH',
+    headers: { Prefer: 'return=representation' },
+    body: JSON.stringify({ claimed_at: nowIso })
+  });
+  return Array.isArray(taken) && taken.length === 1;
+}
+
+async function markSent(ctx, lecture, kind) {
+  await ctx.store.admin(rowFilter(lecture, kind), {
+    method: 'PATCH',
+    body: JSON.stringify({ state: 'sent', sent_at: new Date(ctx.now()).toISOString() })
+  });
 }
 
 async function release(ctx, lecture, kind) {
-  await ctx.store.admin('sent_reminders?lecture_id=eq.' + encodeURIComponent(lecture.id) +
-    '&kind=eq.' + kind + '&starts_at=eq.' + encodeURIComponent(lecture.starts_at), { method: 'DELETE' });
+  await ctx.store.admin(rowFilter(lecture, kind), { method: 'DELETE' });
 }
 
 async function runReminderCycle(ctx) {
@@ -120,10 +153,18 @@ async function runReminderCycle(ctx) {
     if (!await claim(ctx, lecture, kind)) continue;
     try {
       await deliver(ctx, reminderText(ctx, lecture, kind, rescheduled && kind === 'hour'));
-      sent += 1;
     } catch (error) {
       ctx.logger.error('Lecture reminder failed: ' + error.message);
-      await release(ctx, lecture, kind).catch(function () {});
+      // A Telegram error response is a definite failure. Anything else (timeout, dropped connection)
+      // is ambiguous, so the claim stays and is retried after CLAIM_TIMEOUT_MS.
+      if (error.name === 'TelegramError') await release(ctx, lecture, kind).catch(function () {});
+      continue;
+    }
+    sent += 1;
+    try {
+      await markSent(ctx, lecture, kind);
+    } catch (error) {
+      ctx.logger.error('Reminder sent but could not be recorded: ' + error.message);
     }
   }
   return { sent: sent };
@@ -193,4 +234,4 @@ function register(bot) {
   });
 }
 
-module.exports = { register, runReminderCycle, reminderText };
+module.exports = { register, runReminderCycle, reminderText, CLAIM_TIMEOUT_MS };
