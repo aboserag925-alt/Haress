@@ -1,10 +1,11 @@
 'use strict';
 var CACHE_NAMESPACE = 'haress-v3-cache-';
-var CACHE_NAME = CACHE_NAMESPACE + 'native';
+var CACHE_NAME = CACHE_NAMESPACE + 'identity-review-1';
 var SHELL = [
   '/v3/',
   '/v3/index.html',
-  '/v3/v3.css',
+  '/v3/identity.css',
+  '/v3/council.jpg',
   '/v3/v3.js',
   '/v3/v3-runtime.js',
   '/v3/v3-adapter.js',
@@ -49,7 +50,7 @@ self.addEventListener('fetch', function (event) {
     })());
     return;
   }
-  if (/\.(?:css|js|json)$/i.test(url.pathname)) {
+  if (/\.(?:css|js|json|jpg)$/i.test(url.pathname)) {
     event.respondWith((async function () {
       var cache = await caches.open(CACHE_NAME);
       try {

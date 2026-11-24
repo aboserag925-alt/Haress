@@ -25,8 +25,8 @@ test('explicit Markdown preference returns only the authored public representati
 test('HTML stays default and carries real discovery links',async()=>{
  for(const accept of ['', '*/*','text/markdown;q=0,text/html','text/html;q=1,text/markdown;q=0.5']){
   const response=await get('/',{Accept:accept});
-  assert.equal(response.headers.get('Content-Type'),'text/html');
-  assert.match(await response.text(),/<!doctype html>/i);
+  assert.equal(response.status,307);
+  assert.equal(response.headers.get('Location'),'https://site.example/v3/');
   assert.match(response.headers.get('Link'),/api-catalog/);
   assert.match(response.headers.get('Vary'),/Cookie/);
  }
@@ -34,7 +34,8 @@ test('HTML stays default and carries real discovery links',async()=>{
 test('authenticated, cookie and query requests never get negotiated public Markdown',async()=>{
  for(const [p,headers] of [['/',{Authorization:'Bearer test'}],['/',{Cookie:'session=test'}],['/?code=test',{}],['/?access_token=test',{}]]){
   const response=await get(p,{Accept:'text/markdown',...headers});
-  assert.equal(response.headers.get('Content-Type'),'text/html');
+  assert.equal(response.status,307);
+  assert.match(response.headers.get('Location'),/\/v3\//);
  }
 });
 test('HEAD has correct representation headers and no body',async()=>{
@@ -83,3 +84,14 @@ test('approved robots policy separates public retrieval from training and advert
  assert.equal((robots.match(/Disallow: \/admin\.html/g)||[]).length,2);
  assert.match(robots,/Sitemap: https:\/\/hares\.aboserag925\.workers\.dev\/sitemap\.xml/);
 });
+
+ test('provisional identity entry preserves query/hash and leaves private/assets routes untouched', async()=>{
+  for(const method of ['GET','HEAD'])for(const entry of ['/','/index.html']){
+   const r=await get(entry+'?code=keep#account',{},method);
+   assert.equal(r.status,307);assert.equal(r.headers.get('Location'),'https://site.example/v3/?code=keep#account');
+   assert.equal(r.headers.get('Cache-Control'),'no-store');assert.equal(await r.text(),'');
+  }
+  for(const p of ['/v3/','/admin.html','/v3/identity.css','/runtime-config.js']){
+   const r=await get(p);assert.notEqual(r.status,307);
+  }
+ });

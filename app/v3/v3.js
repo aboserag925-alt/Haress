@@ -8,7 +8,7 @@
 
   function setTheme(theme) {
     root.setAttribute('data-theme', theme);
-    if (themeMeta) themeMeta.setAttribute('content', theme === 'dark' ? '#19382f' : '#f4f0e6');
+    if (themeMeta) themeMeta.setAttribute('content', theme === 'dark' ? '#181818' : '#f3f3f3');
     if (themeButton) {
       themeButton.setAttribute('aria-label', theme === 'dark' ? 'تفعيل المظهر الفاتح' : 'تفعيل المظهر الداكن');
       themeButton.textContent = theme === 'dark' ? '☼' : '◐';
@@ -19,8 +19,8 @@
   try {
     var saved = localStorage.getItem('haress-v3-theme');
     if (saved === 'light' || saved === 'dark') setTheme(saved);
-    else setTheme('light');
-  } catch (error) { setTheme('light'); }
+    else setTheme('dark');
+  } catch (error) { setTheme('dark'); }
 
   if (themeButton) themeButton.addEventListener('click', function () {
     setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');

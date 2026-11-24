@@ -1,16 +1,16 @@
 <!doctype html>
-<html lang="ar" dir="rtl" data-theme="light">
+<html lang="ar" dir="rtl" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f5f1e7">
+<meta name="theme-color" content="#181818">
 <meta name="description" content="استراحة أهل الأثر — مجلس للعلم والذكر">
 <link rel="manifest" href="/v3/manifest.json">
 <title>استراحة أهل الأثر | مجلس العلم والذكر</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/v3/v3.css">
+<link rel="stylesheet" href="/v3/identity.css">
 <script src="/supabase-config.js"></script>
 <script src="/runtime-config.js"></script>
 <script src="/vendor/adhan.umd.min.js"></script>
@@ -26,9 +26,9 @@
   <header class="masthead editorial-masthead">
     <a class="wordmark" href="/v3/" aria-label="استراحة أهل الأثر — الرئيسية">
       <span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-      <span><b>أهل الأثر</b><small>مجلة المجلس العلمي</small></span>
+      <span><b>أهل الأثر</b><small>مجلس العلم والذكر</small></span>
     </a>
-    <div class="masthead-meta">
+    <nav class="primary-links" aria-label="التنقل الرئيسي"><button type="button" data-v3-target="sched">الرئيسية</button><button type="button" data-v3-target="media">المكتبة</button><button type="button" data-v3-target="about">عن المجلس</button><button type="button" data-v3-target="q">تواصل</button></nav><div class="masthead-meta">
       <span class="edition">القرآن والسنة بفهم أهل السنة</span>
       <button class="radio-launch" id="quranRadioButton" type="button" aria-expanded="false" aria-controls="quranRadioPanel">استمع إلى القرآن <span aria-hidden="true">◖</span></button>
       <button class="icon-button" type="button" data-v3-theme-toggle aria-label="تبديل المظهر">◐</button>
@@ -40,25 +40,30 @@
   <main id="main">
     <section class="opening editorial-opening" aria-labelledby="welcomeTitle">
       <div class="opening-copy">
-        <p class="eyebrow"><span class="live-dot"></span> العدد الأول · مجلس العلم والذكر</p>
-        <p class="opening-kicker">مساحةٌ للعلم النافع، والذكر، وحسن السؤال</p>
-        <h1 id="welcomeTitle">على مَهَلٍ،<br><em>نقرأ الأثر.</em></h1>
-        <p class="opening-lede">هنا يلتقي درسٌ يُنير الفهم، وذكرٌ يطمئن القلب، وسؤالٌ يُفتح له باب المراجعة. مجلسٌ علمي على هدي القرآن والسنة بفهم أهل السنة.</p>
+        <p class="eyebrow"><span class="live-dot"></span> بسم الله الرحمن الرحيم</p>
+        <p class="opening-kicker">القرآن والسنة بفهم أهل السنة</p>
+        <h1 id="welcomeTitle">المجلس العلمي<br><em>لأهل الأثر</em></h1>
+        <p class="opening-lede">دروس ومحاضرات، مكتبة علمية، وأبواب للذكر والسؤال. نجتمع على العلم النافع وحسن العمل.</p>
+        <p class="supervision">بإشراف الدكتور خالد الحارس</p>
         <div class="opening-actions">
-          <button class="gold-action" type="button" data-v3-target="sched">تصفّح برنامج المجلس <span>←</span></button>
-          <button class="quiet-action" type="button" data-v3-target="q">اكتب سؤالك</button>
+          <button class="gold-action" type="button" data-v3-target="sched">تصفّح الدروس <span>←</span></button>
+          <button class="outline-action" type="button" data-v3-target="q">اكتب سؤالك</button>
         </div>
-        <div class="opening-foot"><span>علمٌ نافع</span><span class="foot-rule"></span><span>عملٌ وأدب</span></div>
       </div>
-      <aside class="opening-aside" aria-label="منهج المجلس">
-        <span class="aside-index">ملفّ تعريفي / ٠١</span>
-        <blockquote>«مَن يُرِدِ اللهُ به خيرًا يُفقِّهْهُ في الدِّين»</blockquote>
-        <span class="aside-source">حديث نبوي · متفق عليه</span>
-        <div class="aside-note"><span>من السبت إلى الخميس</span><b>٧:٠٠ – ١٠:٠٠ مساءً</b><small>بتوقيت القاهرة</small></div>
-        <span class="aside-rule"></span>
-        <span class="aside-issue">١٤٤٨ هـ <i>／</i> ٢٠٢٦ م</span>
+      <aside class="opening-aside" aria-label="شعار مجلس أهل الأثر">
+        <div class="council-art"><img src="/v3/council.jpg" alt="شعار استراحة أهل الأثر، مجلس تدارس العلم والأدب" width="640" height="640"></div>
+        <div class="art-caption"><span class="live-dot"></span><span>مجلس تدارس العلم والأدب</span><span class="art-arrow">↗</span></div>
       </aside>
-      <div class="opening-bottom"><span>استراحة أهل الأثر</span><span>مجلة علمية رقمية</span><span class="scroll-mark">↓</span></div>
+    </section>
+
+    <section class="discovery" aria-labelledby="discoveryTitle">
+      <div class="discovery-heading"><div><p class="eyebrow">أبواب المجلس</p><h2 id="discoveryTitle">أقسام الموقع</h2></div><span>العلم والعمل والأدب</span></div>
+      <div class="discovery-grid">
+        <button type="button" class="discovery-card" data-v3-target="about"><span class="discovery-icon">⌘</span><span><b>عن المجلس</b><small>المنهج والرسالة</small><p>تعرّف على مجلس أهل الأثر، وغايتنا من تدارس العلم والعمل به.</p></span><i>↗</i></button>
+        <button type="button" class="discovery-card" data-v3-target="sched"><span class="discovery-icon">◷</span><span><b>الدروس والمحاضرات</b><small>برنامج أسبوعي متجدد</small><p>دروس الحديث والعقيدة والتفسير والفقه، من السبت إلى الخميس.</p></span><i>↗</i></button>
+        <button type="button" class="discovery-card" data-v3-target="q"><span class="discovery-icon">؟</span><span><b>الأسئلة والتوجيه</b><small>حسن السؤال بداية العلم</small><p>اكتب سؤالك بوضوح، ليُرسل إلى المراجعة قبل اعتماد أي رد.</p></span><i>↗</i></button>
+        <button type="button" class="discovery-card" data-v3-target="media"><span class="discovery-icon">▤</span><span><b>مكتبة المجلس</b><small>صوتيات ومرئيات</small><p>تصفّح المواد المنشورة بعد المراجعة والاعتماد.</p></span><i>↗</i></button>
+      </div>
     </section>
 
     <div class="signal-row">
@@ -169,7 +174,7 @@
     </div>
   </main>
 
-  <footer class="colophon"><span>استراحة أهل الأثر</span><span>القرآن والسنة بفهم أهل السنة</span><span>تصميم محمد سراج</span></footer>
+  <footer class="colophon"><span>استراحة أهل الأثر</span><span>القرآن والسنة بفهم أهل السنة</span><span>تصميم محمد سراج</span><div class="footer-actions"><button class="text-button" type="button" onclick="share()">مشاركة المجلس ↗</button><button class="text-button" type="button" onclick="document.getElementById('supportDialog').showModal()">دعم المجلس ↗</button></div></footer>
 </div>
 
 <button class="mobile-support" type="button" onclick="document.getElementById('supportDialog').showModal()">دعم المجلس <span>↗</span></button>

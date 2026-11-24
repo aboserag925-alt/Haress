@@ -49,15 +49,29 @@ test('V3 native runtime owns required feature entry points', () => {
 });
 
 
-test('V3.1 design system preserves the approved identity and reduced-motion support', () => {
-  const css = fs.readFileSync(path.join(root, 'v3.css'), 'utf8');
-  assert.match(css, /--v31-space-1:/, 'V3.1 spacing tokens must be present');
-  assert.match(css, /--v31-text-display:/, 'V3.1 Arabic type scale must be present');
-  assert.match(css, /--v31-motion:/, 'V3.1 motion token must be present');
-  assert.match(css, /prefers-reduced-motion:\s*reduce/, 'motion must respect reduced-motion preferences');
-  assert.match(css, /--paper:#f4f0e6/, 'approved warm ivory canvas must remain');
-  assert.match(css, /--forest:#183d31/, 'approved forest-green identity must remain');
-  assert.match(css, /--bronze:#9a7042/, 'restrained bronze accent must remain');
+test('Reference-led identity loads one active stylesheet and preserves accessible themes', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(root, 'identity.css'), 'utf8');
+  assert.match(html, /href="\/v3\/identity\.css"/);
+  assert.doesNotMatch(html, /href="\/v3\/v3\.css"/);
+  assert.match(css, /prefers-reduced-motion:\s*reduce/);
+  assert.match(css, /focus-visible/);
+  assert.match(css, /:root\[data-theme=dark\]/);
+  assert.match(css, /\.discovery-grid\{display:grid;grid-template-columns:repeat\(2,/);
+  assert.match(html, /<html lang="ar" dir="rtl"/);
+  assert.match(html, /src="\/v3\/council\.jpg"/);
+  for (const target of ['sched','prayers','qibla','adhkar','media','q','about','account']) {
+    assert.ok(html.includes('data-v3-target="' + target + '"'));
+    assert.ok(html.includes('id="' + target + '"'));
+  }
+});
+
+test('Identity offline shell caches the active stylesheet and project image', () => {
+  const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  assert.match(sw, /'\/v3\/identity\.css'/);
+  assert.match(sw, /'\/v3\/council\.jpg'/);
+  assert.doesNotMatch(sw, /'\/v3\/v3\.css'/);
+  assert.match(sw, /identity-review-1/);
 });
 
 test('V3.1 page has no root base URL and keeps fragment navigation local', () => {
