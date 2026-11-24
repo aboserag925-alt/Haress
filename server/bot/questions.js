@@ -160,7 +160,7 @@ function createQuestionService(options) {
       await answerCallback(callback, 'الطلب غير صالح.');
       return;
     }
-    if (!await ctx.isAdmin(callback.from.id)) {
+    if (!await ctx.isAdmin(callback.from.id, { fresh: true })) {
       await answerCallback(callback, 'هذه الأزرار لمشرفي المجموعة فقط.', true);
       return;
     }

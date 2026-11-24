@@ -76,7 +76,12 @@ function createFakeSupabase(seed, keys) {
     tables[table] = tables[table] || [];
     const method = (init && init.method) || 'GET';
     log.push({ table: table, method: method, query: match[2] || '', body: body });
-    if (method === 'GET') return json(200, filterRows(tables[table], query));
+    if (method === 'GET') {
+      let rows = filterRows(tables[table], query);
+      if (query.get('offset')) rows = rows.slice(Number(query.get('offset')));
+      if (query.get('limit')) rows = rows.slice(0, Number(query.get('limit')));
+      return json(200, rows);
+    }
     if (method === 'POST') {
       const prefer = (init.headers && init.headers.Prefer) || '';
       const row = Object.assign({}, keys[table + ':defaults'] || {}, body);
@@ -109,7 +114,7 @@ function createFakeSupabase(seed, keys) {
   function filterRows(rows, query) {
     return rows.filter(function (row) {
       for (const [field, expression] of query.entries()) {
-        if (['select', 'order', 'limit'].includes(field)) continue;
+        if (['select', 'order', 'limit', 'offset'].includes(field)) continue;
         const dot = expression.indexOf('.');
         const op = expression.slice(0, dot);
         const value = expression.slice(dot + 1);

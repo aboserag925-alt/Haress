@@ -57,11 +57,12 @@ function createBot(options) {
     onUserBlocked: function () {}
   };
 
-  ctx.isAdmin = async function isAdmin(userId) {
+  // options.fresh skips the 60 s cache. Button actions use it so a demoted admin loses access immediately.
+  ctx.isAdmin = async function isAdmin(userId, options) {
     if (!userId || !groupChatId) return false;
     const key = String(userId);
     const cached = adminCache.get(key);
-    if (cached && cached.expiresAt > now()) return cached.value;
+    if (cached && cached.expiresAt > now() && !(options && options.fresh)) return cached.value;
     let value = false;
     try {
       const member = await client.call('getChatMember', { chat_id: groupChatId, user_id: userId });

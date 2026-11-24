@@ -206,3 +206,19 @@ test('escapeHtml neutralises markup and errors expose blocked flag', function ()
   assert.equal(new TelegramError('sendMessage', 403, 'x').blocked, true);
   assert.equal(new TelegramError('sendMessage', 500, 'x').blocked, false);
 });
+
+test('Telegram 429 retries are bounded and the final error is raised', async function () {
+  const sleeps = [];
+  let attempts = 0;
+  const network = createFakeNetwork({
+    telegram: { sendMessage: function () {
+      attempts += 1;
+      return json(429, { ok: false, error_code: 429, description: 'Too Many Requests', parameters: { retry_after: 500 } });
+    } }
+  });
+  const { createTelegramClient } = require('./telegram-client');
+  const client = createTelegramClient({ token: 't', fetch: network.fetch, sleep: async function (ms) { sleeps.push(ms); } });
+  await assert.rejects(client.sendMessage(1, 'x'), function (error) { return error.name === 'TelegramError'; });
+  assert.equal(attempts, 3);
+  assert.deepEqual(sleeps, [60000, 60000]);
+});

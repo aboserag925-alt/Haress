@@ -8,7 +8,7 @@ create table if not exists public.daily_content (
   -- Book and number, or the grading for a hadith. Rows without a source are never published.
   source text not null check (char_length(trim(source)) > 0),
   -- Telegram user id of the moderator who reviewed and added the row.
-  reviewed_by bigint,
+  reviewed_by bigint not null,
   publish_at timestamptz not null,
   state text not null default 'scheduled' check (state in ('scheduled', 'claiming', 'sent')),
   claimed_at timestamptz,

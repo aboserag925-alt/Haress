@@ -134,3 +134,24 @@ test('quiz scheduler can be disabled from the environment', async function () {
   await t.bot.stop();
   assert.equal(sent(t.network).length, 0);
 });
+
+test('/top counts every correct answer of the week across pages (no silent 5000 cut-off)', async function () {
+  const answers = [];
+  for (let i = 0; i < 2500; i += 1) {
+    answers.push({ quiz_id: 'q' + i, telegram_user_id: i % 2 === 0 ? 5 : 6, display_name: i % 2 === 0 ? 'Even' : 'Odd',
+      is_correct: true, answered_at: '2026-12-01T09:00:00Z', choice_index: 1 });
+  }
+  for (let i = 0; i < 6; i += 1) {
+    answers.push({ quiz_id: 'z' + i, telegram_user_id: 7, display_name: 'Late', is_correct: true,
+      answered_at: '2026-12-02T09:00:00Z', choice_index: 1 });
+  }
+  const t = setup([], { answers: answers });
+  await t.bot.handleUpdate(textMessage('/top'));
+  const text = sent(t.network).pop().payload.text;
+  assert.match(text, /1\. Even: 1250/);
+  assert.match(text, /2\. Odd: 1250/);
+  assert.match(text, /3\. Late: 6/);
+  assert.doesNotMatch(text, /جزئي/);
+  const gets = t.db.log.filter(function (l) { return l.table === 'quiz_answers' && l.method === 'GET'; });
+  assert.equal(gets.length, 3);
+});

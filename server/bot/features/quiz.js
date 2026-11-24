@@ -3,6 +3,8 @@
 const { cairoParts, cairoInstant, addDays } = require('../cairo-time');
 
 const CLAIM_TIMEOUT_MS = 2 * 60 * 1000;
+const TOP_PAGE_SIZE = 1000;
+const TOP_MAX_PAGES = 100; // 100,000 correct answers in one week
 const LETTERS = ['أ', 'ب', 'ج', 'د'];
 
 function quizEnabled(env) {
@@ -215,8 +217,18 @@ function weekStart(ctx) {
 async function showTop(ctx, message) {
   if (!ctx.store.adminConfigured()) { await ctx.reply(message, 'الترتيب غير متاح الآن.'); return; }
   const since = encodeURIComponent(new Date(weekStart(ctx)).toISOString());
-  const rows = (await ctx.store.admin('quiz_answers?select=telegram_user_id,display_name&is_correct=eq.true&answered_at=gte.' +
-    since + '&limit=5000')) || [];
+  // Paged read with a stable order, so every correct answer of the week is counted. No silent cut-off:
+  // if the safety cap is hit, the board says it is partial.
+  const rows = [];
+  let truncated = false;
+  for (let page = 0; ; page += 1) {
+    if (page >= TOP_MAX_PAGES) { truncated = true; break; }
+    const chunk = (await ctx.store.admin('quiz_answers?select=telegram_user_id,display_name&is_correct=eq.true' +
+      '&answered_at=gte.' + since + '&order=answered_at.asc,telegram_user_id.asc,quiz_id.asc&limit=' + TOP_PAGE_SIZE +
+      '&offset=' + page * TOP_PAGE_SIZE)) || [];
+    rows.push.apply(rows, chunk);
+    if (chunk.length < TOP_PAGE_SIZE) break;
+  }
   const points = new Map();
   rows.forEach(function (row) {
     const entry = points.get(row.telegram_user_id) || { name: row.display_name || String(row.telegram_user_id), score: 0 };
@@ -227,7 +239,7 @@ async function showTop(ctx, message) {
   if (!board.length) { await ctx.reply(message, 'لا توجد نقاط هذا الأسبوع بعد.'); return; }
   await ctx.reply(message, '<b>ترتيب هذا الأسبوع</b> (نقطة لكل إجابة صحيحة)\n' + board.map(function (entry, index) {
     return (index + 1) + '. ' + ctx.escape(entry.name) + ': ' + entry.score;
-  }).join('\n'));
+  }).join('\n') + (truncated ? '\n\nالترتيب جزئي لكثرة الإجابات.' : ''));
 }
 
 function register(bot) {

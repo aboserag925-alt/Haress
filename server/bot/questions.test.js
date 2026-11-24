@@ -43,7 +43,7 @@ function adminFetchPatch(env2) {
 }
 
 function withAdmins(options) {
-  const admins = new Set(options.admins || [900]);
+  const admins = options.admins instanceof Set ? options.admins : new Set(options.admins || [900]);
   options.telegram = Object.assign({}, options.telegram, {
     getChatMember: function (payload) {
       return json(200, { ok: true, result: { status: admins.has(payload.user_id) ? 'administrator' : 'member' } });
@@ -269,4 +269,17 @@ test('approving a draft as is publishes it without the trailing "unapproved draf
   await bot.handleUpdate(callback('q:ap:' + id, 900));
   assert.equal(t.db.tables.questions[0].answer, 'يشترط في الحديث الصحيح اتصال السند وعدالة الرواة.');
   assert.equal(t.db.tables.questions[0].draft, draft, 'the stored draft is not altered');
+});
+
+test('a demoted admin loses button access immediately, not after the admin cache expires', async function () {
+  const adminSet = new Set([900]);
+  const t = setup(withAdmins({ admins: adminSet }));
+  const { id } = await t.service.submit('سؤال لاختبار الصلاحية', { source: 'web' });
+  // Warm the 60 s admin cache with a command check while still an admin.
+  assert.equal(await t.bot.ctx.isAdmin(900), true);
+  adminSet.delete(900);
+  assert.equal(await t.bot.ctx.isAdmin(900), true); // cached read, fine for non-destructive checks
+  await t.bot.handleUpdate(callback('q:ap:' + id, 900));
+  assert.equal(t.db.tables.questions[0].status, 'pending');
+  assert.equal((await t.service.listPublished()).length, 0);
 });
