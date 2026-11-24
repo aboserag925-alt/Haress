@@ -61,3 +61,74 @@ function textMessage(text, extra) {
 }
 
 module.exports = { baseEnv, createFakeNetwork, json, textMessage };
+
+// Tiny in-memory PostgREST stand-in: enough for the tables the bot uses.
+function createFakeSupabase(seed, keys) {
+  const tables = {};
+  Object.keys(seed || {}).forEach(function (name) { tables[name] = seed[name].slice(); });
+  keys = keys || {};
+  const log = [];
+
+  function handler(url, init, body) {
+    const match = String(url).match(/\/rest\/v1\/([a-z_]+)(?:\?(.*))?$/);
+    const table = match[1];
+    const query = new URLSearchParams(match[2] || '');
+    tables[table] = tables[table] || [];
+    const method = (init && init.method) || 'GET';
+    log.push({ table: table, method: method, query: match[2] || '', body: body });
+    if (method === 'GET') return json(200, filterRows(tables[table], query));
+    if (method === 'POST') {
+      const prefer = (init.headers && init.headers.Prefer) || '';
+      const row = Object.assign({}, body);
+      const key = keys[table] || [];
+      const existing = key.length
+        ? tables[table].find(function (r) { return key.every(function (k) { return String(r[k]) === String(row[k]); }); })
+        : null;
+      if (existing) {
+        if (prefer.includes('merge-duplicates')) Object.assign(existing, row);
+        return json(prefer.includes('return=representation') ? 200 : 201,
+          prefer.includes('ignore-duplicates') ? [] : [existing]);
+      }
+      if (!row.id && keys[table + ':autoid']) row.id = 'row-' + (tables[table].length + 1);
+      tables[table].push(row);
+      return json(201, [row]);
+    }
+    if (method === 'PATCH') {
+      const rows = filterRows(tables[table], query);
+      rows.forEach(function (r) { Object.assign(r, body); });
+      return json(200, rows);
+    }
+    if (method === 'DELETE') {
+      const rows = filterRows(tables[table], query);
+      tables[table] = tables[table].filter(function (r) { return !rows.includes(r); });
+      return json(204, null);
+    }
+    return json(400, {});
+  }
+
+  function filterRows(rows, query) {
+    return rows.filter(function (row) {
+      for (const [field, expression] of query.entries()) {
+        if (['select', 'order', 'limit'].includes(field)) continue;
+        const dot = expression.indexOf('.');
+        const op = expression.slice(0, dot);
+        const value = expression.slice(dot + 1);
+        const actual = row[field];
+        if (op === 'eq' && String(actual) !== value) return false;
+        if (op === 'neq' && String(actual) === value) return false;
+        if (op === 'gte' && !(Date.parse(actual) >= Date.parse(value) || Number(actual) >= Number(value))) return false;
+        if (op === 'lte' && !(Date.parse(actual) <= Date.parse(value) || Number(actual) <= Number(value))) return false;
+        if (op === 'is' && String(actual === null ? 'null' : actual) !== value) return false;
+        if (op === 'in') {
+          const list = value.replace(/^\(|\)$/g, '').split(',');
+          if (!list.includes(String(actual))) return false;
+        }
+      }
+      return true;
+    });
+  }
+
+  return { handler: handler, tables: tables, log: log };
+}
+
+module.exports.createFakeSupabase = createFakeSupabase;

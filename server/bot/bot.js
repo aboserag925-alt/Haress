@@ -37,6 +37,7 @@ function createBot(options) {
   const adminCache = new Map();
   const blockedUsers = new Set();
   const stoppers = [];
+  const starters = [];
   let username = options.username || '';
 
   const ctx = {
@@ -189,6 +190,7 @@ function createBot(options) {
         publicCommands.push({ command: name, description: definition.description });
       }
     });
+    for (const starter of starters) await starter();
     try {
       await client.call('setMyCommands', { commands: publicCommands });
     } catch (error) {
@@ -206,6 +208,7 @@ function createBot(options) {
     registerCommand: registerCommand,
     registerCallback: registerCallback,
     registerMessageHandler: registerMessageHandler,
+    onStart: function (fn) { starters.push(fn); },
     onStop: function (fn) { stoppers.push(fn); },
     start: start,
     stop: stop,
