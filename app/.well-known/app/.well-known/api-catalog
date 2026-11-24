@@ -1,0 +1,25 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://hares.aboserag925.workers.dev/api/library",
+      "service-desc": [
+        {
+          "href": "https://hares.aboserag925.workers.dev/openapi.json",
+          "type": "application/vnd.oai.openapi+json"
+        }
+      ],
+      "service-doc": [
+        {
+          "href": "https://hares.aboserag925.workers.dev/docs/api.md",
+          "type": "text/markdown"
+        }
+      ],
+      "status": [
+        {
+          "href": "https://hares.aboserag925.workers.dev/api/health",
+          "type": "application/json"
+        }
+      ]
+    }
+  ]
+}
