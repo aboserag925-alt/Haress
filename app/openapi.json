@@ -1,0 +1,67 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Haress public read API",
+    "version": "1.0.0",
+    "description": "Existing read-only routes. Deployment availability is not guaranteed; backend configuration may return 503."
+  },
+  "servers": [
+    {
+      "url": "https://hares.aboserag925.workers.dev"
+    }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Basic backend process health, not a full integration check.",
+        "responses": {
+          "200": {
+            "description": "JSON response from configured backend",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Backend operation failed"
+          },
+          "502": {
+            "description": "Backend unreachable"
+          },
+          "503": {
+            "description": "Backend missing or unsafe configuration"
+          }
+        }
+      }
+    },
+    "/api/library": {
+      "get": {
+        "summary": "Approved public library materials only.",
+        "responses": {
+          "200": {
+            "description": "JSON response from configured backend",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Backend operation failed"
+          },
+          "502": {
+            "description": "Backend unreachable"
+          },
+          "503": {
+            "description": "Backend missing or unsafe configuration"
+          }
+        }
+      }
+    }
+  }
+}
