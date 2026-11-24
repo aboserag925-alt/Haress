@@ -10,6 +10,22 @@ const STATUS_LABELS = {
   rejected: 'مرفوض'
 };
 
+// Older drafts may still end with Gemini's own "unapproved draft" sentence. That sentence is wrong once a
+// moderator approves the answer, so a trailing paragraph made only of that notice is removed on approval.
+function stripDraftNotice(text) {
+  const lines = String(text || '').trim().split(/\n/);
+  while (lines.length > 1) {
+    const last = lines[lines.length - 1].trim();
+    if (last === '') { lines.pop(); continue; }
+    if (last.length < 220 && /(?:المسودة|مسودة)\s+غير\s+معتمدة|حتى\s+يراجعها/.test(last)) {
+      lines.pop();
+      continue;
+    }
+    break;
+  }
+  return lines.join('\n').trim();
+}
+
 function reviewKeyboard(id) {
   return {
     inline_keyboard: [[
@@ -160,7 +176,7 @@ function createQuestionService(options) {
     if (action === 'ap') {
       if (!row.draft) { await answerCallback(callback, 'لا توجد مسودة.'); return; }
       const done = await transition(id, ['pending', 'review'], {
-        status: 'published', answer: row.draft, answer_source: 'draft',
+        status: 'published', answer: stripDraftNotice(row.draft), answer_source: 'draft',
         answered_by: callback.from.id, published_at: new Date(now()).toISOString()
       });
       if (!done) return gone();
@@ -265,4 +281,4 @@ function createQuestionService(options) {
   };
 }
 
-module.exports = { createQuestionService, questionText };
+module.exports = { createQuestionService, questionText, stripDraftNotice };

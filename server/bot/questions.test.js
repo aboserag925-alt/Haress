@@ -245,3 +245,28 @@ test('frontend never renders a Gemini draft to the asker', function () {
   assert.doesNotMatch(html, /questionDraft/);
   assert.match(js, /\/api\/answers/);
 });
+
+test('approving a draft as is publishes it without the trailing "unapproved draft" notice', async function () {
+  const { stripDraftNotice } = require('./questions');
+  const draft = 'يشترط في الحديث الصحيح اتصال السند وعدالة الرواة.\n\nهذه مسودة غير معتمدة حتى يراجعها الدكتور خالد.';
+  assert.equal(stripDraftNotice(draft), 'يشترط في الحديث الصحيح اتصال السند وعدالة الرواة.');
+  // Ordinary content, including the word "معتمدة" elsewhere, is kept.
+  const keep = 'الرواية غير معتمدة عند أهل العلم.';
+  assert.equal(stripDraftNotice(keep), keep);
+  assert.equal(stripDraftNotice('فقرة أولى.\nفقرة ثانية عن كتب معتمدة.'), 'فقرة أولى.\nفقرة ثانية عن كتب معتمدة.');
+
+  const t = setup(withAdmins({}));
+  t.service = createQuestionService({
+    env: env, store: createStore({ env: env, fetch: t.network.fetch }),
+    client: createTelegramClient({ token: 't', fetch: t.network.fetch, sleep: async function () {} }),
+    logger: { error: function () {} }, createDraft: async function () { return draft; }
+  });
+  const bot = createBot({
+    env: env, fetch: t.network.fetch, sleep: async function () {}, username: 'TestBot',
+    questionService: t.service, logger: { error: function () {} }
+  });
+  const { id } = await t.service.submit('ما شروط الحديث الصحيح؟', { source: 'web' });
+  await bot.handleUpdate(callback('q:ap:' + id, 900));
+  assert.equal(t.db.tables.questions[0].answer, 'يشترط في الحديث الصحيح اتصال السند وعدالة الرواة.');
+  assert.equal(t.db.tables.questions[0].draft, draft, 'the stored draft is not altered');
+});
