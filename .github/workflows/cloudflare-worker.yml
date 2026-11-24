@@ -181,7 +181,7 @@ jobs:
         run: |
           publishable_key=$(node -e "const fs=require('fs'),vm=require('vm'),sandbox={window:{}};vm.runInNewContext(fs.readFileSync('app/supabase-config.js','utf8'),sandbox);process.stdout.write(sandbox.window.AHL_SUPABASE_CONFIG.anonKey)")
           test -n "$publishable_key" || { echo "Missing public Supabase key in the tested build artifact"; exit 1; }
-          page_status=$(curl --silent --show-error --output /tmp/preview.html --dump-header /tmp/preview.headers --write-out '%{http_code}' "$PREVIEW_URL/")
+          page_status=$(curl --location --silent --show-error --output /tmp/preview.html --dump-header /tmp/preview.headers --write-out '%{http_code}' "$PREVIEW_URL/")
           test "$page_status" = "200" || { echo "Preview page returned HTTP $page_status"; exit 1; }
           grep -Eiq '^content-type: text/html' /tmp/preview.headers || { echo "Preview did not return HTML"; exit 1; }
           grep -Eiq "^x-content-type-options: nosniff" /tmp/preview.headers || { echo "Missing nosniff header"; exit 1; }
