@@ -105,6 +105,14 @@ jobs:
         with:
           name: haress-visual-v11-assets
           path: app/
+      - name: List final asset directory
+        run: |
+          echo FINAL_APP_COUNT $(find app -type f | wc -l)
+          find app -type f | sort | sed 's#^app##' | grep -v '^/books/' | tr '\n' ' '
+          echo
+          find app -type f -name '.*' ; find app -type l
+          git -C . ls-files app | wc -l
+          git -C . ls-files app | sed 's#^app##' | tr '\n' ' '
       - name: Read live script and bindings, preflight, then dry-run or deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
