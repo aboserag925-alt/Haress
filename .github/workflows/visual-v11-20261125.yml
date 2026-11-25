@@ -1,0 +1,199 @@
+name: Temporary visual-only deploy, preserve live script and bindings
+on:
+  push:
+    branches: [maintenance/visual-v11-20261125]
+    paths: [.github/workflows/visual-v11-20261125.yml, ops/visual-v11-mode.txt]
+permissions:
+  contents: read
+concurrency:
+  group: hares-visual-v11-once
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.repository == 'aboserag925-alt/Haress' && github.ref == 'refs/heads/maintenance/visual-v11-20261125'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: Main
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: c130f187f18f4a57bb31e64c60505350afc80248
+      - uses: actions/checkout@v4
+        with:
+          path: ops-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci && npm test
+      - name: Build original application configuration
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          test "$SUPABASE_URL" = 'https://uzepglfimareggswjzlf.supabase.co'
+          test -n "$SUPABASE_ANON_KEY"
+          npm run build:app
+      - name: Add reviewed books-only overlay
+        if: inputs.rollback != true
+        run: |
+          python - <<'OVERLAY'
+          import base64,tarfile,io
+          payload='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'
+          with tarfile.open(fileobj=io.BytesIO(base64.b64decode(payload))) as archive:
+              archive.extractall('.',filter='data')
+          OVERLAY
+          npm pack pdfjs-dist@5.4.624 --pack-destination /tmp
+          mkdir -p /tmp/pdfjs app/vendor/pdfjs
+          tar -xf /tmp/pdfjs-dist-5.4.624.tgz -C /tmp/pdfjs
+          cp /tmp/pdfjs/package/build/pdf.mjs /tmp/pdfjs/package/build/pdf.worker.mjs /tmp/pdfjs/package/LICENSE app/vendor/pdfjs/
+          python -m pip install PyMuPDF==1.26.7
+          python scripts/prepare-pdf-books.py
+          python - <<'VERIFY'
+          import pathlib,json,hashlib
+          books=json.load(open('app/books.json'))
+          assert len(books)==4
+          count=0
+          for b in books:
+              for p in b['parts']:
+                  data=pathlib.Path('app'+p['file']).read_bytes()
+                  assert len(data)<20*1024*1024 and len(data)==p['bytes']
+                  assert hashlib.sha256(data).hexdigest()==p['sha256']
+                  count+=1
+          assert count==35
+          print('Verified 4 books,35 PDF parts; no database changes')
+          VERIFY
+
+      - name: Compare rebuilt assets with the live site, then add the visual overlay
+        shell: bash
+        run: |
+          python - <<'PYCMP'
+          import os,sys,hashlib,urllib.request,urllib.parse,urllib.error,json,shutil,pathlib
+          root=pathlib.Path('app')
+          files=sorted(p for p in root.rglob('*') if p.is_file())
+          print('REBUILT_FILE_COUNT',len(files))
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self,*a,**k):return None
+          op=urllib.request.build_opener(NoRedirect)
+          same=[];diff=[];unverified=[]
+          for p in files:
+              rel='/'+p.relative_to(root).as_posix()
+              data=p.read_bytes()
+              try:
+                  r=op.open(urllib.request.Request('https://hares.aboserag925.workers.dev'+urllib.parse.quote(rel),headers={'Accept-Encoding':'identity','User-Agent':'visual-v11-verify'}),timeout=60)
+                  body=r.read();code=r.status
+              except urllib.error.HTTPError as e:
+                  body=b'';code=e.code
+              if code==200 and body==data: same.append(rel)
+              elif code==200: diff.append(rel)
+              else: unverified.append((rel,code))
+          print('IDENTICAL',len(same));print('DIFFERENT',len(diff),diff);print('UNVERIFIED',len(unverified),unverified)
+          json.dump({'count':len(files),'diff':diff,'unverified':[u[0] for u in unverified]},open('/tmp/compare.json','w'))
+          mode=open('ops-src/ops/visual-v11-mode.txt').read().split()
+          if mode[0]=='deploy':
+              assert len(files)==85,'Unexpected rebuilt file count'
+              allowed=set(mode[2].split(',')) if len(mode)>2 else set()
+              overlay=set('/'+str(q.relative_to('ops-src/ops/overlay')) for q in pathlib.Path('ops-src/ops/overlay').rglob('*') if q.is_file())
+              bad=[d for d in diff if d not in overlay]
+              assert not bad,'Rebuilt files differ from live outside overlay: %s'%bad
+              badu=[u for u,_ in unverified if u not in allowed and u not in overlay]
+              assert not badu,'Unverified paths not allowed: %s'%badu
+          ov=pathlib.Path('ops-src/ops/overlay')
+          for q in sorted(ov.rglob('*')):
+              if q.is_file():
+                  dst=root/q.relative_to(ov);dst.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(q,dst);print('OVERLAY',q.relative_to(ov))
+          print('FINAL_FILE_COUNT',len([p for p in root.rglob('*') if p.is_file()]))
+          PYCMP
+      - uses: actions/upload-artifact@v4
+        with:
+          name: haress-visual-v11-assets
+          path: app/
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: c130f187f18f4a57bb31e64c60505350afc80248
+      - uses: actions/checkout@v4
+        with:
+          path: ops-src
+      - uses: actions/download-artifact@v4
+        with:
+          name: haress-visual-v11-assets
+          path: app/
+      - name: Read live script and bindings, preflight, then dry-run or deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          python - <<'PYPRE'
+          import os,json,urllib.request,hashlib,email.parser,email.policy,pathlib
+          account=os.environ['CF_ACCOUNT']
+          assert account=='9b34aacddb6334bb8c051f0d0e5670e2','Unexpected account'
+          base='https://api.cloudflare.com/client/v4/accounts/'+account+'/workers/scripts/hares'
+          token=os.environ['CF_TOKEN']
+          def call(path=''):
+              req=urllib.request.Request(base+path,headers={'Authorization':'Bearer '+token})
+              with urllib.request.urlopen(req,timeout=45) as r:return r.headers,r.read()
+          def api(path=''):
+              _,b=call(path);j=json.loads(b);assert j.get('success'),'API refused';return j['result']
+          live='b9310110-b748-4dfc-b42a-e1fd134521f9'
+          dep=api('/deployments')['deployments'][0]
+          assert dep['versions']==[{'version_id':live,'percentage':100}],'Production changed; abort'
+          ver=api('/versions/'+live)
+          binds=ver['resources']['bindings'];rt=ver['resources']['script_runtime']
+          print('LIVE_BINDINGS',json.dumps([{k:v for k,v in b.items()} for b in binds]))
+          print('LIVE_RUNTIME',json.dumps(rt))
+          headers,body=call('/content/v2')
+          m=email.parser.BytesParser(policy=email.policy.default).parsebytes(('Content-Type: '+headers['Content-Type']+'\r\n\r\n').encode()+body)
+          parts=[p for p in m.iter_parts() if p.get_filename()=='index.js'];assert len(parts)==1
+          code=parts[0].get_payload(decode=True)
+          sha=hashlib.sha256(code).hexdigest();print('LIVE_SCRIPT_SHA256',sha,len(code))
+          pathlib.Path('live-script').mkdir(exist_ok=True);pathlib.Path('live-script/index.js').write_bytes(code)
+          mode=open('ops-src/ops/visual-v11-mode.txt').read().split()
+          if mode[0]=='deploy': assert mode[1]==sha,'Live script differs from the reviewed script; abort'
+          plain=[b for b in binds if b['type']=='plain_text']
+          assert [b['name'] for b in binds if b['type'] not in ('plain_text','assets')]==[],'Unexpected non-text binding; abort'
+          cfg={'name':'hares','main':'./live-script/index.js','no_bundle':True,'compatibility_date':rt['compatibility_date'],
+               'vars':{b['name']:b['text'] for b in plain},
+               'assets':{'directory':'./app','binding':'ASSETS','run_worker_first':bool(rt['assets']['raw_run_worker_first'])}}
+          print('ASSETS_RUNTIME',json.dumps(rt.get('assets')))
+          json.dump(cfg,open('wrangler.visual.json','w'))
+          print('WRANGLER_CONFIG_VARS',sorted(cfg['vars']))
+          PYPRE
+          if [ "$(cut -d' ' -f1 ops-src/ops/visual-v11-mode.txt)" = "deploy" ]; then
+            npx --yes wrangler@4.168.0 deploy -c wrangler.visual.json
+            python - <<'PYPOST'
+          import os,json,urllib.request,hashlib,email.parser,email.policy,time
+          account=os.environ['CF_ACCOUNT'];token=os.environ['CF_TOKEN']
+          base='https://api.cloudflare.com/client/v4/accounts/'+account+'/workers/scripts/hares'
+          def call(path=''):
+              req=urllib.request.Request(base+path,headers={'Authorization':'Bearer '+token})
+              with urllib.request.urlopen(req,timeout=45) as r:return r.headers,r.read()
+          def api(path=''):
+              _,b=call(path);j=json.loads(b);assert j.get('success');return j['result']
+          old=api('/versions/b9310110-b748-4dfc-b42a-e1fd134521f9')
+          dep=api('/deployments')['deployments'][0];vid=dep['versions'][0]['version_id'];print('NEW_VERSION',vid,dep['versions'])
+          new=api('/versions/'+vid)
+          key=lambda l:sorted(json.dumps(x,sort_keys=True) for x in l)
+          assert key(new['resources']['bindings'])==key(old['resources']['bindings']),'Bindings differ'
+          assert new['resources']['script_runtime']['assets']==old['resources']['script_runtime']['assets'],'Assets runtime config differs'
+          assert new['resources']['script_runtime']['compatibility_date']==old['resources']['script_runtime']['compatibility_date']
+          headers,body=call('/content/v2')
+          m=email.parser.BytesParser(policy=email.policy.default).parsebytes(('Content-Type: '+headers['Content-Type']+'\r\n\r\n').encode()+body)
+          parts=[p for p in m.iter_parts() if p.get_filename()=='index.js']
+          print('NEW_SCRIPT_SHA256',hashlib.sha256(parts[0].get_payload(decode=True)).hexdigest())
+          assert hashlib.sha256(parts[0].get_payload(decode=True)).hexdigest()==open('ops-src/ops/visual-v11-mode.txt').read().split()[1],'Script changed'
+          print('Bindings, runtime config and script verified identical to the previous live version.')
+          PYPOST
+          else
+            npx --yes wrangler@4.168.0 deploy --dry-run -c wrangler.visual.json
+          fi
