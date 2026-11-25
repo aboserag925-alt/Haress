@@ -1,0 +1,77 @@
+name: Temporary library transport, preserve live assets
+on:
+  push:
+    branches: [maintenance/library-transport-20261125]
+    paths: [.github/workflows/library-transport-20261125.yml]
+permissions:
+  contents: read
+concurrency:
+  group: hares-library-transport-once
+  cancel-in-progress: false
+jobs:
+  code-only:
+    if: github.repository == 'aboserag925-alt/Haress' && github.ref == 'refs/heads/maintenance/library-transport-20261125'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    steps:
+      - name: Preserve assets and connect only public library reads
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          python - <<'PYDEPLOY'
+          import os,json,urllib.request,hashlib,email.parser,email.policy,base64,time
+          account=os.environ['CF_ACCOUNT']
+          assert account=='9b34aacddb6334bb8c051f0d0e5670e2','Unexpected account'
+          base='https://api.cloudflare.com/client/v4/accounts/'+account+'/workers/scripts/hares'
+          token=os.environ['CF_TOKEN']
+          def call(path='',data=None,method='GET',ctype='application/json'):
+              headers={'Authorization':'Bearer '+token,'Content-Type':ctype}
+              req=urllib.request.Request(base+path,data=data,method=method,headers=headers)
+              with urllib.request.urlopen(req,timeout=45) as r:return r.headers, r.read()
+          def api(path='',data=None,method='GET'):
+              _,b=call(path,None if data is None else json.dumps(data).encode(),method)
+              j=json.loads(b);assert j.get('success'), 'Cloudflare API refused operation';return j['result']
+          original='90c9299d-46a3-481f-a30e-56352282e2ee'
+          dep=api('/deployments')['deployments'][0]
+          assert dep['versions']==[{'version_id':original,'percentage':100}], 'Production changed; abort'
+          version=api('/versions/'+original)
+          expected=[{'name':'ASSETS','type':'assets'},{'name':'DEPLOYMENT_ENV','text':'production','type':'plain_text'},{'name':'SUPABASE_URL','text':'https://uzepglfimareggswjzlf.supabase.co','type':'plain_text'}]
+          assert version['resources']['bindings']==expected,'Bindings changed; abort'
+          runtime=version['resources']['script_runtime']
+          assert runtime['compatibility_date']=='2026-11-05'
+          assert runtime['assets']['raw_run_worker_first'] is True
+          headers,body=call('/content/v2')
+          m=email.parser.BytesParser(policy=email.policy.default).parsebytes(('Content-Type: '+headers['Content-Type']+'\r\n\r\n').encode()+body)
+          parts=list(m.iter_parts());assert len(parts)==1
+          code=parts[0].get_payload(decode=True)
+          assert hashlib.sha256(code).hexdigest()=='66b444b83df0069ccd187d1cdd8a1d958f2da1f8bc44378a9038b1886deb4770','Source changed; abort'
+          patch=base64.b64decode('ICAvLyBJc29sYXRlIGxpYnJhcnkgcmVjb3ZlcnkgZnJvbSBxdWVzdGlvbi9hZG1pbiBBUElzIGFuZCBmcm9tIFByZXZpZXcuCiAgY29uc3QgbGlicmFyeVBhdGggPSAvXlwvYXBpXC9saWJyYXJ5KD86XC9maWxlc1wvWzAtOWEtZl17OH0tWzAtOWEtZl17NH0tWzAtOWEtZl17NH0tWzAtOWEtZl17NH0tWzAtOWEtZl17MTJ9KT8kL2kudGVzdChlbnRyeVVybC5wYXRobmFtZSk7CiAgaWYgKGVudiAmJiBlbnYuREVQTE9ZTUVOVF9FTlYgPT09ICdwcm9kdWN0aW9uJyAmJiBlbnYuTElCUkFSWV9CQUNLRU5EX1VSTCAmJiBsaWJyYXJ5UGF0aCkgewogICAgaWYgKCFbJ0dFVCcsICdIRUFEJ10uaW5jbHVkZXMocmVxdWVzdC5tZXRob2QpKSByZXR1cm4gbmV3IFJlc3BvbnNlKG51bGwsIHtzdGF0dXM6NDA1LGhlYWRlcnM6e0FsbG93OidHRVQsIEhFQUQnfX0pOwogICAgY29uc3QgbGlicmFyeVVybCA9IFN0cmluZyhlbnYuTElCUkFSWV9CQUNLRU5EX1VSTCk7CiAgICAvLyBPbmx5IHRoZSByZWNvdmVyZWQgZXhpc3Rpbmcgc291cmNlLCBub3QgYW4gYXJiaXRyYXJ5IGRlc3RpbmF0aW9uLgogICAgaWYgKGxpYnJhcnlVcmwgIT09ICdodHRwczovL2hhcmVzcy1wcm9kdWN0aW9uLnVwLnJhaWx3YXkuYXBwJykgcmV0dXJuIG5ldyBSZXNwb25zZShudWxsLHtzdGF0dXM6NTAzfSk7CiAgICBjb25zdCBsaWJyYXJ5UmVxdWVzdCA9IG5ldyBSZXF1ZXN0KHJlcXVlc3QpOwogICAgbGlicmFyeVJlcXVlc3QuaGVhZGVycy5kZWxldGUoJ2F1dGhvcml6YXRpb24nKTsKICAgIGxpYnJhcnlSZXF1ZXN0LmhlYWRlcnMuZGVsZXRlKCdjb29raWUnKTsKICAgIGxpYnJhcnlSZXF1ZXN0LmhlYWRlcnMuZGVsZXRlKCdhcGlrZXknKTsKICAgIHJldHVybiBwcm94eVRvQmFja2VuZChsaWJyYXJ5UmVxdWVzdCwgbGlicmFyeVVybCwgZmV0Y2hJbXBsLCB7fSk7CiAgfQo=')
+          needle=b'  const backendUrl = env && env.API_BACKEND_URL'
+          assert code.count(needle)==1
+          code=code.replace(needle,patch+needle)
+          # Recheck existing public source immediately before activation. Never create content.
+          with urllib.request.urlopen('https://haress-production.up.railway.app/api/library',timeout=30) as r:
+              source=json.load(r);assert r.status==200 and source=={'items':[]},'Source changed; review required'
+          metadata={'main_module':'index.js','keep_assets':True,'compatibility_date':'2026-11-05','bindings':expected+[{'name':'LIBRARY_BACKEND_URL','type':'plain_text','text':'https://haress-production.up.railway.app'}],'assets':{'config':{'run_worker_first':True}},'logpush':False}
+          boundary='haress-library-code-only-20261125'
+          segments=[]
+          def part(name,content,kind,filename=None):
+              disposition='Content-Disposition: form-data; name="'+name+'"'+('' if filename is None else '; filename="'+filename+'"')
+              segments.append(('--'+boundary+'\r\n'+disposition+'\r\nContent-Type: '+kind+'\r\n\r\n').encode()+content+b'\r\n')
+          part('metadata',json.dumps(metadata).encode(),'application/json')
+          part('index.js',code,'application/javascript+module','index.js')
+          payload=b''.join(segments)+('--'+boundary+'--\r\n').encode()
+          _,result=call('',payload,'PUT','multipart/form-data; boundary='+boundary)
+          response=json.loads(result);assert response.get('success'),'Upload failed'
+          print('Code-only upload accepted with keep_assets=true. Original rollback version:',original)
+          newdep=api('/deployments')['deployments'][0]
+          print('Active version:',newdep['versions'])
+          assert newdep['versions'][0]['version_id']!=original
+          newver=api('/versions/'+newdep['versions'][0]['version_id'])
+          assert newver['resources']['bindings']==metadata['bindings']
+          assert newver['resources']['script_runtime']['assets']['raw_run_worker_first'] is True
+          print('Bindings and asset routing verified. No content/schema/plan changes.')
+          PYDEPLOY
