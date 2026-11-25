@@ -18,6 +18,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: ops-src
+      - uses: actions/checkout@v4
+        with:
+          ref: c130f187f18f4a57bb31e64c60505350afc80248
+          path: base
       - uses: actions/download-artifact@v4
         with:
           name: haress-books-only-assets
@@ -30,6 +34,11 @@ jobs:
           python - <<'PYCMP'
           import os,sys,hashlib,urllib.request,urllib.parse,urllib.error,json,shutil,pathlib
           root=pathlib.Path('app')
+          for q in sorted(pathlib.Path('base/app').rglob('*')):
+              if q.is_file():
+                  d=root/q.relative_to('base/app')
+                  if not d.exists():
+                      d.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(q,d);print('FROM_BASE_ONLY',q.relative_to('base/app'))
           files=sorted(p for p in root.rglob('*') if p.is_file())
           print('ARTIFACT_FILE_COUNT',len(files))
           class NoRedirect(urllib.request.HTTPRedirectHandler):
