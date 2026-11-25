@@ -53,6 +53,16 @@ jobs:
                   body=r.read();code=r.status
               except urllib.error.HTTPError as e:
                   body=b'';code=e.code
+              if code in (301,302,307,308) and rel.endswith('.html'):
+                  alt=rel[:-10] if rel.endswith('/index.html') else rel[:-5]
+                  alt=alt or '/'
+                  try:
+                      r2=urllib.request.urlopen(urllib.request.Request('https://hares.aboserag925.workers.dev'+urllib.parse.quote(alt),headers={'Accept-Encoding':'identity','User-Agent':'visual-v11-verify'}),timeout=60)
+                      b2=r2.read()
+                      print('PRETTY_URL',rel,'->',alt,r2.status,'identical' if b2==data else 'DIFFERENT %d vs %d'%(len(b2),len(data)))
+                      if b2==data: body=b2;code=200
+                  except Exception as e:
+                      print('PRETTY_URL_ERR',rel,alt,e)
               if code==200 and body==data: same.append(rel)
               elif code==200: diff.append(rel)
               else: unverified.append((rel,code))
