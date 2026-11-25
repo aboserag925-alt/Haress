@@ -70,7 +70,7 @@ jobs:
           json.dump({'count':len(files),'diff':diff,'unverified':[u[0] for u in unverified]},open('/tmp/compare.json','w'))
           mode=open('ops-src/ops/visual-v11-mode.txt').read().split()
           if mode[0]=='deploy':
-              assert len(files)==85,'Unexpected rebuilt file count'
+              assert len(files)==79,'Unexpected original file count'
               allowed=set(mode[2].split(',')) if len(mode)>2 else set()
               overlay=set('/'+str(q.relative_to('ops-src/ops/overlay')) for q in pathlib.Path('ops-src/ops/overlay').rglob('*') if q.is_file())
               bad=[d for d in diff if d not in overlay]
