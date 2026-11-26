@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/v3/identity.css">
-<link rel="stylesheet" href="/v3/royal.css">
+<link rel="stylesheet" href="/v3/archive/archive.css"><link rel="stylesheet" href="/v3/royal.css">
 <link rel="stylesheet" href="/v3/royal-v2.css">
 <link rel="stylesheet" href="/v3/royal-v3.css">
 <script src="/supabase-config.js"></script>
@@ -23,6 +23,12 @@
 <script defer src="/v3/v3-runtime.js"></script>
 <script defer src="/v3/v3-books.js"></script>
 <script defer src="/v3/v3-adapter.js"></script>
+<script defer src="/v3/archive/youtube.js"></script>
+<script defer src="/v3/archive/source-links.js"></script>
+<script defer src="/v3/archive/video-live/model.js"></script>
+<script defer src="/v3/archive/video-live/player.js"></script>
+<script defer src="/v3/archive/v3-archive.js"></script>
+<script defer src="/v3/archive/archive-init.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">تجاوز إلى المحتوى</a>
@@ -32,7 +38,7 @@
       <span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
       <span><b>أهل الأثر</b><small>مجلس العلم والذكر</small></span>
     </a>
-    <nav class="primary-links" aria-label="التنقل الرئيسي"><button type="button" data-v3-target="sched">الرئيسية</button><button type="button" data-v3-target="media">المكتبة</button><button type="button" data-v3-target="about">عن المجلس</button><button type="button" data-v3-target="q">تواصل</button></nav><div class="masthead-meta">
+    <nav class="primary-links" aria-label="التنقل الرئيسي"><button type="button" data-v3-target="sched">الرئيسية</button><button type="button" data-v3-target="media">المكتبة</button><button type="button" data-v3-target="archive">الأقسام</button><button type="button" data-v3-target="about">عن المجلس</button><button type="button" data-v3-target="q">تواصل</button></nav><div class="masthead-meta">
       <span class="edition">القرآن والسنة بفهم أهل السنة</span>
       <button class="radio-launch" id="quranRadioButton" type="button" aria-expanded="false" aria-controls="quranRadioPanel">استمع إلى القرآن <span aria-hidden="true">◖</span></button>
       <button class="icon-button" type="button" data-v3-theme-toggle aria-label="تبديل المظهر">◐</button>
@@ -145,6 +151,16 @@
           </div></div>
           <h3>كتب PDF</h3><p>نسخ مصورة من مقتنيات المكتبات الجامعية، مع بيان نطاق كل نسخة ومصدرها.</p><div id="bookItems" class="editorial-library"></div><h3>مواد المكتبة الأخرى</h3><p id="mediaStatus" class="status" role="status" aria-live="polite">جارٍ تحميل المكتبة…</p><div id="mediaItems" class="editorial-library"></div>
         </section>
+
+        <section id="archive" hidden tabindex="-1" class="scene">
+          <header class="scene-heading"><p class="eyebrow">الأقسام العلمية</p><h2>الأقسام <em>والشروح</em></h2><p>دفعة أولى من قناة الدكتور خالد على يوتيوب. حالة كل شرح غير محددة حتى تُراجع، ولا يُدّعى اكتمال أي سلسلة.</p></header>
+          <div class="library-tools"><div aria-label="القسم" class="media-filters" id="archiveSubjectFilters"></div></div>
+          <div class="library-tools"><div aria-label="الحالة" class="media-filters" id="archiveProgressFilters"></div></div>
+          <div class="library-tools"><div aria-label="نوع المادة" class="media-filters" id="archiveMediaFilters"></div></div>
+          <p id="archiveStatus" class="status" role="status" aria-live="polite">جارٍ تحميل الأقسام…</p><div class="v3-archive" id="archiveItems"></div>
+        </section>
+
+        <section id="haressVideoPlayer" hidden class="scene-card" aria-label="مشغّل الفيديو والبث"></section>
 
         <section id="q" hidden tabindex="-1" class="scene consultation">
           <div class="consultation-art" aria-hidden="true"><span>س</span><i></i></div>
