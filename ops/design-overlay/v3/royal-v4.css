@@ -1,0 +1,25 @@
+/* Design audit pass (redesign-skill checks that fit this project). Additive and reversible:
+   remove this file and its link to restore the previous look. No colors, fonts, imagery or layout change. */
+:root{--ease-out:cubic-bezier(.22,1,.36,1)}
+/* type: balanced headings, no orphaned last words, steady numerals */
+h1,h2,h3,.scene-heading h2,.section-heading h2{text-wrap:balance}
+p,.v3-lesson-note,.opening-lede{text-wrap:pretty}
+time,.signal-count,.prayer-cell time,.dhikr-count,.v3-subject-count,.v3-resource-type{font-variant-numeric:tabular-nums}
+/* measure: body copy stays readable on wide screens */
+.section-heading>p,.scene-heading>p,.v3-lesson-note,.opening-lede{max-width:68ch}
+/* states: hover and press feedback on the controls that had none */
+@media(prefers-reduced-motion:no-preference){
+.nav-item,.adhkar-choice,.dhikr-count,.v3-badge,.radio-launch,.v3-audio-play,.v3-audio-more{transition:transform .3s var(--ease-out),background-color .3s var(--ease-out),border-color .3s var(--ease-out),color .3s var(--ease-out)}
+.nav-item:not(.is-active):hover{background:var(--forest-soft);color:var(--navy)}
+.media-filter:not(.on):hover,.adhkar-choice:not(.on):hover{border-color:var(--gold-2);background:#fff9e6}
+.gold-action:hover{filter:brightness(1.05);transform:translateY(-1px)}
+.outline-action:hover{border-color:var(--gold-2)}
+.radio-launch:hover{background:rgba(232,196,106,.14)}
+.nav-item:active,.adhkar-choice:active,.dhikr-count:active,.radio-launch:active{transform:scale(.97)}
+}
+/* loading: a calm skeleton instead of an empty gap while lists fetch */
+#mediaItems:empty,#archiveItems:empty{display:grid;gap:14px;min-height:240px;background:linear-gradient(var(--line-soft),var(--line-soft)) 0 0/100% 76px no-repeat,linear-gradient(var(--line-soft),var(--line-soft)) 0 96px/100% 76px no-repeat,linear-gradient(var(--line-soft),var(--line-soft)) 0 192px/100% 76px no-repeat;border-radius:14px;opacity:.55}
+@media(prefers-reduced-motion:no-preference){#mediaItems:empty,#archiveItems:empty{animation:v4pulse 1.6s var(--ease-out) infinite alternate}@keyframes v4pulse{to{opacity:.25}}}
+/* touch targets */
+.primary-links button,.media-filter,.adhkar-choice{min-height:44px}
+@media(max-width:680px){.primary-links button{min-height:40px}}
