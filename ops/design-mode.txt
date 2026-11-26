@@ -1,1 +1,1 @@
-dry-run
+deploy 695bca916e628aee63111ad4d4abf160125c787c87904122b846698ae2f6701a /index.html
