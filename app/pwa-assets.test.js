@@ -44,14 +44,14 @@ test('cinematic splash assets are wired into the deployed app shell', function (
   const splashCss = fs.readFileSync(path.join(appDirectory, 'splash.css'), 'utf8');
   const splashJs = fs.readFileSync(path.join(appDirectory, 'splash.js'), 'utf8');
 
-  assert.match(html, /href="splash\\.css" rel="stylesheet"/);
-  assert.match(html, /src="splash\\.js" defer/);
-  assert.doesNotMatch(html, /src="brand-intro\\.js"/);
-  assert.match(html, /Noto\\+Kufi\\+Arabic/);
-  assert.match(splashCss, /haress-splash__shield-text/);
-  assert.match(splashCss, /haress-draw/);
-  assert.match(splashJs, /حرس الحدود/);
-  assert.match(splashJs, /sessionStorage\\.getItem\\(SESSION_KEY\\)/);
-  assert.match(splashJs, /splash\\.addEventListener\\("click", close\\)/);
-  assert.match(splashJs, /prefersReducedMotion/);
+  assert.ok(html.includes('href="splash.css" rel="stylesheet"'));
+  assert.ok(html.includes('src="splash.js" defer'));
+  assert.ok(!html.includes('src="brand-intro.js"'));
+  assert.ok(html.includes('Noto+Kufi+Arabic'));
+  assert.ok(splashCss.includes('haress-splash__shield-text'));
+  assert.ok(splashCss.includes('haress-draw'));
+  assert.ok(splashJs.includes('حرس الحدود'));
+  assert.ok(splashJs.includes('sessionStorage.getItem(SESSION_KEY)'));
+  assert.ok(splashJs.includes('splash.addEventListener("click", close)'));
+  assert.ok(splashJs.includes('prefersReducedMotion'));
 });
