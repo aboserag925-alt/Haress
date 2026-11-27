@@ -65,6 +65,29 @@ describe('Haress Worker: توجيه /api/*', () => {
     assert.equal(body.ok, true);
   });
 
+  it('strips client-spoofed x-client-ip and only forwards the Cloudflare-provided address', async () => {
+    const captured = [];
+    const fetchImpl = async (url, init) => {
+      captured.push(Object.fromEntries(init.headers.entries()));
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    };
+
+    const trustedReq = makeRequest('https://worker.example/api/health', {
+      headers: { 'x-client-ip': '198.51.100.77', 'cf-connecting-ip': '203.0.113.9' }
+    });
+    const trustedRes = await handleRequest(trustedReq, env, fetchImpl);
+    assert.equal(trustedRes.status, 200);
+    assert.equal(captured[0]['x-client-ip'], '203.0.113.9');
+    assert.equal(captured[0]['cf-connecting-ip'], undefined);
+
+    const spoofedReq = makeRequest('https://worker.example/api/health', {
+      headers: { 'x-client-ip': '198.51.100.77' }
+    });
+    const spoofedRes = await handleRequest(spoofedReq, env, fetchImpl);
+    assert.equal(spoofedRes.status, 200);
+    assert.equal(captured[1]['x-client-ip'], undefined);
+  });
+
   it('يحافظ على معاملات الاستعلام عند توجيه طلبات API', async () => {
     let capturedUrl = null;
     const fetchImpl = async (url) => {
