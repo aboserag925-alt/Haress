@@ -246,9 +246,15 @@ async function consumeSharedDailyCap(env, cap, now, fetchImpl) {
   return await response.json() === true;
 }
 
+// Visitor questions go to TELEGRAM_QUESTIONS_CHAT_ID (the sheikh's own chat) when set,
+// otherwise to TELEGRAM_CHAT_ID. Media intake keeps using TELEGRAM_CHAT_ID only.
+function questionsChatId(env) {
+  return String(env.TELEGRAM_QUESTIONS_CHAT_ID || env.TELEGRAM_CHAT_ID || '').trim();
+}
+
 // In production the questions form must be protected by Turnstile.
 function assertProductionConfig(env) {
-  const questionsConfigured = Boolean(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID);
+  const questionsConfigured = Boolean(env.TELEGRAM_BOT_TOKEN && questionsChatId(env));
   if (env.NODE_ENV === 'production' && questionsConfigured && !env.TURNSTILE_SECRET_KEY) {
     throw new Error('TURNSTILE_SECRET_KEY is required in production when the questions form is enabled.');
   }
@@ -350,7 +356,7 @@ async function sendToTelegram(question, env, fetchImpl) {
           Accept: 'application/json; charset=utf-8'
         },
         signal: AbortSignal.timeout(15000),
-        body: JSON.stringify({ chat_id: env.TELEGRAM_CHAT_ID, text: message })
+        body: JSON.stringify({ chat_id: questionsChatId(env), text: message })
       }
     );
   } catch {
@@ -503,7 +509,7 @@ function createServer(options) {
         sendJson(response, 403, { error: 'مصدر الطلب غير مسموح.' });
         return;
       }
-      if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
+      if (!env.TELEGRAM_BOT_TOKEN || !questionsChatId(env)) {
         sendJson(response, 503, { error: 'إعدادات Telegram غير مكتملة على الخادم.' });
         return;
       }

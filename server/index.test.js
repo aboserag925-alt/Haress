@@ -478,6 +478,20 @@ test('sends the visitor question as-is to the configured Telegram chat with no A
   });
 });
 
+test('sends visitor questions to TELEGRAM_QUESTIONS_CHAT_ID when set, not the media chat', async function () {
+  const provider = mockFetch();
+  const env = { ...configuredEnv, TELEGRAM_QUESTIONS_CHAT_ID: '123456789' };
+  await withServer({ env: env, fetch: provider.fetch }, async function (baseUrl) {
+    const response = await fetch(baseUrl + '/api/questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+      body: JSON.stringify({ question: 'ما حكم هذا السؤال؟' })
+    });
+    assert.equal(response.status, 200);
+    assert.equal(JSON.parse(provider.calls[0].options.body).chat_id, '123456789');
+  });
+});
+
 test('does not need or use a Gemini key', async function () {
   const provider = mockFetch();
   const env = { ...configuredEnv, GEMINI_API_KEY: 'should-be-ignored' };
