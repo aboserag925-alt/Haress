@@ -30,6 +30,10 @@ describe('isSecureBackendUrl', () => {
   });
   it('يرضح عناوين النطاقات غير الصالحة', () => {
     assert.equal(isSecureBackendUrl('not-a-url'), false);
+    assert.equal(isSecureBackendUrl('https://user:pass@backend.example.com'), false);
+    assert.equal(isSecureBackendUrl('https://backend.example.com/internal'), false);
+    assert.equal(isSecureBackendUrl('https://backend.example.com/?token=x'), false);
+    assert.equal(isSecureBackendUrl('https://backend.example.com/#fragment'), false);
   });
 });
 
