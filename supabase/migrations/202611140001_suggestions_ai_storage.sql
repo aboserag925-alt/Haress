@@ -70,7 +70,7 @@ create table if not exists public.ai_audit_events (
 
 -- Older Haress production schema has the audit sequence but no column default.
 -- Restore automatic IDs without altering identity-backed installations.
-do $
+do $$
 begin
   if exists (
     select 1 from pg_catalog.pg_class seq
@@ -93,7 +93,7 @@ begin
     );
   end if;
 end
-$;
+$$;
 
 create index if not exists suggestions_created_at_idx on public.suggestions(created_at desc);
 create index if not exists suggestions_status_created_idx on public.suggestions(status,created_at desc);
