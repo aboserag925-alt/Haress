@@ -59,7 +59,9 @@ test('buildKey: object key shape', async function () {
   assert.equal(buildKey('audio', 'abc', 'lesson.mp3'), 'library/audio/abc/lesson.mp3');
   assert.equal(buildKey('video', 'abc', 'v.mp4'), 'library/video/abc/v.mp4');
   assert.equal(buildKey('books', 'abc', 'b.pdf'), 'library/books/abc/b.pdf');
+  assert.equal(buildKey('document', 'abc', 'b.pdf'), 'library/books/abc/b.pdf');
   assert.equal(buildKey('images', 'abc', 'i.jpg'), 'library/images/abc/i.jpg');
+  assert.equal(buildKey('image', 'abc', 'i.jpg'), 'library/images/abc/i.jpg');
   assert.equal(buildKey('unknown', 'abc', 'x.bin'), 'library/other/abc/x.bin');
 });
 
