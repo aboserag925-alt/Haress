@@ -56,6 +56,9 @@ export function isSecureBackendUrl(value) {
   if (typeof value !== 'string' || value.trim().length === 0) return false;
   try {
     const parsed = new URL(value);
+    // Backend configuration must be an origin only: never embed credentials,
+    // path prefixes, query parameters, or fragments in a trusted proxy target.
+    if (parsed.username || parsed.password || parsed.pathname !== '/' || parsed.search || parsed.hash) return false;
     if (parsed.protocol === 'https:') return true;
     // http مسموح فقط لـ localhost في بيئة التطوير المحلية.
     if (parsed.protocol === 'http:' && parsed.hostname === 'localhost') return true;
