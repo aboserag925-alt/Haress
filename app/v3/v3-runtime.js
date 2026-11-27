@@ -72,13 +72,19 @@
   }
   async function loadLectures() {
     try {
-      var response = await fetch(api('/api/lectures'), { cache: 'no-store' });
+      var publishableKey = window.AHL_SUPABASE_CONFIG && window.AHL_SUPABASE_CONFIG.anonKey;
+      var response = await fetch(api('/api/lectures'), { cache: 'no-store', headers: publishableKey ? { apikey: publishableKey } : {} });
       if (!response.ok) throw new Error('lecture');
       var result = await response.json();
       if (!Array.isArray(result.items) || !result.items.length) return;
       var host = $('managedLectures'); if (!host) return;
       host.replaceChildren();
-      result.items.forEach(function (item) {
+      var cutoff = Date.now() - 6 * 3600 * 1000;
+      var upcoming = result.items.filter(function (item) {
+        return item.recording_url || !item.starts_at || new Date(item.starts_at).getTime() >= cutoff;
+      });
+      if (!upcoming.length) { host.hidden = true; return; }
+      upcoming.forEach(function (item) {
         var article = document.createElement('article'); article.className = 'v3-managed-entry';
         var title = document.createElement('h3'); title.textContent = item.title || 'محاضرة';
         var meta = document.createElement('p');
@@ -92,7 +98,8 @@
         });
         host.appendChild(article);
       });
-      host.hidden = false;
+      var schedHost = $('sched');
+      host.hidden = !!(schedHost && schedHost.hidden);
     } catch (e) { /* Built-in schedule remains available. */ }
   }
   function updateScheduleClock() {
@@ -122,6 +129,8 @@
       button.classList.toggle('is-active', active); button.setAttribute('aria-pressed', String(active));
     });
     var heading = document.querySelector('.section-heading'), next = document.querySelector('.next');
+    var managed = $('managedLectures');
+    if (managed) managed.hidden = !scheduleView || !managed.childElementCount;
     if (heading) heading.hidden = !scheduleView;
     if (next) next.hidden = !scheduleView;
     var target = $(id);
@@ -174,7 +183,7 @@
       if (audio.muted) clearTimeout(state.radioTimer);
     });
     audio.addEventListener('error', function () { status('quranRadioStatus','تعذر تحميل بث القاهرة حاليًا. يمكنك فتح الموقع الرسمي.'); });
-    sync(); playCairo();
+    sync();
   }
 
   /* Prayer calculations and Qibla use the existing pinned Adhan browser bundle. */
