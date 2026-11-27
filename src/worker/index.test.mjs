@@ -374,4 +374,36 @@ describe('production routing with API_BACKEND_URL', () => {
       assert.equal(captured.headers.get('x-proxy-secret'), 'test-shared-secret');
     });
   }
+
+  for (const route of ['/api/questions', '/api/library']) {
+    it('forwards trusted proxy identity and strips visitor credentials for ' + route, async () => {
+      let captured;
+      const method = route === '/api/questions' ? 'POST' : 'GET';
+      const req = makeRequest('https://hares.aboserag925.workers.dev' + route, {
+        method,
+        headers: {
+          'cf-connecting-ip': '203.0.113.19',
+          'x-client-ip': '198.51.100.77',
+          'x-proxy-secret': 'attacker-controlled',
+          authorization: 'Bearer visitor-token',
+          cookie: 'session=visitor-cookie',
+          apikey: 'visitor-api-key',
+          ...(method === 'POST' ? { 'content-type': 'application/json' } : {})
+        },
+        ...(method === 'POST' ? { body: JSON.stringify({ question: 'سؤال اختبار' }) } : {})
+      });
+      const res = await handleRequest(req, productionEnv, async (url, init) => {
+        captured = { url: String(url), method: init.method, headers: new Headers(init.headers) };
+        return new Response(method === 'POST' ? '{"ok":true}' : '{"items":[]}', { status: 200 });
+      });
+      assert.equal(res.status, 200);
+      assert.equal(captured.url, 'https://haress-production.up.railway.app' + route);
+      assert.equal(captured.method, method);
+      assert.equal(captured.headers.get('x-client-ip'), '203.0.113.19');
+      assert.equal(captured.headers.get('x-proxy-secret'), 'test-shared-secret');
+      assert.equal(captured.headers.has('authorization'), false);
+      assert.equal(captured.headers.has('cookie'), false);
+      assert.equal(captured.headers.has('apikey'), false);
+    });
+  }
 });
