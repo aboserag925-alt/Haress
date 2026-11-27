@@ -7,12 +7,20 @@ const path=require('node:path');
 const migration=fs.readFileSync(path.join(__dirname,'migrations','202611140001_suggestions_ai_storage.sql'),'utf8');
 const approvalGuard=fs.readFileSync(path.join(__dirname,'migrations','20261127123000_restore_ai_approval_rpc_guards.sql'),'utf8');
 const approvalSchema=fs.readFileSync(path.join(__dirname,'migrations','20261118172423_haress_ai_workflow_storage_hardening.sql'),'utf8');
+const approvalAlignment=fs.readFileSync(path.join(__dirname,'migrations','20261118172518_haress_ai_approval_state_alignment.sql'),'utf8');
 
 test('approval guard upsert target is backed by the recovered production unique constraint',()=>{
   assert.match(approvalSchema,/Recovered verbatim from Production PostgreSQL statement logs/i);
   assert.match(approvalSchema,/Applied at 2026-11-18 17:24:23 UTC; SQLSTATE 00000/i);
   assert.match(approvalSchema,/unique\s*\(task_id,\s*action\)/i);
   assert.match(approvalGuard,/on conflict \(task_id, action\) do update/i);
+});
+
+test('approval_id and human_approval_id columns exist before the guarded RPC writes them',()=>{
+  assert.match(approvalAlignment,/add column if not exists approval_id uuid references public\.ai_approvals\(id\)/i);
+  assert.match(approvalSchema,/human_approval_id uuid/i);
+  assert.match(approvalGuard,/approval_id = v_approval_id/i);
+  assert.match(approvalGuard,/human_approval_id = v_approval_id/i);
 });
 
 test('latest AI approval RPC enforces taint, administrator, and task-state guards in the database',()=>{
