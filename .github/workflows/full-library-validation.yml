@@ -1,0 +1,78 @@
+name: Full library assets validation (no deploy)
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - validation/library-assets-full-2026-11-27
+
+permissions:
+  contents: read
+
+concurrency:
+  group: full-library-validation
+  cancel-in-progress: true
+
+jobs:
+  validate-library-assets:
+    name: Rebuild and verify PDF.js plus all 35 book parts
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out validation branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run project test suite
+        run: npm test
+
+      - name: Rebuild pinned PDF.js assets and verify SHA-256
+        run: bash ./scripts/vendor-pdfjs.sh
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pinned PDF processing dependency
+        run: python -m pip install PyMuPDF==1.26.7
+
+      - name: Rebuild all source PDFs and verify all 35 delivery parts
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp app/books.json /tmp/books.committed.json
+          trap 'cp /tmp/books.committed.json app/books.json' EXIT
+          python scripts/prepare-pdf-books.py
+          test "$(find app/books -maxdepth 1 -type f -name '*.pdf' | wc -l)" -eq 35
+          test -z "$(find app/books -maxdepth 1 -type f -name '*.pdf' -size +20M)"
+          python - <<'PY'
+          import json, pathlib
+          root = pathlib.Path(".")
+          committed = json.loads(pathlib.Path("/tmp/books.committed.json").read_text())
+          generated = json.loads((root / "app/books.json").read_text())
+          assert len(committed) == 4, f"expected 4 committed book records, got {len(committed)}"
+          assert len(generated) == 4, f"expected 4 generated book records, got {len(generated)}"
+          expected = {p["file"].removeprefix("/books/") for b in committed for p in b["parts"]}
+          actual = {p.name for p in (root / "app/books").glob("*.pdf")}
+          assert len(expected) == 35, f"committed index references {len(expected)} PDF parts"
+          assert actual == expected, f"PDF file set mismatch: missing={sorted(expected-actual)}, extra={sorted(actual-expected)}"
+          for name in sorted(expected):
+              path = root / "app/books" / name
+              assert path.is_file() and 0 < path.stat().st_size < 20 * 1024 * 1024, f"invalid asset: {name}"
+          print(f"PASS: {len(expected)} indexed PDF parts exist; all are non-empty and under 20 MiB.")
+          PY
+          cp /tmp/books.committed.json app/books.json
+          trap - EXIT
+          git diff --exit-code -- app/books.json content/pdf-source-manifest.json
+          echo "PASS: committed production metadata preserved; no deployment steps exist in this workflow."
