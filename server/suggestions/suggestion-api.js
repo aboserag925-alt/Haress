@@ -7,7 +7,10 @@ async function body(req) {
   for await(const chunk of req){size+=chunk.length;if(size>MAX_BYTES)throw Object.assign(new Error('Request too large'),{statusCode:413});chunks.push(chunk);}
   try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw Object.assign(new Error('Invalid JSON'),{statusCode:400});}
 }
-function createSuggestionsApi({env,fetch:fetchImpl=global.fetch,service,rateLimit=()=>true}) {
+// Public POST /api/suggestions is OFF. No page in the app sends suggestions, and this route had
+// no Turnstile check and no daily cap (the Supabase Edge Function has both). It stays closed until
+// the Edge Function protections (Turnstile + shared daily cap) are ported and this flag is set on purpose.
+function createSuggestionsApi({env,fetch:fetchImpl=global.fetch,service,rateLimit=()=>true,publicSubmissions=false}) {
   async function admin(req) {
     const token=(req.headers.authorization||'').match(/^Bearer\s+([A-Za-z0-9._~-]+)$/i);
     if(!token||!env.SUPABASE_URL||!env.SUPABASE_ANON_KEY||!env.SUPABASE_SERVICE_ROLE_KEY)return null;
@@ -21,6 +24,7 @@ function createSuggestionsApi({env,fetch:fetchImpl=global.fetch,service,rateLimi
     const path=url.split('?')[0];
     if(path==='/api/suggestions') {
       if(req.method!=='POST'){res.setHeader('Allow','POST');send(res,405,{error:'طريقة الطلب غير مدعومة.'});return true;}
+      if(!publicSubmissions){send(res,404,{error:'استقبال الاقتراحات العامة غير متاح حاليًا.'});return true;}
       if(!rateLimit(req)){send(res,429,{error:'تجاوزت حد إرسال الاقتراحات. حاول لاحقًا.'});return true;}
       if(!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type']||'')){send(res,415,{error:'أرسل الاقتراح بصيغة JSON.'});return true;}
       try{const input=await body(req);const created=await service.submit(input,null);send(res,201,{item:created});}
