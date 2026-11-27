@@ -6,6 +6,7 @@ on:
       - "feat/**"
       - "fix/**"
       - "integrate/**"
+      - "validation/**"
       - main
   pull_request:
     branches:
@@ -115,6 +116,8 @@ jobs:
           sudo apt-get install --yes postgresql-client
       - name: Replay every Supabase migration on a clean database
         run: bash scripts/test-supabase-migrations.sh
+      - name: Test AI approval RPC behavior and concurrency
+        run: bash scripts/test-ai-approval-behavior.sh
 
   secrets:
     name: Secret Scan
