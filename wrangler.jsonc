@@ -8,6 +8,9 @@
     "LIBRARY_BACKEND_URL": "https://haress-production.up.railway.app",
     "SUPABASE_URL": "https://uzepglfimareggswjzlf.supabase.co"
   },
+  "secrets": {
+    "required": ["PROXY_SHARED_SECRET"]
+  },
   "assets": {
     "directory": "./app",
     "binding": "ASSETS",
