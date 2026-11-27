@@ -61,10 +61,9 @@ begin
     raise exception 'Task is not ready for human review' using errcode = '55000';
   end if;
 
-  -- Reuse the latest approval row when one exists. The recovered historical
-  -- migrations used CREATE TABLE IF NOT EXISTS, so older installations may not
-  -- have the task/action unique constraint. Lock the task above to serialize
-  -- concurrent decisions for this task without depending on that constraint.
+  -- Reject a second decision for the same task/action. Locking the task row
+  -- serializes concurrent calls even on installations without the historical
+  -- task/action unique constraint.
   select a.id
   into v_approval_id
   from public.ai_approvals a
