@@ -655,17 +655,21 @@ test('uses the authenticated Worker client identity for question rate limits', a
     });
     assert.equal(otherClient.status, 200);
 
-    const spoofedClient = await fetch(baseUrl + '/api/questions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Origin: baseUrl,
-        'X-Client-IP': '203.0.113.23',
-        'X-Proxy-Secret': 'wrong-secret'
-      },
-      body: JSON.stringify({ question: 'سؤال من زائر بسر غير صحيح' })
-    });
-    assert.equal(spoofedClient.status, 429);
+    const invalidSecretStatuses = [];
+    for (let index = 0; index < 6; index += 1) {
+      const spoofedClient = await fetch(baseUrl + '/api/questions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: baseUrl,
+          'X-Client-IP': '203.0.113.' + (30 + index),
+          'X-Proxy-Secret': 'wrong-secret'
+        },
+        body: JSON.stringify({ question: 'سؤال من زائر بسر غير صحيح رقم ' + index })
+      });
+      invalidSecretStatuses.push(spoofedClient.status);
+    }
+    assert.deepEqual(invalidSecretStatuses, [200, 200, 200, 200, 200, 429]);
   });
 });
 
