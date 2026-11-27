@@ -24,7 +24,8 @@ body::before{background:radial-gradient(ellipse at 12% 2%,color-mix(in srgb,var(
 .theme-toggle:focus-visible{outline:3px solid color-mix(in srgb,var(--id-green) 45%,transparent);outline-offset:3px}
 .theme-toggle svg{width:17px;height:17px;flex:none}
 .nav .theme-toggle{flex:none}
-body .wrap>header{position:relative}\nbody .wrap>header .theme-toggle{position:absolute;inset-inline-start:0;top:8px;z-index:8}
+body .wrap>header{position:relative}
+body .wrap>header .theme-toggle{position:absolute;inset-inline-start:0;top:8px;z-index:8}
 html[data-theme="dark"] .site,
 html[data-theme="dark"] .site .nav{background-color:var(--id-bg)!important;color:var(--id-text)!important}
 html[data-theme="dark"] .site .nav{background:rgba(13,23,19,.88)!important;border-color:var(--id-line)!important}
@@ -72,7 +73,8 @@ body .wrap textarea,body .wrap .field input,body .wrap .field select{background:
 body .wrap textarea::placeholder{color:#83948a}
 body .wrap .note,body .wrap .notice{background:#f1f6f0;border-color:var(--id-line);color:#52685c}
 body .wrap .btn{border-color:rgba(23,107,80,.18)}
-\n/* Soft motion language: reveal, lift, and ambient movement without blocking interaction. */
+
+/* Soft motion language: reveal, lift, and ambient movement without blocking interaction. */
 .motion-ready .motion-reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
 .motion-ready .motion-reveal.is-visible{opacity:1;transform:translateY(0)}
 .motion-card{transform-style:preserve-3d;will-change:transform;transition:transform .28s ease,border-color .28s,box-shadow .28s}
