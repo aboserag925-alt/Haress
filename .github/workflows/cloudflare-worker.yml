@@ -25,8 +25,8 @@ jobs:
     name: Build and test application
     environment:
       # PR builds must not receive Cloudflare deployment secrets from the Preview environment.
-      # Production builds use Main only to read the public Supabase build inputs.
-      name: ${{ github.event_name == 'pull_request' && 'Preview-Build-CI' || 'Main' }}
+      # Production builds use the production environment for public Supabase build inputs.
+      name: ${{ github.event_name == 'pull_request' && 'Preview-Build-CI' || 'production' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -40,7 +40,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Validate production Worker configuration (dry run only)
         run: npx --yes wrangler@4 deploy --dry-run
@@ -51,10 +51,10 @@ jobs:
       - name: Validate Supabase build inputs
         env:
           SUPABASE_URL: ${{ github.event_name == 'pull_request' && 'https://bevyztwoijjzfngutnys.supabase.co' || secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && 'sb_publishable_5GpifW0KcFuA_kEupjoByg_mMOdhrRH' || secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ github.event_name == 'pull_request' && 'sb_publishable_5GpifW0KcFuA_kEupjoByg_mMOdhrRH' || secrets.SUPABASE_PUBLISHABLE_KEY }}
           EXPECTED_SUPABASE_URL: ${{ github.event_name == 'pull_request' && 'https://bevyztwoijjzfngutnys.supabase.co' || 'https://uzepglfimareggswjzlf.supabase.co' }}
         run: |
-          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
             echo "Missing Supabase URL or publishable key in the selected GitHub Actions environment."
             exit 1
           fi
@@ -66,7 +66,7 @@ jobs:
       - name: Build application assets
         env:
           SUPABASE_URL: ${{ github.event_name == 'pull_request' && 'https://bevyztwoijjzfngutnys.supabase.co' || secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && 'sb_publishable_5GpifW0KcFuA_kEupjoByg_mMOdhrRH' || secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ github.event_name == 'pull_request' && 'sb_publishable_5GpifW0KcFuA_kEupjoByg_mMOdhrRH' || secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: npm run build:app
 
       # Library assets are not stored in git (see docs/LIBRARY-ASSETS.md). They are rebuilt for
