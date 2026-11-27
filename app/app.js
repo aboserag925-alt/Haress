@@ -960,13 +960,14 @@ async function sendQuestion() {
   var consent = document.getElementById('questionConsent').checked;
   var button = document.getElementById('sendQuestionBtn');
   var status = document.getElementById('qm');
+  var draftBox = document.getElementById('questionDraft');
 
   if (question.length < 5 || question.length > 1600) {
     setStatus(status, 'اكتب سؤالًا بين 5 و1600 حرف.', true);
     return;
   }
   if (!consent) {
-    setStatus(status, 'وافق على إرسال السؤال إلى الشيخ عبر Telegram أولًا.', true);
+    setStatus(status, 'وافق على إرسال السؤال إلى Gemini وTelegram أولًا.', true);
     return;
   }
 
@@ -986,7 +987,8 @@ async function sendQuestion() {
   }
 
   button.disabled = true;
-  setStatus(status, 'جارٍ إرسال السؤال…');
+  draftBox.hidden = true;
+  setStatus(status, 'جارٍ إعداد المسودة وإرسال السؤال للمراجعة…');
   try {
     var response = await fetch(apiUrl('/api/questions'), {
       method: 'POST',
@@ -1002,8 +1004,12 @@ async function sendQuestion() {
       throw new Error('استجابة الخادم غير صالحة. حاول لاحقًا.');
     }
 
+    if (typeof result.draft === 'string') {
+      document.getElementById('questionDraftText').textContent = result.draft;
+      draftBox.hidden = false;
+    }
     if (!response.ok) throw new Error(result.error || 'تعذر إرسال السؤال. حاول لاحقًا.');
-    setStatus(status, 'وصل سؤالك إلى الشيخ على Telegram.');
+    setStatus(status, 'وصل السؤال والمسودة إلى Telegram للمراجعة. المسودة ليست فتوى معتمدة.');
   } catch (error) {
     var message = error instanceof TypeError
       ? 'تعذر الاتصال بالخادم الخلفي. تأكد من تشغيل الخادم ثم حاول مجددًا.'

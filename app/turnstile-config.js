@@ -1,3 +1,2 @@
-// Public Cloudflare Turnstile site key. Replace the empty value with the site's public key.
-// The corresponding TURNSTILE_SECRET_KEY must remain server-side only.
-window.AHL_TURNSTILE_SITE_KEY = '';
+// Public Cloudflare Turnstile site key (public by design). The secret stays server-side only.
+window.AHL_TURNSTILE_SITE_KEY = '0x4AAAAAAGVXcmoynqm_QzGF';
