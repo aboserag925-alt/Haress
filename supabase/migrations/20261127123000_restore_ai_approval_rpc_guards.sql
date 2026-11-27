@@ -61,16 +61,31 @@ begin
     raise exception 'Task is not ready for human review' using errcode = '55000';
   end if;
 
-  -- Keep one current approval row per task/action (the schema enforces this
-  -- uniqueness) and preserve every decision in the append-only audit log below.
-  insert into public.ai_approvals(task_id, actor_user_id, action, decision, reason)
-  values (p_task_id, p_actor_user_id, p_action, p_decision, v_reason)
-  on conflict (task_id, action) do update
-    set actor_user_id = excluded.actor_user_id,
-        decision = excluded.decision,
-        reason = excluded.reason,
+  -- Reuse the latest approval row when one exists. The recovered historical
+  -- migrations used CREATE TABLE IF NOT EXISTS, so older installations may not
+  -- have the task/action unique constraint. Lock the task above to serialize
+  -- concurrent decisions for this task without depending on that constraint.
+  select a.id
+  into v_approval_id
+  from public.ai_approvals a
+  where a.task_id = p_task_id
+    and a.action = p_action
+  order by a.created_at desc, a.id desc
+  limit 1
+  for update;
+
+  if found then
+    update public.ai_approvals
+    set actor_user_id = p_actor_user_id,
+        decision = p_decision,
+        reason = v_reason,
         created_at = pg_catalog.now()
-  returning id into v_approval_id;
+    where id = v_approval_id;
+  else
+    insert into public.ai_approvals(task_id, actor_user_id, action, decision, reason)
+    values (p_task_id, p_actor_user_id, p_action, p_decision, v_reason)
+    returning id into v_approval_id;
+  end if;
 
   if p_action = 'IMPLEMENT' then
     update public.ai_tasks
