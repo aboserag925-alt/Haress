@@ -9,6 +9,7 @@ const { createSuggestionsApi } = require('./suggestions/suggestion-api');
 const { createSuggestionService } = require('./suggestions/suggestion-service');
 const { createApprovalApi } = require('./ai/approval-api');
 const { createTaskService } = require('./ai/task-service');
+const { normalizeSupabaseEnv } = require('./supabase-env');
 const { staticSecurityHeaders } = require('./security-headers');
 
 const PUBLIC_ROOT = path.resolve(__dirname, '..');
@@ -366,7 +367,7 @@ async function sendToTelegram(question, env, fetchImpl) {
 
 function createServer(options) {
   options = options || {};
-  const env = options.env || process.env;
+  const env = normalizeSupabaseEnv(options.env || process.env);
   const fetchImpl = options.fetch || global.fetch;
   const limits = new Map();
   const dailyCapState = { day: '', count: 0 };
@@ -607,7 +608,7 @@ if (require.main === module) {
     throw new Error('PORT must be a valid TCP port.');
   }
   const host = process.env.HOST || '127.0.0.1';
-  const mediaLibrary = createMediaLibrary({ env: process.env });
+  const mediaLibrary = createMediaLibrary({ env: normalizeSupabaseEnv(process.env) });
   const server = createServer({ mediaLibrary: mediaLibrary });
   let shuttingDown = false;
   async function shutdown(signal) {
