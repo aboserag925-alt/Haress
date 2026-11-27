@@ -40,18 +40,14 @@ test('all PWA manifest and offline-cache files exist within the app', function (
 });
 
 
-test('cinematic splash assets are wired into the deployed app shell', function () {
-  const splashCss = fs.readFileSync(path.join(appDirectory, 'splash.css'), 'utf8');
-  const splashJs = fs.readFileSync(path.join(appDirectory, 'splash.js'), 'utf8');
+test('the approved shield logo receives standalone 3D motion without a splash overlay', function () {
+  const brandCss = fs.readFileSync(path.join(appDirectory, 'brand-motion.css'), 'utf8');
 
-  assert.ok(html.includes('href="splash.css" rel="stylesheet"'));
-  assert.ok(html.includes('src="splash.js" defer'));
-  assert.ok(!html.includes('src="brand-intro.js"'));
-  assert.ok(html.includes('Noto+Kufi+Arabic'));
-  assert.ok(splashCss.includes('haress-splash__shield-text'));
-  assert.ok(splashCss.includes('haress-draw'));
-  assert.ok(splashJs.includes('حرس الحدود'));
-  assert.ok(splashJs.includes('sessionStorage.getItem(SESSION_KEY)'));
-  assert.ok(splashJs.includes('splash.addEventListener("click", close)'));
-  assert.ok(splashJs.includes('prefersReducedMotion'));
+  assert.ok(html.includes('brand-motion.css'));
+  assert.ok(!html.includes('splash.css'));
+  assert.ok(!html.includes('splash.js'));
+  assert.ok(!html.includes('brand-intro.js'));
+  assert.ok(brandCss.includes('haress-logo-3d'));
+  assert.ok(brandCss.includes('perspective(720px)'));
+  assert.ok(brandCss.includes('prefers-reduced-motion'));
 });
