@@ -211,8 +211,24 @@ function createMediaLibrary(options) {
   }
 
   async function deleteStoredFile(item) {
-    if (useRemote && item.objectKey) await storage.delete(item.objectKey);
-    else await fs.rm(path.join(filesDirectory, item.storedName), { force: true });
+    if (useRemote) {
+      let objectKey = item.objectKey;
+      if (!objectKey) {
+        objectKey = buildKey(item.kind, item.id, item.fileName);
+        let stored = await storage.get(objectKey);
+        // Older document/image objects may still use the historical "other" folder.
+        if (!stored && (item.kind === 'document' || item.kind === 'image')) {
+          const legacyKey = buildKey('other', item.id, item.fileName);
+          if (legacyKey !== objectKey) {
+            stored = await storage.get(legacyKey);
+            if (stored) objectKey = legacyKey;
+          }
+        }
+      }
+      if (objectKey) await storage.delete(objectKey);
+      return;
+    }
+    await fs.rm(path.join(filesDirectory, item.storedName), { force: true });
   }
 
   async function telegram(method, payload, signal) {
