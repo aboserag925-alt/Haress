@@ -3,7 +3,8 @@
   "use strict";
 
   const SESSION_KEY = "haress_intro_seen_v1";
-  const DURATION_MS = 5350;
+  const prefersReducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const DURATION_MS = prefersReducedMotion ? 1400 : 5350;
   let alreadySeen = false;
 
   try {
@@ -53,17 +54,30 @@
     <button class="haress-splash__skip" type="button" aria-label="تخطّي المقدمة">تخطّي المقدمة</button>
   `;
 
+  const previousFocus = document.activeElement;
   document.body.appendChild(splash);
+  const skipButton = splash.querySelector(".haress-splash__skip");
+  skipButton.focus({ preventScroll: true });
 
   let closed = false;
   const close = () => {
     if (closed) return;
     closed = true;
     splash.classList.add("is-leaving");
-    window.setTimeout(() => splash.remove(), 900);
+    window.setTimeout(() => {
+      splash.remove();
+      if (previousFocus && typeof previousFocus.focus === "function" && document.contains(previousFocus)) {
+        previousFocus.focus({ preventScroll: true });
+      }
+    }, 900);
     document.removeEventListener("keydown", onKeyDown);
   };
   const onKeyDown = (event) => {
+    if (event.key === "Tab") {
+      event.preventDefault();
+      skipButton.focus();
+      return;
+    }
     if (event.key === "Escape" || event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       close();
