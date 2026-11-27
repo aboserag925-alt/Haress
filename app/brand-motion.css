@@ -39,4 +39,18 @@ input,textarea,select{background:#fff!important;color:#20372b!important;border-c
 @media(max-width:600px){.radio-controls>*{flex-basis:100%}.radio-panel{padding:14px}.radio-panel-head{align-items:flex-start;flex-direction:column}}
 @media(prefers-reduced-motion:reduce){header .logo,.logo,.card{animation:none!important}}
 
-.haress-intro{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;background:rgba(248,251,247,.97);opacity:1;transition:opacity .45s ease}.haress-intro.is-leaving{opacity:0;pointer-events:none}.haress-intro__content{display:grid;justify-items:center;gap:14px;animation:haress-intro-in .7s ease both}.haress-intro__logo{width:min(42vw,190px);height:auto;filter:drop-shadow(0 14px 22px rgba(11,94,60,.2))}.haress-intro__name{font:700 clamp(24px,5vw,34px) 'Noto Naskh Arabic',serif;color:#0b5e3c}.haress-intro__tag{font:600 16px 'Noto Naskh Arabic',serif;color:#64786b}@keyframes haress-intro-in{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}@media(prefers-reduced-motion:reduce){.haress-intro{display:none}}
+/* Standalone 3D logo motion — the shield remains the only animated brand element. */
+header .logo,.logo{
+  transform-origin:50% 54%;
+  transform-style:preserve-3d;
+  backface-visibility:visible;
+  will-change:transform,filter;
+  animation:haress-logo-3d 7.2s cubic-bezier(.45,.05,.25,1) infinite!important;
+}
+@keyframes haress-logo-3d{
+  0%,100%{transform:perspective(720px) rotateY(-7deg) rotateX(2deg) translateY(0) scale(1);filter:drop-shadow(0 7px 12px rgba(11,94,60,.16)) drop-shadow(0 0 0 rgba(197,160,74,0))}
+  22%{transform:perspective(720px) rotateY(0) rotateX(0) translateY(-2px) scale(1.035);filter:drop-shadow(0 10px 18px rgba(11,94,60,.2)) drop-shadow(0 0 8px rgba(197,160,74,.22))}
+  50%{transform:perspective(720px) rotateY(9deg) rotateX(-2deg) translateY(0) scale(1);filter:drop-shadow(0 8px 16px rgba(11,94,60,.18)) drop-shadow(0 0 5px rgba(197,160,74,.18))}
+  76%{transform:perspective(720px) rotateY(0) rotateX(1deg) translateY(-1px) scale(1.02);filter:drop-shadow(0 10px 18px rgba(11,94,60,.2)) drop-shadow(0 0 9px rgba(197,160,74,.24))}
+}
+@media(prefers-reduced-motion:reduce){header .logo,.logo{animation:none!important;transform:none!important;will-change:auto}}
