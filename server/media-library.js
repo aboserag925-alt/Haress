@@ -547,7 +547,13 @@ function createMediaLibrary(options) {
     }
     if (useRemote) {
       const objectKey = buildKey(item.kind, item.id, item.fileName);
-      const obj = await storage.get(objectKey);
+      let obj = await storage.get(objectKey);
+      // Older manifests predate objectKey and stored document/image files under
+      // library/other. Preserve those files while preferring the new category path.
+      if (!obj && !item.objectKey && (item.kind === 'document' || item.kind === 'image')) {
+        const legacyKey = buildKey('other', item.id, item.fileName);
+        if (legacyKey !== objectKey) obj = await storage.get(legacyKey);
+      }
       if (!obj) return null;
       return { item: item, data: obj.body };
     }
