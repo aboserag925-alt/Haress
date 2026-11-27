@@ -1,0 +1,189 @@
+name: Temporary ask overlay text fix deploy
+on:
+  push:
+    branches: [maintenance/visual-v11-20261125]
+    paths: [.github/workflows/ask-20261127b.yml, ops/ask2-mode.txt]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: hares-ask-twice
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.repository == 'aboserag925-alt/Haress' && github.ref == 'refs/heads/maintenance/visual-v11-20261125'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ops-src
+      - uses: actions/checkout@v4
+        with:
+          ref: c130f187f18f4a57bb31e64c60505350afc80248
+          path: base
+      - uses: actions/download-artifact@v4
+        with:
+          name: haress-design-assets
+          run-id: 45891129488
+          github-token: ${{ github.token }}
+          path: app/
+      - name: Compare rebuilt assets with the live site, then add the visual overlay
+        shell: bash
+        run: |
+          python - <<'PYCMP'
+          import os,sys,hashlib,urllib.request,urllib.parse,urllib.error,json,shutil,pathlib
+          root=pathlib.Path('app')
+          for q in sorted(pathlib.Path('base/app').rglob('*')):
+              if q.is_file():
+                  d=root/q.relative_to('base/app')
+                  if not d.exists():
+                      d.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(q,d);print('FROM_BASE_ONLY',q.relative_to('base/app'))
+          files=sorted(p for p in root.rglob('*') if p.is_file())
+          print('ARTIFACT_FILE_COUNT',len(files))
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self,*a,**k):return None
+          op=urllib.request.build_opener(NoRedirect)
+          same=[];diff=[];unverified=[]
+          for p in files:
+              rel='/'+p.relative_to(root).as_posix()
+              data=p.read_bytes()
+              try:
+                  r=op.open(urllib.request.Request('https://hares.aboserag925.workers.dev'+urllib.parse.quote(rel),headers={'Accept-Encoding':'identity','User-Agent':'visual-v11-verify'}),timeout=60)
+                  body=r.read();code=r.status
+              except urllib.error.HTTPError as e:
+                  body=b'';code=e.code
+              if code in (301,302,307,308) and rel.endswith('.html'):
+                  alt=rel[:-10] if rel.endswith('/index.html') else rel[:-5]
+                  alt=alt or '/'
+                  try:
+                      r2=urllib.request.urlopen(urllib.request.Request('https://hares.aboserag925.workers.dev'+urllib.parse.quote(alt),headers={'Accept-Encoding':'identity','User-Agent':'visual-v11-verify'}),timeout=60)
+                      b2=r2.read()
+                      print('PRETTY_URL',rel,'->',alt,r2.status,'identical' if b2==data else 'DIFFERENT %d vs %d'%(len(b2),len(data)))
+                      if b2==data: body=b2;code=200
+                  except Exception as e:
+                      print('PRETTY_URL_ERR',rel,alt,e)
+              if code==200 and body==data: same.append(rel)
+              elif code==200: diff.append(rel)
+              else: unverified.append((rel,code))
+          print('IDENTICAL',len(same));print('DIFFERENT',len(diff),diff);print('UNVERIFIED',len(unverified),unverified)
+          json.dump({'count':len(files),'diff':diff,'unverified':[u[0] for u in unverified]},open('/tmp/compare.json','w'))
+          mode=open('ops-src/ops/ask2-mode.txt').read().split()
+          if mode[0]=='deploy':
+              allowed=set(mode[2].split(',')) if len(mode)>2 else set()
+              ovl={'/v3/index.html','/v3/v3-runtime.js','/turnstile-config.js'}
+              bad=[d for d in diff if d not in ovl]
+              assert not bad,'Archive artifact differs from live: %s'%bad
+              badu=[u for u,_ in unverified if u not in allowed]
+              assert not badu,'Unverified paths not allowed: %s'%badu
+          ov=pathlib.Path('ops-src/ops/ask-overlay')
+          for q in sorted(ov.rglob('*')):
+              if q.is_file():
+                  dst=root/q.relative_to(ov);dst.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(q,dst);print('OVERLAY',q.relative_to(ov))
+          print('FINAL_FILE_COUNT',len([p for p in root.rglob('*') if p.is_file()]))
+          PYCMP
+      - uses: actions/upload-artifact@v4
+        with:
+          name: haress-ask-assets
+          path: app/
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: c130f187f18f4a57bb31e64c60505350afc80248
+      - uses: actions/checkout@v4
+        with:
+          path: ops-src
+      - uses: actions/download-artifact@v4
+        with:
+          name: haress-ask-assets
+          path: app/
+      - name: List final asset directory
+        run: |
+          echo FINAL_APP_COUNT $(find app -type f | wc -l)
+          find app -type f | sort | sed 's#^app##' | grep -v '^/books/' | tr '\n' ' '
+          echo
+          find app -type f -name '.*' ; find app -type l
+          git -C . ls-files app | wc -l
+          git -C . ls-files app | sed 's#^app##' | tr '\n' ' '
+      - name: Read live script and bindings, preflight, then dry-run or deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          python - <<'PYPRE'
+          import os,json,urllib.request,hashlib,email.parser,email.policy,pathlib
+          account=os.environ['CF_ACCOUNT']
+          assert account=='9b34aacddb6334bb8c051f0d0e5670e2','Unexpected account'
+          base='https://api.cloudflare.com/client/v4/accounts/'+account+'/workers/scripts/hares'
+          token=os.environ['CF_TOKEN']
+          def call(path=''):
+              req=urllib.request.Request(base+path,headers={'Authorization':'Bearer '+token})
+              with urllib.request.urlopen(req,timeout=45) as r:return r.headers,r.read()
+          def api(path=''):
+              _,b=call(path);j=json.loads(b);assert j.get('success'),'API refused';return j['result']
+          dep=api('/deployments')['deployments'][0]
+          live=dep['versions'][0]['version_id']
+          assert len(dep['versions'])==1 and dep['versions'][0]['percentage']==100,'Unexpected split deployment; abort'
+          open('live-version.txt','w').write(live)
+          ver=api('/versions/'+live)
+          binds=ver['resources']['bindings'];rt=ver['resources']['script_runtime']
+          print('LIVE_BINDINGS',json.dumps([{k:v for k,v in b.items()} for b in binds]))
+          print('LIVE_RUNTIME',json.dumps(rt))
+          headers,body=call('/content/v2')
+          m=email.parser.BytesParser(policy=email.policy.default).parsebytes(('Content-Type: '+headers['Content-Type']+'\r\n\r\n').encode()+body)
+          parts=[p for p in m.iter_parts() if p.get_filename()=='index.js'];assert len(parts)==1
+          code=parts[0].get_payload(decode=True)
+          sha=hashlib.sha256(code).hexdigest();print('LIVE_SCRIPT_SHA256',sha,len(code))
+          pathlib.Path('live-script').mkdir(exist_ok=True);pathlib.Path('live-script/index.js').write_bytes(code)
+          mode=open('ops-src/ops/ask2-mode.txt').read().split()
+          assert sha=='aa453b70188ddc4930cf8e6e1cc27287f3f70b7738c45d963e17a03b9360fb65','Live script differs from reviewed script; abort'
+          new=pathlib.Path('ops-src/ops/worker-ask/index.js').read_bytes()
+          print('NEW_SCRIPT_SHA256',hashlib.sha256(new).hexdigest())
+          if mode[0]=='deploy': assert mode[1]==hashlib.sha256(new).hexdigest(),'Mode file script hash mismatch'
+          plain=[b for b in binds if b['type']=='plain_text']
+          assert [b['name'] for b in binds if b['type'] not in ('plain_text','assets')]==[],'Unexpected non-text binding; abort'
+          cfg={'name':'hares','main':'./ops-src/ops/worker-ask/index.js','no_bundle':True,'compatibility_date':rt['compatibility_date'],
+               'vars':{b['name']:b['text'] for b in plain},
+               'assets':{'directory':'./app','binding':'ASSETS','run_worker_first':bool(rt['assets']['raw_run_worker_first'])}}
+          print('ASSETS_RUNTIME',json.dumps(rt.get('assets')))
+          json.dump(cfg,open('wrangler.visual.json','w'))
+          print('WRANGLER_CONFIG_VARS',sorted(cfg['vars']))
+          PYPRE
+          if [ "$(cut -d' ' -f1 ops-src/ops/ask2-mode.txt)" = "deploy" ]; then
+            npx --yes wrangler@4.168.0 deploy -c wrangler.visual.json
+            python - <<'PYPOST'
+          import os,json,urllib.request,hashlib,email.parser,email.policy,time
+          account=os.environ['CF_ACCOUNT'];token=os.environ['CF_TOKEN']
+          base='https://api.cloudflare.com/client/v4/accounts/'+account+'/workers/scripts/hares'
+          def call(path=''):
+              req=urllib.request.Request(base+path,headers={'Authorization':'Bearer '+token})
+              with urllib.request.urlopen(req,timeout=45) as r:return r.headers,r.read()
+          def api(path=''):
+              _,b=call(path);j=json.loads(b);assert j.get('success');return j['result']
+          old=api('/versions/'+open('live-version.txt').read())
+          dep=api('/deployments')['deployments'][0];vid=dep['versions'][0]['version_id'];print('NEW_VERSION',vid,dep['versions']);assert vid!=open('live-version.txt').read(),'No new version'
+          new=api('/versions/'+vid)
+          key=lambda l:sorted(json.dumps(x,sort_keys=True) for x in l)
+          assert key(new['resources']['bindings'])==key(old['resources']['bindings']),'Bindings differ'
+          assert new['resources']['script_runtime']['assets']==old['resources']['script_runtime']['assets'],'Assets runtime config differs'
+          assert new['resources']['script_runtime']['compatibility_date']==old['resources']['script_runtime']['compatibility_date']
+          headers,body=call('/content/v2')
+          m=email.parser.BytesParser(policy=email.policy.default).parsebytes(('Content-Type: '+headers['Content-Type']+'\r\n\r\n').encode()+body)
+          parts=[p for p in m.iter_parts() if p.get_filename()=='index.js']
+          print('NEW_SCRIPT_SHA256',hashlib.sha256(parts[0].get_payload(decode=True)).hexdigest())
+          assert hashlib.sha256(parts[0].get_payload(decode=True)).hexdigest()==open('ops-src/ops/ask2-mode.txt').read().split()[1],'Script not as reviewed'
+          print('Bindings, runtime config and script verified identical to the previous live version.')
+          PYPOST
+          else
+            npx --yes wrangler@4.168.0 deploy --dry-run -c wrangler.visual.json
+          fi
