@@ -81,7 +81,18 @@ SupabaseMediaStorage.prototype.get = async function (key) {
   try {
     const res = await sbRequest('/object/' + this.bucket + '/' + encodeURIComponent(key).replace(/%2F/g, '/'), 'GET', { raw: true }, u, k);
     if (res.status === 404) return null;
-    if (!res.ok) throw new Error('Supabase storage ' + res.status);
+    if (!res.ok) {
+      // Older Storage API versions returned HTTP 400 with a not_found payload
+      // for missing objects; current versions return HTTP 404 (NoSuchKey).
+      if (res.status === 400) {
+        let errorBody = null;
+        try { errorBody = await res.json(); } catch { /* Keep the original failure below. */ }
+        const errorCode = errorBody && (errorBody.code || errorBody.error);
+        const statusCode = errorBody && Number(errorBody.statusCode || errorBody.httpStatusCode);
+        if (errorCode === 'not_found' || errorCode === 'NoSuchKey' || statusCode === 404) return null;
+      }
+      throw new Error('Supabase storage ' + res.status);
+    }
     const buf = Buffer.from(await res.arrayBuffer());
     return { body: buf, contentType: res.headers.get('content-type') || 'application/octet-stream', size: buf.length };
   } catch (e) { if (e.status === 404) return null; throw e; }
