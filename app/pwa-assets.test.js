@@ -38,3 +38,20 @@ test('all PWA manifest and offline-cache files exist within the app', function (
     assert.ok(fs.existsSync(path.join(appDirectory, asset.replace(/^\.\//, ''))), asset);
   }
 });
+
+
+test('cinematic splash assets are wired into the deployed app shell', function () {
+  const splashCss = fs.readFileSync(path.join(appDirectory, 'splash.css'), 'utf8');
+  const splashJs = fs.readFileSync(path.join(appDirectory, 'splash.js'), 'utf8');
+
+  assert.match(html, /href="splash\\.css" rel="stylesheet"/);
+  assert.match(html, /src="splash\\.js" defer/);
+  assert.doesNotMatch(html, /src="brand-intro\\.js"/);
+  assert.match(html, /Noto\\+Kufi\\+Arabic/);
+  assert.match(splashCss, /haress-splash__shield-text/);
+  assert.match(splashCss, /haress-draw/);
+  assert.match(splashJs, /حرس الحدود/);
+  assert.match(splashJs, /sessionStorage\\.getItem\\(SESSION_KEY\\)/);
+  assert.match(splashJs, /splash\\.addEventListener\\("click", close\\)/);
+  assert.match(splashJs, /prefersReducedMotion/);
+});
