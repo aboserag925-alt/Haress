@@ -55,6 +55,33 @@ test('SupabaseMediaStorage: only explicit upserts enable overwrite', async funct
   }
 });
 
+test('SupabaseMediaStorage: missing objects handle current and legacy not-found responses only', async function () {
+  const originalFetch = global.fetch;
+  const storage = new SupabaseMediaStorage({
+    bucket: 'haress-media',
+    supabaseUrl: 'https://example.supabase.co',
+    serviceRoleKey: 'test-service-role-key'
+  });
+  try {
+    global.fetch = async function () {
+      return new Response(JSON.stringify({ code: 'NoSuchKey', message: 'Object not found' }), { status: 404 });
+    };
+    assert.equal(await storage.get('library/media-index.json'), null);
+
+    global.fetch = async function () {
+      return new Response(JSON.stringify({ statusCode: '404', error: 'not_found', message: 'Object not found' }), { status: 400 });
+    };
+    assert.equal(await storage.get('library/media-index.json'), null);
+
+    global.fetch = async function () {
+      return new Response(JSON.stringify({ code: 'InvalidRequest', message: 'Malformed path' }), { status: 400 });
+    };
+    await assert.rejects(storage.get('library/media-index.json'), /Supabase storage 400/);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test('buildKey: object key shape', async function () {
   assert.equal(buildKey('audio', 'abc', 'lesson.mp3'), 'library/audio/abc/lesson.mp3');
   assert.equal(buildKey('video', 'abc', 'v.mp4'), 'library/video/abc/v.mp4');
