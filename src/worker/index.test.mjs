@@ -322,3 +322,29 @@ describe('Haress Worker: فشل الشبكة', () => {
     assert.equal(res.status, 502);
   });
 });
+
+describe('production routing with API_BACKEND_URL', () => {
+  const productionEnv = {
+    DEPLOYMENT_ENV: 'production',
+    SUPABASE_URL: 'https://uzepglfimareggswjzlf.supabase.co',
+    API_BACKEND_URL: 'https://haress-production.up.railway.app',
+    PROXY_SHARED_SECRET: 'test-shared-secret'
+  };
+  for (const route of ['/api/lectures', '/api/suggestions']) {
+    it('sends ' + route + ' to the Node backend, never to Supabase Edge Functions', async () => {
+      let captured;
+      const req = makeRequest('https://hares.aboserag925.workers.dev' + route, {
+        headers: { 'cf-connecting-ip': '203.0.113.9' }
+      });
+      const res = await handleRequest(req, productionEnv, async (url, init) => {
+        captured = { url: String(url), headers: new Headers(init.headers) };
+        return new Response('{"items":[]}', { status: 200 });
+      });
+      assert.equal(res.status, 200);
+      assert.equal(captured.url, 'https://haress-production.up.railway.app' + route);
+      assert.doesNotMatch(captured.url, /supabase\.co|functions\/v1/);
+      assert.equal(captured.headers.get('x-client-ip'), '203.0.113.9');
+      assert.equal(captured.headers.get('x-proxy-secret'), 'test-shared-secret');
+    });
+  }
+});
