@@ -53,9 +53,18 @@ begin
     raise exception 'Tainted tasks cannot be approved' using errcode = '42501';
   end if;
 
-  -- Reject a second decision for the same task/action. Locking the task row
-  -- serializes concurrent calls even on installations without the historical
-  -- task/action unique constraint.
+  if p_action = 'IMPLEMENT' and v_task.status <> 'WAITING_APPROVAL' then
+    raise exception 'Task is not waiting for implementation approval' using errcode = '55000';
+  end if;
+
+  if p_action = 'MERGE' and v_task.status <> 'READY_FOR_REVIEW' then
+    raise exception 'Task is not ready for human review' using errcode = '55000';
+  end if;
+
+  -- Reuse the latest approval row when one exists. The recovered historical
+  -- migrations used CREATE TABLE IF NOT EXISTS, so older installations may not
+  -- have the task/action unique constraint. Lock the task above to serialize
+  -- concurrent decisions for this task without depending on that constraint.
   select a.id
   into v_approval_id
   from public.ai_approvals a
@@ -66,21 +75,17 @@ begin
   for update;
 
   if found then
-    raise exception 'Approval already recorded for this task and action'
-      using errcode = '23505';
+    update public.ai_approvals
+    set actor_user_id = p_actor_user_id,
+        decision = p_decision,
+        reason = v_reason,
+        created_at = pg_catalog.now()
+    where id = v_approval_id;
+  else
+    insert into public.ai_approvals(task_id, actor_user_id, action, decision, reason)
+    values (p_task_id, p_actor_user_id, p_action, p_decision, v_reason)
+    returning id into v_approval_id;
   end if;
-
-  if p_action = 'IMPLEMENT' and v_task.status <> 'WAITING_APPROVAL' then
-    raise exception 'Task is not waiting for implementation approval' using errcode = '55000';
-  end if;
-
-  if p_action = 'MERGE' and v_task.status <> 'READY_FOR_REVIEW' then
-    raise exception 'Task is not ready for human review' using errcode = '55000';
-  end if;
-
-  insert into public.ai_approvals(task_id, actor_user_id, action, decision, reason)
-  values (p_task_id, p_actor_user_id, p_action, p_decision, v_reason)
-  returning id into v_approval_id;
 
   if p_action = 'IMPLEMENT' then
     update public.ai_tasks
