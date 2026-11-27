@@ -623,6 +623,52 @@ test('uses the validated Cloudflare client IP for rate limiting only when TRUST_
   });
 });
 
+test('uses the authenticated Worker client identity for question rate limits', async function () {
+  const provider = mockFetch();
+  const env = { ...configuredEnv, PROXY_SHARED_SECRET: 'test-proxy-secret' };
+  await withServer({ env: env, fetch: provider.fetch }, async function (baseUrl) {
+    const statuses = [];
+    for (let index = 0; index < 6; index += 1) {
+      const response = await fetch(baseUrl + '/api/questions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: baseUrl,
+          'X-Client-IP': '203.0.113.21',
+          'X-Proxy-Secret': 'test-proxy-secret'
+        },
+        body: JSON.stringify({ question: 'سؤال من العميل الموثق رقم ' + index })
+      });
+      statuses.push(response.status);
+    }
+    assert.deepEqual(statuses, [200, 200, 200, 200, 200, 429]);
+
+    const otherClient = await fetch(baseUrl + '/api/questions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: baseUrl,
+        'X-Client-IP': '203.0.113.22',
+        'X-Proxy-Secret': 'test-proxy-secret'
+      },
+      body: JSON.stringify({ question: 'سؤال من زائر موثق آخر' })
+    });
+    assert.equal(otherClient.status, 200);
+
+    const spoofedClient = await fetch(baseUrl + '/api/questions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: baseUrl,
+        'X-Client-IP': '203.0.113.23',
+        'X-Proxy-Secret': 'wrong-secret'
+      },
+      body: JSON.stringify({ question: 'سؤال من زائر بسر غير صحيح' })
+    });
+    assert.equal(spoofedClient.status, 429);
+  });
+});
+
 test('ignores spoofed Cloudflare client-IP headers unless TRUST_PROXY is enabled', async function () {
   const provider = mockFetch();
   await withServer({ env: configuredEnv, fetch: provider.fetch }, async function (baseUrl) {
