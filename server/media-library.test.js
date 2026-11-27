@@ -58,6 +58,38 @@ async function withLibrary(run, customFetch, libraryOptions) {
   }
 }
 
+test('rejects local manifests with stored filenames that escape the media directory', async function () {
+  await withLibrary(async function (context) {
+    const id = 'a8e0c2d1-91b4-4f37-8b11-3c9e4b9e9a11';
+    const manifest = {
+      offset: null,
+      items: [{
+        id: id,
+        storedName: '../../outside.mp3',
+        fileName: 'lesson.mp3',
+        fileUniqueId: 'telegram-unique-id',
+        mimeType: 'audio/mpeg',
+        kind: 'audio',
+        category: 'audio',
+        title: 'درس',
+        status: 'approved',
+        uploadedAt: '2026-11-27T12:00:00.000Z'
+      }]
+    };
+    await fs.writeFile(
+      path.join(context.storageDirectory, 'media-index.json'),
+      JSON.stringify(manifest),
+      'utf8'
+    );
+    const library = createMediaLibrary({
+      env: context.env,
+      fetch: context.fetch,
+      storageDirectory: context.storageDirectory
+    });
+    await assert.rejects(library.getApprovedFile(id), /Invalid media library index/);
+  });
+});
+
 test('stores group uploads privately until an administrator approves them', async function () {
   await withLibrary(async function (context) {
     await context.library.processUpdate({
