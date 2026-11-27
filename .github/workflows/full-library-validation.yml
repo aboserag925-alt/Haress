@@ -1,6 +1,9 @@
 name: Full library assets validation (no deploy)
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - validation/library-assets-full-2026-11-27
