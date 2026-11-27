@@ -212,6 +212,43 @@ test('Supabase storage: legacy document keys without objectKey remain readable',
   assert.equal(file.data.toString('utf8'), 'legacy bytes');
 });
 
+test('Supabase storage: removing a legacy document without objectKey deletes its remote object', async function () {
+  const storage = new MemoryStore();
+  const id = '123e4567-e89b-42d3-a456-426614174002';
+  const fileName = 'legacy-remove.pdf';
+  const legacyKey = 'library/other/' + id + '/' + fileName;
+  await storage.put(legacyKey, Buffer.from('legacy bytes'), 'application/pdf');
+  await storage.put(MANIFEST_KEY, Buffer.from(JSON.stringify({
+    offset: null,
+    items: [{
+      id: id,
+      storedName: id + '.pdf',
+      fileName: fileName,
+      fileUniqueId: 'legacy-remove-id',
+      mimeType: 'application/pdf',
+      kind: 'document',
+      category: 'books',
+      title: 'مستند قديم للحذف',
+      status: 'approved',
+      uploadedAt: '2026-11-20T10:00:00.000Z'
+    }]
+  })), 'application/json');
+
+  const library = createLibrary(storage);
+  await library.processUpdate({
+    update_id: 3,
+    message: {
+      chat: { id: -100123 },
+      from: { id: 7 },
+      text: '/media-remove ' + id
+    }
+  });
+
+  assert.equal(await storage.get(legacyKey), null);
+  const saved = JSON.parse((await storage.get(MANIFEST_KEY)).body.toString('utf8'));
+  assert.equal(saved.items[0].status, 'removed');
+});
+
 test('Supabase storage: legacy document object keys remain readable', async function () {
   const { MemoryStore: MS } = require('./media-storage');
   const storage = new MS();
