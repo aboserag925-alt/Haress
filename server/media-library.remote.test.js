@@ -185,6 +185,33 @@ test('remote media library rejects structurally invalid manifests instead of loa
 });
 
 
+test('Supabase storage: legacy document keys without objectKey remain readable', async function () {
+  const storage = new MemoryStore();
+  const id = '123e4567-e89b-42d3-a456-426614174001';
+  const fileName = 'legacy-no-key.pdf';
+  const legacyKey = 'library/other/' + id + '/' + fileName;
+  await storage.put(legacyKey, Buffer.from('legacy bytes'), 'application/pdf');
+  await storage.put(MANIFEST_KEY, Buffer.from(JSON.stringify({
+    offset: null,
+    items: [{
+      id: id,
+      storedName: id + '.pdf',
+      fileName: fileName,
+      fileUniqueId: 'legacy-no-key-id',
+      mimeType: 'application/pdf',
+      kind: 'document',
+      category: 'books',
+      title: 'مستند قديم بلا مفتاح',
+      status: 'approved',
+      uploadedAt: '2026-11-20T10:00:00.000Z'
+    }]
+  })), 'application/json');
+
+  const library = createLibrary(storage);
+  const file = await library.getApprovedFile(id);
+  assert.equal(file.data.toString('utf8'), 'legacy bytes');
+});
+
 test('Supabase storage: legacy document object keys remain readable', async function () {
   const { MemoryStore: MS } = require('./media-storage');
   const storage = new MS();
