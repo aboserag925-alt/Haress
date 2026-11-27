@@ -234,7 +234,11 @@ async function consumeSharedDailyCap(env, cap, now, fetchImpl) {
     }),
     signal: AbortSignal.timeout(10000)
   });
-  if (!response.ok) throw new Error('Shared daily question budget request failed');
+  if (!response.ok) {
+    let detail = '';
+    try { detail = (await response.text()).slice(0, 120); } catch { detail = ''; }
+    throw new Error('Shared daily question budget request failed: HTTP ' + response.status + ' ' + detail);
+  }
   return await response.json() === true;
 }
 
@@ -537,8 +541,8 @@ function createServer(options) {
       if (env.NODE_ENV === 'production') {
         try {
           withinDailyBudget = await consumeSharedDailyCap(env, questionsDailyCap(env), Date.now(), fetchImpl);
-        } catch {
-          console.error('Shared daily question budget is unavailable');
+        } catch (error) {
+          console.error('Shared daily question budget is unavailable:', String((error && error.message) || error).slice(0, 300));
           sendJson(response, 503, { error: 'تعذر التحقق من الحد اليومي للأسئلة الآن. حاول لاحقًا.' });
           return;
         }
