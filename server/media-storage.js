@@ -30,7 +30,9 @@ class MemoryStore {
 }
 
 function buildKey(kind, id, filename) {
-  const safe = String(filename || 'file').replace(/\\/g, '/').split('/').pop().replace(/[\u0000-\u001f\u007f]/g, '') || 'file';
+  const name = String(filename || 'file').replace(/\\/g, '/').split('/').pop().replace(/[\u0000-\u001f\u007f]/g, '');
+  // A bare "." or ".." is a path-navigation segment, never a real file name.
+  const safe = (!name || name === '.' || name === '..') ? 'file' : name;
   const m = { audio: 'audio', video: 'video', books: 'books', images: 'images', other: 'other' };
   const dir = m[kind] || 'other';
   return `library/${dir}/${id}/${safe}`;
