@@ -6,6 +6,7 @@ on:
       - "feat/**"
       - "fix/**"
       - "integrate/**"
+      - "validation/**"
       - main
   pull_request:
     branches:
@@ -142,4 +143,5 @@ jobs:
       - name: Verify required jobs
         run: |
           test "${{ needs.test.result }}" = "success"
+          test "${{ needs.migrations.result }}" = "success"
           test "${{ needs.secrets.result }}" = "success"
