@@ -1,6 +1,6 @@
 'use strict';
 var CACHE_NAMESPACE = 'haress-v3-cache-';
-var CACHE_NAME = CACHE_NAMESPACE + 'identity-review-1';
+var CACHE_NAME = CACHE_NAMESPACE + 'identity-review-2';
 var SHELL = [
   '/v3/',
   '/v3/index.html',
@@ -11,10 +11,14 @@ var SHELL = [
   '/v3/v3-adapter.js',
   '/v3/manifest.json'
 ];
+// Files the page loads from outside /v3/. adhan is required for prayer times offline.
+var EXTERNAL = ['/vendor/adhan.umd.min.js', '/supabase-config.js', '/runtime-config.js', '/turnstile-config.js', '/auth-client.js'];
+function isExternal(pathname) { return EXTERNAL.indexOf(pathname) !== -1; }
 self.addEventListener('install', function (event) {
   event.waitUntil((async function () {
     var cache = await caches.open(CACHE_NAME);
     await cache.addAll(SHELL);
+    await Promise.all(EXTERNAL.map(function (u) { return cache.add(u).catch(function () {}); }));
     await self.skipWaiting();
   })());
 });
@@ -32,8 +36,8 @@ self.addEventListener('fetch', function (event) {
   if (request.method !== 'GET' || request.headers.has('authorization') ||
       request.headers.has('range') || request.cache === 'no-store') return;
   var url = new URL(request.url);
-  if (url.origin !== self.location.origin || url.pathname.indexOf('/v3/') !== 0 ||
-      url.pathname.indexOf('/api/') !== -1) return;
+  if (url.origin !== self.location.origin || url.pathname.indexOf('/api/') !== -1 ||
+      (url.pathname.indexOf('/v3/') !== 0 && !isExternal(url.pathname))) return;
   if (request.mode === 'navigate') {
     event.respondWith((async function () {
       try {

@@ -19,7 +19,7 @@ function fakeRequest(method,headers={},payload){
 }
 test('public suggestions API rejects unknown fields before storage',async()=>{
  let submitted=false;
- const api=createSuggestionsApi({env:{},service:{submit:async(input)=>{const checked=validateSuggestion(input);if(checked.error)throw Object.assign(new Error(checked.error),{statusCode:400});submitted=true;}},rateLimit:()=>true});
+ const api=createSuggestionsApi({env:{},publicSubmissions:true,service:{submit:async(input)=>{const checked=validateSuggestion(input);if(checked.error)throw Object.assign(new Error(checked.error),{statusCode:400});submitted=true;}},rateLimit:()=>true});
  const res=fakeResponse();
  await api(fakeRequest('POST',{'content-type':'application/json'},{category:'bug',title:'عنوان صالح',description:'تفاصيل كافية للاقتراح',status:'APPROVED'}),res,'/api/suggestions');
  assert.equal(res.status,400);assert.equal(submitted,false);
@@ -42,4 +42,12 @@ test('admin suggestions API checks Supabase identity and admin_users before list
  await api(fakeRequest('GET',{authorization:'Bearer valid.token.value'}),res,'/api/admin/suggestions');
  assert.equal(res.status,200);assert.equal(JSON.parse(res.body).items[0].id,'suggestion-1');
  assert.equal(calls.length,2);assert.match(calls[1].url,/admin_users/);
+});
+
+test('public suggestions POST is closed by default and never reaches storage',async()=>{
+ let submitted=false;
+ const api=createSuggestionsApi({env:{},service:{submit:async()=>{submitted=true;}},rateLimit:()=>true});
+ const res=fakeResponse();
+ await api(fakeRequest('POST',{'content-type':'application/json'},{category:'bug',title:'عنوان صالح',description:'تفاصيل كافية للاقتراح'}),res,'/api/suggestions');
+ assert.equal(res.status,404);assert.equal(submitted,false);
 });

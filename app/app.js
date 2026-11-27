@@ -1190,8 +1190,7 @@ function initQuranRadio() {
   audio.addEventListener('pause', syncButton);
   syncMute();
   openButton.href = cairoOfficial;
-  /* Best-effort autoplay; browsers may require a user gesture. */
-  playCairo();
+  /* No autoplay on page load: playback starts only from a visitor click. */
 }
 
 if ('serviceWorker' in navigator) {

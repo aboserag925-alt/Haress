@@ -71,7 +71,7 @@ test('Identity offline shell caches the active stylesheet and project image', ()
   assert.match(sw, /'\/v3\/identity\.css'/);
   assert.match(sw, /'\/v3\/council\.jpg'/);
   assert.doesNotMatch(sw, /'\/v3\/v3\.css'/);
-  assert.match(sw, /identity-review-1/);
+  assert.match(sw, /identity-review-2/);
 });
 
 test('V3.1 page has no root base URL and keeps fragment navigation local', () => {
@@ -123,4 +123,46 @@ test('account recovery exposes reset and update actions and handles the recovery
   assert.match(runtime, /\$\(['"]updatePasswordBtn['"]\)\.addEventListener/);
   assert.match(authClient, /auth\.resetPasswordForEmail\(email,\s*\{\s*redirectTo:\s*redirectTo\s*\}\)/);
   assert.match(authClient, /auth\.updateUser\(\{\s*password:\s*password\s*\}\)/);
+});
+
+test('library filters use the category ids the server sends (audio, video, books, images, other)', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const ids = [...html.matchAll(/data-media-category="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(ids, ['all', 'audio', 'video', 'books', 'images', 'other']);
+});
+
+test('lectures request sends the public apikey when configured, like the legacy app', () => {
+  const src = fs.readFileSync(path.join(root, 'v3-runtime.js'), 'utf8');
+  assert.match(src, /AHL_SUPABASE_CONFIG\s*&&\s*window\.AHL_SUPABASE_CONFIG\.anonKey/);
+  assert.match(src, /api\('\/api\/lectures'\)[^;]*apikey:\s*publishableKey/);
+});
+
+test('managed lectures show only in the schedule section and skip finished lectures', () => {
+  const src = fs.readFileSync(path.join(root, 'v3-runtime.js'), 'utf8');
+  assert.match(src, /managed\.hidden\s*=\s*!scheduleView/);
+  assert.match(src, /new Date\(item\.starts_at\)\.getTime\(\)\s*>=\s*cutoff/);
+});
+
+test('radio never autoplays: init does not call play, only visitor clicks do', () => {
+  const src = fs.readFileSync(path.join(root, 'v3-runtime.js'), 'utf8');
+  assert.doesNotMatch(src, /sync\(\);\s*playCairo\(\);\s*\n\s*\}/);
+  const legacy = fs.readFileSync(path.join(root, '..', 'app.js'), 'utf8');
+  assert.doesNotMatch(legacy, /Best-effort autoplay/);
+  assert.doesNotMatch(fs.readFileSync(path.join(root, 'index.html'), 'utf8'), /<audio[^>]*\bautoplay\b/i);
+});
+
+test('v3 service worker caches the adhan bundle and other page files from outside /v3/', () => {
+  const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.match(sw, /'\/vendor\/adhan\.umd\.min\.js'/);
+  assert.match(html, /<script src="\/vendor\/adhan\.umd\.min\.js">/);
+  assert.match(sw, /isExternal\(url\.pathname\)/);
+  assert.match(sw, /identity-review-2/);
+  assert.ok(fs.existsSync(path.join(root, '..', 'vendor', 'adhan.umd.min.js')));
+});
+
+test('question section tells the visitor plainly that no answer can be sent to them', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.match(html, /id="questionNoReply"[^>]*>[\s\S]*لا توجد حاليًا وسيلة لإرسال الجواب إليك/);
+  assert.doesNotMatch(html, /اعتماد أي رد/);
 });

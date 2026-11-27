@@ -64,7 +64,7 @@ test('serves the app and health status without exposing environment values', asy
   });
 });
 
-test('HTTP suggestions API accepts public suggestions and exposes admin listing only to verified admins', async function () {
+test('HTTP suggestions API keeps public submissions closed and exposes admin listing only to verified admins', async function () {
   const suggestion = {
     id: '123e4567-e89b-42d3-a456-426614174000',
     category: 'feature',
@@ -120,16 +120,9 @@ test('HTTP suggestions API accepts public suggestions and exposes admin listing 
         description: 'إضافة بحث أسرع إلى مكتبة الدروس'
       })
     });
-    assert.equal(createResponse.status, 201);
-    assert.deepEqual((await createResponse.json()).item, suggestion);
-    assert.deepEqual(submitted, [{
-      input: {
-        category: 'feature',
-        title: 'تحسين البحث',
-        description: 'إضافة بحث أسرع إلى مكتبة الدروس'
-      },
-      userId: null
-    }]);
+    assert.equal(createResponse.status, 404);
+    await createResponse.arrayBuffer();
+    assert.deepEqual(submitted, []);
 
     const unauthorized = await fetch(baseUrl + '/api/admin/suggestions', {
       headers: { Origin: baseUrl }
@@ -711,5 +704,24 @@ test('adds allowlisted CORS headers to library and media responses', async funct
     assert.equal(file.status, 200);
     assert.equal(file.headers.get('access-control-allow-origin'), 'https://app.example');
     assert.match(file.headers.get('access-control-expose-headers'), /Content-Range/i);
+  });
+});
+
+test('serves the /v3/ page and the files it requests from outside /v3/', async function () {
+  await withServer({ env: configuredEnv, fetch: mockFetch().fetch }, async function (baseUrl) {
+    for (const route of ['/v3/', '/v3', '/v3/index.html', '/v3/v3-runtime.js', '/v3/v3.css', '/v3/sw.js',
+      '/v3/manifest.json', '/v3/council.jpg', '/vendor/adhan.umd.min.js', '/supabase-config.js',
+      '/runtime-config.js', '/turnstile-config.js', '/auth-client.js']) {
+      const response = await fetch(baseUrl + route);
+      assert.equal(response.status, 200, route);
+      await response.arrayBuffer();
+    }
+    const page = await (await fetch(baseUrl + '/v3/')).text();
+    assert.match(page, /<html[^>]*lang="ar"[^>]*dir="rtl"|dir="rtl"/);
+    for (const blocked of ['/v3/../server/index.js', '/v3/%2e%2e/server/index.js', '/vendor/../package.json', '/package.json', '/server/index.js']) {
+      const response = await fetch(baseUrl + blocked);
+      assert.notEqual(response.status, 200, blocked);
+      await response.arrayBuffer();
+    }
   });
 });

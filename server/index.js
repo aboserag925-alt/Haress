@@ -315,6 +315,15 @@ function staticFilePath(requestUrl) {
   if (segments.some(function (segment) { return segment === '.' || segment === '..' || segment.startsWith('.'); })) {
     return null;
   }
+  // The V3 page lives in app/v3 but asks for /v3/... and for a few shared files at the site root,
+  // exactly as the Cloudflare Worker serves them. Map those requests onto app/.
+  const SHARED_ROOT_FILES = ['supabase-config.js', 'runtime-config.js', 'turnstile-config.js', 'auth-client.js'];
+  if (segments[0] === 'v3') {
+    if (segments.length === 1) segments.push('index.html');
+    segments.unshift('app');
+  } else if (segments[0] === 'vendor' || (segments.length === 1 && SHARED_ROOT_FILES.includes(segments[0]))) {
+    segments.unshift('app');
+  }
   if (segments.length === 0) segments = ['index.html'];
   if (segments[0] !== 'index.html' &&
       segments[0] !== 'app' && segments[0] !== 'assets' && segments[0] !== 'screens') {
