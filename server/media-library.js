@@ -6,6 +6,7 @@ const { randomUUID } = require('node:crypto');
 const { resolveStorage, buildKey } = require('./media-storage');
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
+const MANIFEST_KEY = 'library/media-index.json';
 const MAX_LIBRARY_ITEMS = 500;
 const CATEGORY_NAMES = {
   audio: 'صوتيات',
