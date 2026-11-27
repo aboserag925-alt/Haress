@@ -39,14 +39,22 @@ test('all PWA manifest and offline-cache files exist within the app', function (
   }
 });
 
-
 test('the approved shield logo receives standalone 3D motion without a splash overlay', function () {
   const brandCss = fs.readFileSync(path.join(appDirectory, 'brand-motion.css'), 'utf8');
+  const shieldSvg = fs.readFileSync(path.join(appDirectory, 'icon.svg'), 'utf8');
 
+  assert.match(html, /<img class="logo" src="icon\.svg"/);
   assert.ok(html.includes('brand-motion.css'));
   assert.ok(!html.includes('splash.css'));
   assert.ok(!html.includes('splash.js'));
   assert.ok(!html.includes('brand-intro.js'));
+
+  assert.match(shieldSvg, /fill: #0e7a4d; stroke: #c5a04a;/);
+  assert.match(shieldSvg, /حرس الحدود/);
+  assert.doesNotMatch(shieldSvg, /نجمة|سنابل|شخص/);
+  assert.equal((shieldSvg.match(/<text\b/g) || []).length, 1);
+
+  assert.match(brandCss, /\.logo\s*\{/);
   assert.ok(brandCss.includes('haress-logo-3d'));
   assert.ok(brandCss.includes('perspective(720px)'));
   assert.ok(brandCss.includes('prefers-reduced-motion'));
