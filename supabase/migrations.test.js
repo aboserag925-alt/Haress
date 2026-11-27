@@ -18,7 +18,8 @@ test('latest AI approval RPC enforces taint, administrator, and task-state guard
 });
 
 test('latest AI approval RPC clears stale approval booleans and writes an audit event for each decision',()=>{
-  assert.match(approvalGuard,/on conflict \(task_id, action\) do update/i);
+  assert.match(approvalGuard,/insert into public\\.ai_approvals\\(task_id, actor_user_id, action, decision, reason\\)/i);
+  assert.doesNotMatch(approvalGuard,/on conflict \\(task_id, action\\)/i);
   assert.match(approvalGuard,/approved = \(p_decision = 'APPROVED'\)/i);
   assert.match(approvalGuard,/human_approved = \(p_decision = 'APPROVED'\)/i);
   assert.match(approvalGuard,/insert into public\.ai_audit_events/i);
