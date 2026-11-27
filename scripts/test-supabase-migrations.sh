@@ -75,7 +75,8 @@ CREATE TABLE IF NOT EXISTS storage.objects (
 );
 SQL
 
-echo "Replaying ${#migrations[@]} migration files in filename order..."
+echo "Replaying migration files in filename order..."
+applied_migrations=0
 for migration in "${migrations[@]}"; do
   migration_name="$(basename "$migration")"
   if [[ "${SKIP_AI_APPROVAL_GUARDS:-0}" == "1" && "$migration_name" == "20261127123000_restore_ai_approval_rpc_guards.sql" ]]; then
@@ -84,6 +85,7 @@ for migration in "${migrations[@]}"; do
   fi
   echo "::group::$migration_name"
   psql --no-psqlrc --set ON_ERROR_STOP=1 --file "$migration"
+  applied_migrations=$((applied_migrations + 1))
   echo "::endgroup::"
 done
 
@@ -95,7 +97,7 @@ psql --no-psqlrc --set ON_ERROR_STOP=1 --tuples-only --command="
   SELECT 'functions=' || count(*)
   FROM information_schema.routines
   WHERE routine_schema = 'public';
-  SELECT 'migrations=' || ${#migrations[@]};
+  SELECT 'migrations=' || $applied_migrations;
 "
 
-echo "PASS: migrations replayed on isolated PostgreSQL (SKIP_AI_APPROVAL_GUARDS=${SKIP_AI_APPROVAL_GUARDS:-0})."
+echo "PASS: all $applied_migrations applied migration files replayed on isolated PostgreSQL."
