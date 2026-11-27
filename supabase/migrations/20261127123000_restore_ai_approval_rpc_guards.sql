@@ -53,14 +53,6 @@ begin
     raise exception 'Tainted tasks cannot be approved' using errcode = '42501';
   end if;
 
-  if p_action = 'IMPLEMENT' and v_task.status <> 'WAITING_APPROVAL' then
-    raise exception 'Task is not waiting for implementation approval' using errcode = '55000';
-  end if;
-
-  if p_action = 'MERGE' and v_task.status <> 'READY_FOR_REVIEW' then
-    raise exception 'Task is not ready for human review' using errcode = '55000';
-  end if;
-
   -- Reject a second decision for the same task/action. Locking the task row
   -- serializes concurrent calls even on installations without the historical
   -- task/action unique constraint.
@@ -76,6 +68,14 @@ begin
   if found then
     raise exception 'Approval already recorded for this task and action'
       using errcode = '23505';
+  end if;
+
+  if p_action = 'IMPLEMENT' and v_task.status <> 'WAITING_APPROVAL' then
+    raise exception 'Task is not waiting for implementation approval' using errcode = '55000';
+  end if;
+
+  if p_action = 'MERGE' and v_task.status <> 'READY_FOR_REVIEW' then
+    raise exception 'Task is not ready for human review' using errcode = '55000';
   end if;
 
   insert into public.ai_approvals(task_id, actor_user_id, action, decision, reason)
