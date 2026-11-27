@@ -93,6 +93,31 @@ function getAttachment(message) {
   };
 }
 
+function isValidManifest(manifest) {
+  if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest) ||
+      !Array.isArray(manifest.items) ||
+      (manifest.offset !== null &&
+        (!Number.isSafeInteger(manifest.offset) || manifest.offset < 0))) {
+    return false;
+  }
+  const validStatuses = new Set(['pending', 'approved', 'rejected', 'removed']);
+  const validKinds = new Set(['audio', 'video', 'document', 'image']);
+  const validCategories = new Set(['audio', 'video', 'books', 'images', 'other']);
+  return manifest.items.every(function (item) {
+    return item && typeof item === 'object' && !Array.isArray(item) &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(item.id || '') &&
+      typeof item.storedName === 'string' && item.storedName.length > 0 &&
+      typeof item.fileName === 'string' && item.fileName.length > 0 &&
+      typeof item.fileUniqueId === 'string' && item.fileUniqueId.length > 0 &&
+      typeof item.mimeType === 'string' && item.mimeType.length > 0 &&
+      validKinds.has(item.kind) && validCategories.has(item.category) &&
+      typeof item.title === 'string' && item.title.length > 0 &&
+      validStatuses.has(item.status) &&
+      typeof item.uploadedAt === 'string' && Number.isFinite(Date.parse(item.uploadedAt)) &&
+      (item.objectKey === undefined || (typeof item.objectKey === 'string' && item.objectKey.startsWith('library/')));
+  });
+}
+
 function createMediaLibrary(options) {
   options = options || {};
   const env = options.env || process.env;
@@ -130,8 +155,7 @@ function createMediaLibrary(options) {
         } catch {
           throw new Error('Invalid remote media library index.');
         }
-        if (!manifest || !Array.isArray(manifest.items) ||
-            (manifest.offset !== null && !Number.isSafeInteger(manifest.offset))) {
+        if (!isValidManifest(manifest)) {
           throw new Error('Invalid remote media library index.');
         }
         items = manifest.items;
@@ -146,8 +170,7 @@ function createMediaLibrary(options) {
     try {
       const contents = await fs.readFile(indexPath, 'utf8');
       const stored = JSON.parse(contents);
-      if (!stored || !Array.isArray(stored.items) ||
-          (stored.offset !== null && !Number.isSafeInteger(stored.offset))) {
+      if (!isValidManifest(stored)) {
         throw new Error('Invalid media library index.');
       }
       items = stored.items;
