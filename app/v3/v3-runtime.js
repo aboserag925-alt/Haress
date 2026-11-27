@@ -120,7 +120,7 @@
   }
 
   function navigate(id) {
-    var ids = ['sched','prayers','qibla','adhkar','media','q','about','account'];
+    var ids = ['sched','prayers','qibla','adhkar','media','archive','q','about','account'];
     if (ids.indexOf(id) < 0) return;
     ids.forEach(function (key) { var el = $(key); if (el) el.hidden = key !== id; });
     var scheduleView = id === 'sched';

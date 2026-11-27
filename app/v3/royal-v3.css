@@ -1,0 +1,50 @@
+/* Haress visual identity v3: one integrated hero composition. Visual only; remove the <link> to this file (and the .stage-shield element) to roll back to v2. */
+.opening{position:relative;isolation:isolate}
+.opening:before{background:url("/v3/hero-bg.svg") center bottom/cover no-repeat,#0a2260!important}
+.opening-aside:before{display:none!important}
+.opening-copy>.eyebrow{margin-top:6px}
+.stage-shield{position:absolute;z-index:3;width:92px;height:106px;top:-46px;left:50%;margin-left:-46px;filter:drop-shadow(0 6px 14px rgba(0,8,40,.55)) drop-shadow(0 0 22px rgba(240,210,122,.55));pointer-events:none}
+.stage-shield svg{width:100%;height:100%;display:block}
+.opening-aside{background:none!important;box-shadow:none!important;border:0!important;padding:0!important;max-width:none!important;border-radius:0!important}
+.council-art{border-radius:0!important;background:none!important;aspect-ratio:auto!important;overflow:visible}
+.council-art img{width:100%;height:100%;object-fit:cover;object-position:50% 12%;-webkit-mask-image:linear-gradient(to right,transparent 0,#000 18%,#000 84%,transparent 100%),linear-gradient(to bottom,#000 90%,transparent 100%);-webkit-mask-composite:source-in;mask-image:linear-gradient(to right,transparent 0,#000 18%,#000 84%,transparent 100%),linear-gradient(to bottom,#000 90%,transparent 100%);mask-composite:intersect;filter:drop-shadow(0 0 40px rgba(240,210,122,.25))}
+.art-caption{position:absolute!important;left:6%;bottom:28px;z-index:3;background:rgba(8,28,82,.78)!important;color:#f6e7bd!important;border:1px solid rgba(240,210,122,.6);border-radius:24px!important;padding:6px 14px!important;font-size:12px;backdrop-filter:blur(6px)}
+.opening-copy{position:relative;z-index:2;background:linear-gradient(160deg,rgba(7,26,82,.93),rgba(12,42,110,.9));border:2px solid #d4a43c;border-radius:34px;box-shadow:0 0 0 6px rgba(7,26,82,.55),0 0 0 7px rgba(240,210,122,.45),0 26px 60px rgba(2,10,45,.55),inset 0 0 40px rgba(240,210,122,.1);padding:66px 36px 28px;backdrop-filter:blur(8px)}
+.opening-copy>.eyebrow{justify-content:center}
+@media(min-width:861px){
+ .opening{display:block!important;min-height:760px;padding:0!important}
+ .opening-aside{position:absolute!important;left:-4%;top:0;bottom:0;width:62%;margin:0!important;z-index:1}
+ .council-art{height:100%}
+ .opening-copy{position:absolute;right:0;top:70px;width:46%;max-width:560px}
+ .opening h1{font-size:clamp(40px,4.4vw,56px);margin:0 0 6px}
+ .opening .hero-quote p{font-size:20px;line-height:1.8}
+ .opening-lede{margin:6px 0}
+ .opening-copy{display:flex;flex-direction:column}
+}
+@media(max-width:860px){
+ .opening{display:flex!important;flex-direction:column;padding:0 0 70px!important}
+ .opening-aside{position:relative!important;width:100%!important;max-width:none!important;height:400px;margin:0!important;order:-1;flex:none}
+ .council-art{height:100%}
+ .council-art img{object-position:50% 20%;-webkit-mask-image:linear-gradient(to bottom,#000 70%,transparent 100%);mask-image:linear-gradient(to bottom,#000 70%,transparent 100%)}
+ .art-caption{left:14px;bottom:auto;top:14px}
+ .opening-copy{margin:-64px 10px 0;padding:54px 20px 24px;border-radius:28px}
+ .opening h1{font-size:clamp(34px,10vw,44px)}
+}
+@media(min-width:861px){
+ .opening{min-height:700px}
+ .opening-copy{top:46px;padding:62px 34px 24px}
+ .opening h1{font-size:clamp(38px,3.9vw,50px);line-height:1.25}
+ .opening-kicker{margin:0 0 2px;font-size:13px}
+ .opening .hero-quote{margin:8px 0}.opening .hero-quote p{font-size:18px;line-height:1.7;margin:0}
+ .opening-lede{font-size:13px;line-height:1.8;margin:4px 0}
+ .supervision{margin:2px 0 10px}
+ .opening-actions{margin-top:6px}.opening-actions .gold-action{min-height:46px}.opening-actions>*{min-height:40px}
+}
+@media(max-width:860px){
+ .opening-aside{height:340px}
+ .council-art img{-webkit-mask-image:linear-gradient(to bottom,#000 62%,transparent 94%);mask-image:linear-gradient(to bottom,#000 62%,transparent 94%)}
+ .opening-copy{margin:-34px 10px 0}
+}
+@media(max-width:860px){
+ .council-art img{-webkit-mask-image:linear-gradient(to right,transparent 0,#000 7%,#000 93%,transparent 100%),linear-gradient(to bottom,#000 62%,transparent 94%);-webkit-mask-composite:source-in;mask-image:linear-gradient(to right,transparent 0,#000 7%,#000 93%,transparent 100%),linear-gradient(to bottom,#000 62%,transparent 94%);mask-composite:intersect}
+}
