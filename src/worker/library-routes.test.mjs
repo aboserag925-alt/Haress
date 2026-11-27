@@ -12,13 +12,15 @@ function recorder() {
   return { calls, fetchImpl };
 }
 
-test('library GET goes to the recovered backend without credentials or proxy secret', async () => {
+test('library GET goes to the recovered backend with trusted proxy identity and without visitor credentials', async () => {
   const r = recorder();
-  const req = new Request('https://x.test/api/library', { headers: { authorization: 'a', cookie: 'c', apikey: 'k', 'cf-connecting-ip': '1.2.3.4' } });
+  const req = new Request('https://x.test/api/library', { headers: { authorization: 'a', cookie: 'c', apikey: 'k', 'cf-connecting-ip': '1.2.3.4', 'x-client-ip': '198.51.100.2', 'x-proxy-secret': 'attacker-value' } });
   const res = await handleRequest(req, env, r.fetchImpl);
   assert.equal(res.status, 200);
   assert.equal(r.calls[0].url, ORIGIN + '/api/library');
-  for (const h of ['authorization', 'cookie', 'apikey', 'x-proxy-secret']) assert.equal(r.calls[0].headers.get(h), null);
+  for (const h of ['authorization', 'cookie', 'apikey']) assert.equal(r.calls[0].headers.get(h), null);
+  assert.equal(r.calls[0].headers.get('x-client-ip'), '1.2.3.4');
+  assert.equal(r.calls[0].headers.get('x-proxy-secret'), 's3cret');
 });
 
 test('library file route accepts only a uuid path and GET/HEAD', async () => {
@@ -31,9 +33,11 @@ test('library file route accepts only a uuid path and GET/HEAD', async () => {
 test('questions accepts only POST on the dedicated route', async () => {
   const r = recorder();
   assert.equal((await handleRequest(new Request('https://x.test/api/questions'), env, r.fetchImpl)).status, 405);
-  const ok = await handleRequest(new Request('https://x.test/api/questions', { method: 'POST', body: '{}', headers: { cookie: 'c' } }), env, r.fetchImpl);
+  const ok = await handleRequest(new Request('https://x.test/api/questions', { method: 'POST', body: '{}', headers: { cookie: 'c', 'cf-connecting-ip': '203.0.113.8' } }), env, r.fetchImpl);
   assert.equal(ok.status, 200);
   assert.equal(r.calls[0].headers.get('cookie'), null);
+  assert.equal(r.calls[0].headers.get('x-client-ip'), '203.0.113.8');
+  assert.equal(r.calls[0].headers.get('x-proxy-secret'), 's3cret');
 });
 
 test('a library backend other than the recovered origin is refused', async () => {
