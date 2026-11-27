@@ -396,15 +396,14 @@
       token=window.turnstile.getResponse(state.turnstileId)||'';
       if(!token){status('qm','أكمل التحقق الأمني قبل الإرسال.',true);return;}
     }
-    button.disabled=true; $('questionDraft').hidden=true; status('qm','جارٍ إرسال السؤال للمراجعة…');
+    button.disabled=true; status('qm','جارٍ إرسال السؤال للمراجعة…');
     try {
       var payload={question:question}; if(token) payload.turnstileToken=token;
       var response=await fetch(api('/api/questions'),{method:'POST',headers:{'Content-Type':'application/json; charset=utf-8'},body:JSON.stringify(payload)});
       var result; try { result=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(await response.arrayBuffer())); }
       catch(e){throw new Error('استجابة الخادم غير صالحة. حاول لاحقًا.');}
-      if(typeof result.draft==='string'){$('questionDraftText').textContent=result.draft;$('questionDraft').hidden=false;}
       if(!response.ok) throw new Error(result.error||'تعذر إرسال السؤال.');
-      status('qm','وصل السؤال والمسودة إلى Telegram للمراجعة. المسودة ليست فتوى معتمدة.');
+      status('qm','وصل سؤالك إلى الشيخ على Telegram. سيطّلع عليه الشيخ بنفسه.');
     } catch(e) { status('qm',e instanceof TypeError?'تعذر الاتصال بالخادم الخلفي. حاول مجددًا.':e.message,true); }
     finally { if(window.turnstile&&state.turnstileId!==null)window.turnstile.reset(state.turnstileId); button.disabled=!$('questionConsent').checked; }
   }
