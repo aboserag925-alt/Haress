@@ -7,6 +7,8 @@ const path = require('node:path');
 const test = require('node:test');
 const { createMediaLibrary } = require('./media-library');
 
+const MANIFEST_KEY = 'library/media-index.json';
+
 function telegramResponse(payload) {
   return {
     ok: true,
@@ -461,17 +463,22 @@ test('Supabase storage: upload verifies via injected MemoryStore', async functio
     const library = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
     await library.processUpdate({ update_id: 1, message: { chat: { id: -100123 }, date: 1793500000, caption: 'درس الخميس #كتب', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', mime_type: 'audio/mpeg', file_size: 11 } } });
     const keys = await storage.listKeys('');
-    assert.equal(keys.length, 1);
-    assert.ok(keys[0].startsWith('library/audio/'));
-    assert.ok(keys[0].endsWith('lesson.mp3'));
-    // In Supabase mode there is no local media-index.json; extract id from object key path
-    const id = keys[0].split('/')[2];
+    assert.equal(keys.length, 2);
+    assert.ok(keys.includes(MANIFEST_KEY));
+    const fileKey = keys.find(function (key) { return key !== MANIFEST_KEY; });
+    assert.ok(fileKey.startsWith('library/audio/'));
+    assert.ok(fileKey.endsWith('lesson.mp3'));
+    const id = fileKey.split('/')[2];
     assert.match(id, /^[0-9a-f-]{36}$/i);
     await library.processUpdate({ update_id: 2, callback_query: { id: 'cb', data: 'media:approve:' + id, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } } });
     assert.equal((await library.listApproved()).length, 1);
-    const f = await library.getApprovedFile(id);
+
+    // A fresh process must reload metadata from Supabase, not from memory.
+    const restarted = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
+    assert.equal((await restarted.listApproved()).length, 1);
+    const f = await restarted.getApprovedFile(id);
     assert.equal(f.data.toString('utf8'), 'audio bytes');
-    assert.deepEqual(await storage.listKeys(''), [keys[0]]);
+    assert.deepEqual(await storage.listKeys(''), keys);
   } finally {
     await fs.rm(storageDirectory, { recursive: true, force: true });
   }
@@ -494,15 +501,17 @@ test('Supabase storage: reject deletes remote object', async function () {
   try {
     const library = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
     await library.processUpdate({ update_id: 1, message: { chat: { id: -100123 }, caption: 'درس جديد', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', file_size: 11 } } });
-    // after fix, Supabase mode does not write media-index.json locally
-    await assert.rejects(fs.readFile(path.join(storageDirectory, 'media-index.json'), 'utf8'), { code: 'ENOENT' });
     const keys = await storage.listKeys('');
-    assert.equal(keys.length, 1);
-    const id = keys[0].split('/')[2];
+    assert.equal(keys.length, 2);
+    assert.ok(keys.includes(MANIFEST_KEY));
+    const fileKey = keys.find(function (key) { return key !== MANIFEST_KEY; });
+    const id = fileKey.split('/')[2];
     assert.match(id, /^[0-9a-f-]{36}$/i);
-    // clean: reject path also deletes
+    // Reject removes the media object but keeps the durable metadata manifest.
     await library.processUpdate({ update_id: 2, callback_query: { id: 'cb', data: 'media:reject:' + id, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } } });
-    assert.deepEqual(await storage.listKeys(''), []);
+    assert.deepEqual(await storage.listKeys(''), [MANIFEST_KEY]);
+    const restarted = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
+    assert.deepEqual(await restarted.listApproved(), []);
   } finally {
     await fs.rm(storageDirectory, { recursive: true, force: true });
   }
@@ -517,20 +526,18 @@ test('Supabase storage: listApproved works without local index file', async func
   try {
     const library = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
     assert.deepEqual(await library.listApproved(), []);
-    // no files created on disk (root-owned volume simulated by empty dir)
-    assert.deepEqual(await storage.listKeys(''), []);
+    // The manifest is durable in Supabase; no local volume writes are required.
+    assert.deepEqual(await storage.listKeys(''), [MANIFEST_KEY]);
+    assert.deepEqual(await fs.readdir(storageDirectory), []);
   } finally {
     await fs.rm(storageDirectory, { recursive: true, force: true });
   }
 });
 
-// Regression (Railway EACCES): in remote mode the library must not touch the
-// local storage directory at all. Point storageDirectory at a path that cannot
-// be used as a directory (an existing file). If initialize()/save() tried
-// fs.mkdir/writeFile here it would throw EEXIST/ENOTDIR/EACCES and break
-// GET /api/library (500 in Railway where the volume root is owned by root
-// and the app runs as node). In remote mode listApproved/processUpdate must
-// succeed without any filesystem access.
+// Regression (Railway EACCES): remote mode stores both media bytes and the
+// metadata manifest in Supabase Storage, so it must not touch the local volume.
+// Point storageDirectory at a path that cannot be used as a directory and prove
+// that listApproved/processUpdate remain functional without filesystem writes.
 test('Supabase storage: works when storage directory is unwritable (Railway EACCES)', async function () {
   const { MemoryStore: MS } = require('./media-storage');
   // A file, not a directory: fs.mkdir(filePath) would fail with EEXIST/ENOTDIR.
@@ -557,15 +564,17 @@ test('Supabase storage: works when storage directory is unwritable (Railway EACC
     // processUpdate (upload path via storeFile/save) must not touch the fs either
     await library.processUpdate({ update_id: 1, message: { chat: { id: -100123 }, date: 1793500000, caption: 'درس الخميس #كتب', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', mime_type: 'audio/mpeg', file_size: 11 } } });
     const keys = await storage.listKeys('');
-    assert.equal(keys.length, 1);
-    assert.ok(keys[0].startsWith('library/audio/'));
-    assert.ok(keys[0].endsWith('lesson.mp3'));
-    const id = keys[0].split('/')[2];
+    assert.equal(keys.length, 2);
+    assert.ok(keys.includes(MANIFEST_KEY));
+    const fileKey = keys.find(function (key) { return key !== MANIFEST_KEY; });
+    assert.ok(fileKey.startsWith('library/audio/'));
+    assert.ok(fileKey.endsWith('lesson.mp3'));
+    const id = fileKey.split('/')[2];
     await library.processUpdate({ update_id: 2, callback_query: { id: 'cb', data: 'media:approve:' + id, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } } });
     assert.equal((await library.listApproved()).length, 1);
     const f = await library.getApprovedFile(id);
     assert.equal(f.data.toString('utf8'), 'audio bytes');
-    // The blocking file must remain untouched and no media-index.json may appear
+    // The blocking file must remain untouched; the remote manifest lives in Supabase.
     assert.equal(await fs.readFile(notAValidDirectory, 'utf8'), 'blocking file');
     await assert.rejects(fs.readFile(path.join(notAValidDirectory, 'media-index.json'), 'utf8'));
   } finally {
