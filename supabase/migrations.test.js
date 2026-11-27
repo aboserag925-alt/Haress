@@ -8,7 +8,7 @@ const migration=fs.readFileSync(path.join(__dirname,'migrations','202611140001_s
 const approvalGuard=fs.readFileSync(path.join(__dirname,'migrations','20261127123000_restore_ai_approval_rpc_guards.sql'),'utf8');
 
 test('latest AI approval RPC enforces taint, administrator, and task-state guards in the database',()=>{
-  assert.match(approvalGuard,/security definer\\s+set search_path = ''/i);
+  assert.match(approvalGuard,/security definer\s+set search_path = ''/i);
   assert.match(approvalGuard,/v_task\.tainted is distinct from false/i);
   assert.match(approvalGuard,/from public\.admin_users/i);
   assert.match(approvalGuard,/for update/i);
@@ -27,11 +27,11 @@ test('latest AI approval RPC clears stale approval booleans and writes an audit 
 });
 
 test('latest AI approval RPC remains service-role-only and transactional',()=>{
-  assert.match(approvalGuard,/^\\s*(?:--[^\\n]*\\n\\s*)*begin;/i);
-  assert.match(approvalGuard,/commit;\\s*$/i);
-  assert.match(approvalGuard,/revoke all on function public\.record_ai_approval[\\s\\S]*?from public, anon, authenticated/i);
-  assert.match(approvalGuard,/grant execute on function public\.record_ai_approval[\\s\\S]*?to service_role/i);
-  assert.doesNotMatch(approvalGuard,/\\b(drop table|truncate|delete from)\\b/i);
+  assert.match(approvalGuard,/^\s*(?:--[^\n]*\n\s*)*begin;/i);
+  assert.match(approvalGuard,/commit;\s*$/i);
+  assert.match(approvalGuard,/revoke all on function public\.record_ai_approval[\s\S]*?from public, anon, authenticated/i);
+  assert.match(approvalGuard,/grant execute on function public\.record_ai_approval[\s\S]*?to service_role/i);
+  assert.doesNotMatch(approvalGuard,/\b(drop table|truncate|delete from)\b/i);
 });
 
 
