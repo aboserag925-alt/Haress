@@ -106,7 +106,9 @@ function isValidManifest(manifest) {
   return manifest.items.every(function (item) {
     return item && typeof item === 'object' && !Array.isArray(item) &&
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(item.id || '') &&
-      typeof item.storedName === 'string' && item.storedName.length > 0 &&
+      typeof item.storedName === 'string' &&
+      item.storedName === item.id + path.extname(item.storedName) &&
+      Object.prototype.hasOwnProperty.call(TYPES, path.extname(item.storedName)) &&
       typeof item.fileName === 'string' && item.fileName.length > 0 &&
       typeof item.fileUniqueId === 'string' && item.fileUniqueId.length > 0 &&
       typeof item.mimeType === 'string' && item.mimeType.length > 0 &&
