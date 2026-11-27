@@ -40,6 +40,21 @@ test('questions accepts only POST on the dedicated route', async () => {
   assert.equal(r.calls[0].headers.get('x-proxy-secret'), 's3cret');
 });
 
+test('public Railway routes fail closed when the Worker proxy secret is missing', async () => {
+  const r = recorder();
+  const missingSecret = { ...env };
+  delete missingSecret.PROXY_SHARED_SECRET;
+  const library = await handleRequest(new Request('https://x.test/api/library'), missingSecret, r.fetchImpl);
+  const questions = await handleRequest(new Request('https://x.test/api/questions', {
+    method: 'POST',
+    body: '{}',
+    headers: { 'content-type': 'application/json' }
+  }), missingSecret, r.fetchImpl);
+  assert.equal(library.status, 503);
+  assert.equal(questions.status, 503);
+  assert.equal(r.calls.length, 0);
+});
+
 test('a library backend other than the recovered origin is refused', async () => {
   const r = recorder();
   const bad = { ...env, LIBRARY_BACKEND_URL: 'https://evil.example' };
