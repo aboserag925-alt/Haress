@@ -69,6 +69,10 @@ jobs:
           SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && 'sb_publishable_5GpifW0KcFuA_kEupjoByg_mMOdhrRH' || secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: npm run build:app
 
+      - name: Validate PDF.js vendor script on pull requests
+        if: github.event_name == 'pull_request'
+        run: bash ./scripts/vendor-pdfjs.sh
+
       # Library assets are not stored in git (see docs/LIBRARY-ASSETS.md). They are rebuilt for
       # production-bound builds only; pull request previews skip the ~390 MB of PDFs.
       - name: Set up Python for library assets
