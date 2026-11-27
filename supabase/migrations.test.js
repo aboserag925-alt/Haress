@@ -9,11 +9,12 @@ const approvalGuard=fs.readFileSync(path.join(__dirname,'migrations','2026112712
 const approvalSchema=fs.readFileSync(path.join(__dirname,'migrations','20261118172423_haress_ai_workflow_storage_hardening.sql'),'utf8');
 const approvalAlignment=fs.readFileSync(path.join(__dirname,'migrations','20261118172518_haress_ai_approval_state_alignment.sql'),'utf8');
 
-test('approval guard upsert target is backed by the recovered production unique constraint',()=>{
+test('approval guard supports legacy approval tables without assuming a task/action unique constraint',()=>{
   assert.match(approvalSchema,/Recovered verbatim from Production PostgreSQL statement logs/i);
   assert.match(approvalSchema,/Applied at 2026-11-18 17:24:23 UTC; SQLSTATE 00000/i);
-  assert.match(approvalSchema,/unique\s*\(task_id,\s*action\)/i);
-  assert.match(approvalGuard,/on conflict \(task_id, action\) do update/i);
+  assert.match(approvalGuard,/from public\.ai_approvals a[\s\S]*?where a\.task_id = p_task_id[\s\S]*?and a\.action = p_action[\s\S]*?order by a\.created_at desc, a\.id desc[\s\S]*?limit 1[\s\S]*?for update/i);
+  assert.match(approvalGuard,/if found then[\s\S]*?update public\.ai_approvals[\s\S]*?else[\s\S]*?insert into public\.ai_approvals/i);
+  assert.doesNotMatch(approvalGuard,/on conflict \(task_id, action\)/i);
 });
 
 test('approval_id and human_approval_id columns exist before the guarded RPC writes them',()=>{
