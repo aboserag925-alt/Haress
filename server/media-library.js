@@ -116,7 +116,7 @@ function isValidManifest(manifest) {
       typeof item.title === 'string' && item.title.length > 0 &&
       validStatuses.has(item.status) &&
       typeof item.uploadedAt === 'string' && Number.isFinite(Date.parse(item.uploadedAt)) &&
-      (item.objectKey === undefined || (typeof item.objectKey === 'string' && item.objectKey === buildKey(item.kind, item.id, item.fileName)));
+      (item.objectKey === undefined || (typeof item.objectKey === 'string' && (item.objectKey === buildKey(item.kind, item.id, item.fileName) || ((item.kind === 'document' || item.kind === 'image') && item.objectKey === buildKey('other', item.id, item.fileName)))));
   });
 }
 
