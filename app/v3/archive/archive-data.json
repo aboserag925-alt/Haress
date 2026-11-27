@@ -1,0 +1,366 @@
+{
+ "subjects": [
+  {
+   "id": "s1",
+   "title": "العقيدة",
+   "lessons": [
+    {
+     "id": "l1",
+     "title": "لا مدخل للعقول استقلالا في مسائل الغيب",
+     "progress": "unknown",
+     "resources": [
+      {
+       "type": "video",
+       "title": "لا مدخل للعقول استقلالا في مسائل الغيب",
+       "url": "https://www.youtube.com/watch?v=nPkucKwoL0Y",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      }
+     ]
+    },
+    {
+     "id": "l2",
+     "title": "شرح العقيدة الواسطية",
+     "progress": "unknown",
+     "resources": [
+      {
+       "type": "video",
+       "title": "شرح العقيدة الواسطية (2) | أهم أصول عقيدة أهل السنة والجماعة | ابن تيمية رحمه الله",
+       "url": "https://www.youtube.com/watch?v=f9lM2RUnFM0",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      },
+      {
+       "type": "video",
+       "title": "العقيدة التي جمعت أصول اعتقاد أهل السنة | شرح العقيدة الواسطية (1)",
+       "url": "https://www.youtube.com/watch?v=yKbt02xkeE4",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      },
+      {
+       "type": "video",
+       "title": "شرح العقيدة الواسطية محاضرة 15",
+       "url": "https://www.youtube.com/watch?v=nR6vSuQc5aw",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      },
+      {
+       "type": "video",
+       "title": "شرح العقيدة الواسطية محاضرة 14",
+       "url": "https://www.youtube.com/watch?v=wT_n_njf-ZU",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      },
+      {
+       "type": "video",
+       "title": "شرح العقيدة الواسطية محاضرة رقم ( 13)",
+       "url": "https://www.youtube.com/watch?v=e6GB2hh_ygE",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      }
+     ]
+    },
+    {
+     "id": "l4",
+     "title": "لا يقبل من الأعمال إلا ما كان خالصا صوابا (قاعدة في الألوهية مهمة)",
+     "progress": "unknown",
+     "resources": [
+      {
+       "type": "video",
+       "title": "لا يقبل من الأعمال إلا ما كان خالصا صوابا (قاعدة في الألوهية مهمة)",
+       "url": "https://www.youtube.com/watch?v=Cn0KadV953g",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      }
+     ]
+    },
+    {
+     "id": "l5",
+     "title": "قواعد مهمة في الأسماء والصفات",
+     "progress": "unknown",
+     "resources": [
+      {
+       "type": "video",
+       "title": "قواعد مهمة في الأسماء والصفات",
+       "url": "https://www.youtube.com/watch?v=yLPqwJUBn5E",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      }
+     ]
+    },
+    {
+     "id": "l6",
+     "title": "المهدي المنتظر الرابط بين العلامات الصغري والكبري",
+     "progress": "unknown",
+     "resources": [
+      {
+       "type": "video",
+       "title": "المهدي المنتظر الرابط بين العلامات الصغري والكبري",
+       "url": "https://www.youtube.com/watch?v=xhv9FdBx3HY",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      }
+     ]
+    },
+    {
+     "id": "l7",
+     "title": "علامات كبرى تشير لاقتراب ظهور المهدي",
+     "progress": "unknown",
+     "resources": [
+      {
+       "type": "video",
+       "title": "علامات كبرى تشير لاقتراب ظهور المهدي",
+       "url": "https://www.youtube.com/watch?v=kdn8UkfT2aQ",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      }
+     ]
+    },
+    {
+     "id": "l8",
+     "title": "قواعد عقائد أهل السنة والجماعة",
+     "progress": "unknown",
+     "resources": [
+      {
+       "type": "video",
+       "title": "قواعد عقائد أهل السنة والجماعة",
+       "url": "https://www.youtube.com/watch?v=x6d-iaF7UuQ",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      },
+      {
+       "type": "video",
+       "title": "قواعد عقائد أهل السنة والجماعة( حكم مرتكب الكبيرة )",
+       "url": "https://www.youtube.com/watch?v=FV6r31ba_T8",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      }
+     ]
+    }
+   ],
+   "counts": {
+    "total": 7,
+    "completed": 0,
+    "ongoing": 0
+   }
+  },
+  {
+   "id": "s3",
+   "title": "مواعظ وتذكير",
+   "lessons": [
+    {
+     "id": "l3",
+     "title": "زلزال يضرب مصر | ماذا يقول القرآن والسنة عن الزلازل؟ وهل هي عقوبة أم تذكير؟",
+     "progress": "unknown",
+     "resources": [
+      {
+       "type": "video",
+       "title": "زلزال يضرب مصر | ماذا يقول القرآن والسنة عن الزلازل؟ وهل هي عقوبة أم تذكير؟",
+       "url": "https://www.youtube.com/watch?v=7L_upA_zmnk",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      }
+     ]
+    }
+   ],
+   "counts": {
+    "total": 1,
+    "completed": 0,
+    "ongoing": 0
+   }
+  },
+  {
+   "id": "s4",
+   "title": "التفسير وعلوم القرآن",
+   "lessons": [
+    {
+     "id": "l9",
+     "title": "مناهج البيان في أصول التفسير",
+     "progress": "unknown",
+     "resources": [
+      {
+       "type": "video",
+       "title": "مناهج البيان 《7》 في علم أصول التفسير",
+       "url": "https://www.youtube.com/watch?v=idBRhJPzRPg",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      },
+      {
+       "type": "video",
+       "title": "مَنَاهِجُ البَيَان (6) | أُصُولُ التَّفْسِيرِ وَقَوَاعِدُ فَهْمِ القُرْآنِ | شرح مقدمة ابن تيمية",
+       "url": "https://www.youtube.com/watch?v=WZpSO4F9VS8",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      }
+     ]
+    }
+   ],
+   "counts": {
+    "total": 1,
+    "completed": 0,
+    "ongoing": 0
+   }
+  },
+  {
+   "id": "s5",
+   "title": "الحديث وعلومه",
+   "lessons": [
+    {
+     "id": "l10",
+     "title": "مجلس قراءة صحيح مسلم",
+     "progress": "unknown",
+     "resources": [
+      {
+       "type": "video",
+       "title": "مجلس قراءة صحيح مسلم 67",
+       "url": "https://www.youtube.com/watch?v=Smzvp3YnmWo",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      },
+      {
+       "type": "video",
+       "title": "مجلس قراءة صحيح مسلم 66",
+       "url": "https://www.youtube.com/watch?v=EmkOTeQ6vgE",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      },
+      {
+       "type": "video",
+       "title": "مجلس قراءة صحيح مسلم 65",
+       "url": "https://www.youtube.com/watch?v=49ltg4Ty4Y0",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      },
+      {
+       "type": "video",
+       "title": "مجلس قراءة صحيح مسلم 64",
+       "url": "https://www.youtube.com/watch?v=J2f-z47LSg8",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      },
+      {
+       "type": "video",
+       "title": "مجلس قراءة صحيح صحيح مسلم 63",
+       "url": "https://www.youtube.com/watch?v=hlG2-jyKL08",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      },
+      {
+       "type": "video",
+       "title": "مجلس قراءة  صحيح مسلم 62",
+       "url": "https://www.youtube.com/watch?v=R5yauHtv-As",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      },
+      {
+       "type": "video",
+       "title": "مجلس قراءة صحيح مسلم برقم 61",
+       "url": "https://www.youtube.com/watch?v=uwxGlbUxsvk",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      }
+     ]
+    },
+    {
+     "id": "l11",
+     "title": "منارات المحدثين في مصطلح الحديث",
+     "progress": "unknown",
+     "resources": [
+      {
+       "type": "video",
+       "title": "منارات المحدثين في مصطلح  الحديث محاضرة 25",
+       "url": "https://www.youtube.com/watch?v=pe13dibVSj4",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      },
+      {
+       "type": "video",
+       "title": "شرح كتاب منارات المحدثين في علم مصلطح الحديث محاضرة  24",
+       "url": "https://www.youtube.com/watch?v=iPfGy0IUNsc",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      }
+     ]
+    }
+   ],
+   "counts": {
+    "total": 2,
+    "completed": 0,
+    "ongoing": 0
+   }
+  },
+  {
+   "id": "s6",
+   "title": "منوعات إسلامية",
+   "lessons": [
+    {
+     "id": "l12",
+     "title": "منوعات إسلامية وعلمية",
+     "progress": "unknown",
+     "resources": [
+      {
+       "type": "video",
+       "title": "بث منوعات إسلامية وعلمية",
+       "url": "https://www.youtube.com/watch?v=RvTuU1oZr1Y",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      },
+      {
+       "type": "video",
+       "title": "اليوم المفتوح ( منوعات إسلامية )",
+       "url": "https://www.youtube.com/watch?v=6IIQK3N-Qwk",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      },
+      {
+       "type": "video",
+       "title": "اليوم المفتوح ( منوعات إسلامية)",
+       "url": "https://www.youtube.com/watch?v=BRKzEV4A3zM",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      }
+     ]
+    }
+   ],
+   "counts": {
+    "total": 1,
+    "completed": 0,
+    "ongoing": 0
+   }
+  },
+  {
+   "id": "s7",
+   "title": "أصول الفقه",
+   "lessons": [
+    {
+     "id": "l13",
+     "title": "مدارج الاستنباط في أصول الفقه",
+     "progress": "unknown",
+     "resources": [
+      {
+       "type": "video",
+       "title": "شرح كتاب مدارج الاستنباط في أصول الفقه بلا اعتياط",
+       "url": "https://www.youtube.com/watch?v=5xo2CJ8Yhq4",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      },
+      {
+       "type": "video",
+       "title": "مدارج الاستنباط في أصول الفقه 6",
+       "url": "https://www.youtube.com/watch?v=SwhxcbjV1fY",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      }
+     ]
+    }
+   ],
+   "counts": {
+    "total": 1,
+    "completed": 0,
+    "ongoing": 0
+   }
+  },
+  {
+   "id": "s8",
+   "title": "السير والتراجم",
+   "lessons": [
+    {
+     "id": "l14",
+     "title": "الإمام أحمد بن حنبل",
+     "progress": "unknown",
+     "resources": [
+      {
+       "type": "video",
+       "title": "شيخ المحنة إمام أهل السنة أحمد بن حنبل",
+       "url": "https://www.youtube.com/watch?v=yBF9KJf0hlc",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      },
+      {
+       "type": "video",
+       "title": "عظماء الإسلام \" الإمام أحمد بن حنبل \"",
+       "url": "https://www.youtube.com/watch?v=eRZOk_QYDNM",
+       "sourceLabel": "قناة خالد نجم على يوتيوب"
+      }
+     ]
+    }
+   ],
+   "counts": {
+    "total": 1,
+    "completed": 0,
+    "ongoing": 0
+   }
+  }
+ ],
+ "rebuttals": []
+}
