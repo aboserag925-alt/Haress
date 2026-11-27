@@ -69,6 +69,26 @@ jobs:
           SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && 'sb_publishable_5GpifW0KcFuA_kEupjoByg_mMOdhrRH' || secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: npm run build:app
 
+      # Library assets are not stored in git (see docs/LIBRARY-ASSETS.md). They are rebuilt for
+      # production-bound builds only; pull request previews skip the ~390 MB of PDFs.
+      - name: Set up Python for library assets
+        if: github.event_name != 'pull_request'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build library assets (pdf.js and book PDFs)
+        if: github.event_name != 'pull_request'
+        run: |
+          ./scripts/vendor-pdfjs.sh
+          python -m pip install PyMuPDF==1.26.7
+          cp app/books.json /tmp/books.committed.json
+          python scripts/prepare-pdf-books.py
+          # The committed books.json is the production copy; keep it (part hashes differ by PDF serialization).
+          cp /tmp/books.committed.json app/books.json
+          test "$(find app/books -name '*.pdf' | wc -l)" = "35"
+          test -z "$(find app/books -name '*.pdf' -size +20M)"
+
       - name: Verify generated Supabase configuration without exposing key
         env:
           EXPECTED_SUPABASE_URL: ${{ github.event_name == 'pull_request' && 'https://bevyztwoijjzfngutnys.supabase.co' || 'https://uzepglfimareggswjzlf.supabase.co' }}

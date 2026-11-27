@@ -5,12 +5,23 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#181818">
 <meta name="description" content="استراحة أهل الأثر — مجلس للعلم والذكر">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ar_AR">
+<meta property="og:title" content="استراحة أهل الأثر | مجلس العلم والذكر">
+<meta property="og:description" content="استراحة أهل الأثر — مجلس للعلم والذكر">
+<meta property="og:image" content="https://hares.aboserag925.workers.dev/v3/hero-featured.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="manifest" href="/v3/manifest.json">
+<link rel="icon" href="/v3/favicon.svg" type="image/svg+xml">
 <title>استراحة أهل الأثر | مجلس العلم والذكر</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/v3/identity.css">
+<link rel="stylesheet" href="/v3/archive/archive.css"><link rel="stylesheet" href="/v3/royal.css">
+<link rel="stylesheet" href="/v3/royal-v2.css">
+<link rel="stylesheet" href="/v3/royal-v3.css">
+<link rel="stylesheet" href="/v3/royal-v4.css">
 <script src="/supabase-config.js"></script>
 <script src="/runtime-config.js"></script>
 <script src="/vendor/adhan.umd.min.js"></script>
@@ -18,17 +29,24 @@
 <script src="/auth-client.js"></script>
 <script defer src="/v3/v3.js"></script>
 <script defer src="/v3/v3-runtime.js"></script>
+<script defer src="/v3/v3-books.js"></script>
 <script defer src="/v3/v3-adapter.js"></script>
+<script defer src="/v3/archive/youtube.js"></script>
+<script defer src="/v3/archive/source-links.js"></script>
+<script defer src="/v3/archive/video-live/model.js"></script>
+<script defer src="/v3/archive/video-live/player.js"></script>
+<script defer src="/v3/archive/v3-archive.js"></script>
+<script defer src="/v3/archive/archive-init.js"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">تجاوز إلى المحتوى</a>
 <div class="frame editorial-frame">
   <header class="masthead editorial-masthead">
-    <a class="wordmark" href="/v3/" aria-label="استراحة أهل الأثر — الرئيسية">
+    <a class="wordmark" href="/v3/" aria-label="استراحة أهل الأثر — الرئيسية"><span class="shield" role="img" aria-label="حرس الحدود"><svg viewBox="0 0 60 70" aria-hidden="true" focusable="false"><path d="M30 2 56 10v22c0 17-11 30-26 36C15 62 4 49 4 32V10z" fill="#12306b" stroke="#e8c46a" stroke-width="3" stroke-linejoin="round"/><text x="30" y="30" text-anchor="middle" font-size="17" font-weight="700" fill="#f8e29a" font-family="inherit">حرس</text><text x="30" y="50" text-anchor="middle" font-size="16" font-weight="700" fill="#f8e29a" font-family="inherit">الحدود</text></svg></span>
       <span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
       <span><b>أهل الأثر</b><small>مجلس العلم والذكر</small></span>
     </a>
-    <nav class="primary-links" aria-label="التنقل الرئيسي"><button type="button" data-v3-target="sched">الرئيسية</button><button type="button" data-v3-target="media">المكتبة</button><button type="button" data-v3-target="about">عن المجلس</button><button type="button" data-v3-target="q">تواصل</button></nav><div class="masthead-meta">
+    <nav class="primary-links" aria-label="التنقل الرئيسي"><button type="button" data-v3-target="sched">الرئيسية</button><button type="button" data-v3-target="media">المكتبة</button><button type="button" data-v3-target="archive">الأقسام</button><button type="button" data-v3-target="about">عن المجلس</button><button type="button" data-v3-target="q">تواصل</button></nav><div class="masthead-meta">
       <span class="edition">القرآن والسنة بفهم أهل السنة</span>
       <button class="radio-launch" id="quranRadioButton" type="button" aria-expanded="false" aria-controls="quranRadioPanel">استمع إلى القرآن <span aria-hidden="true">◖</span></button>
       <button class="icon-button" type="button" data-v3-theme-toggle aria-label="تبديل المظهر">◐</button>
@@ -40,9 +58,11 @@
   <main id="main">
     <section class="opening editorial-opening" aria-labelledby="welcomeTitle">
       <div class="opening-copy">
+        <div class="stage-shield" aria-hidden="true"><svg viewBox="0 0 60 70" aria-hidden="true" focusable="false"><path d="M30 2 56 10v22c0 17-11 30-26 36C15 62 4 49 4 32V10z" fill="#12306b" stroke="#e8c46a" stroke-width="3" stroke-linejoin="round"/><text x="30" y="30" text-anchor="middle" font-size="17" font-weight="700" fill="#f8e29a" font-family="inherit">حرس</text><text x="30" y="50" text-anchor="middle" font-size="16" font-weight="700" fill="#f8e29a" font-family="inherit">الحدود</text></svg></div>
         <p class="eyebrow"><span class="live-dot"></span> بسم الله الرحمن الرحيم</p>
         <p class="opening-kicker">القرآن والسنة بفهم أهل السنة</p>
         <h1 id="welcomeTitle">المجلس العلمي<br><em>لأهل الأثر</em></h1>
+        <blockquote class="hero-quote"><p>«أشرف الأعمال قاطبةً أن تموت خادمًا لهذا الدين»</p></blockquote>
         <p class="opening-lede">دروس ومحاضرات، مكتبة علمية، وأبواب للذكر والسؤال. نجتمع على العلم النافع وحسن العمل.</p>
         <p class="supervision">بإشراف الدكتور خالد الحارس</p>
         <div class="opening-actions">
@@ -51,7 +71,7 @@
         </div>
       </div>
       <aside class="opening-aside" aria-label="شعار مجلس أهل الأثر">
-        <div class="council-art"><img src="/v3/council.jpg" alt="شعار استراحة أهل الأثر، مجلس تدارس العلم والأدب" width="640" height="640"></div>
+        <div class="council-art"><img src="/v3/hero-featured.jpg" alt="شعار استراحة أهل الأثر، مجلس تدارس العلم والأدب" width="640" height="640"></div>
         <div class="art-caption"><span class="live-dot"></span><span>مجلس تدارس العلم والأدب</span><span class="art-arrow">↗</span></div>
       </aside>
     </section>
@@ -137,8 +157,18 @@
           <div class="library-tools"><div class="library-index">المجموعة <b>05</b></div><div class="media-filters" id="mediaFilters">
             <button class="media-filter on" type="button" data-media-category="all" aria-pressed="true">الكل</button><button class="media-filter" type="button" data-media-category="audio" aria-pressed="false">صوتيات</button><button class="media-filter" type="button" data-media-category="video" aria-pressed="false">مرئيات</button><button class="media-filter" type="button" data-media-category="books" aria-pressed="false">كتب</button><button class="media-filter" type="button" data-media-category="images" aria-pressed="false">صور</button><button class="media-filter" type="button" data-media-category="other" aria-pressed="false">أخرى</button>
           </div></div>
-          <p id="mediaStatus" class="status" role="status" aria-live="polite">جارٍ تحميل المكتبة…</p><div id="mediaItems" class="editorial-library"></div>
+          <h3>كتب PDF</h3><p>نسخ مصورة من مقتنيات المكتبات الجامعية، مع بيان نطاق كل نسخة ومصدرها.</p><div id="bookItems" class="editorial-library"></div><h3>مواد المكتبة الأخرى</h3><p id="mediaStatus" class="status" role="status" aria-live="polite">جارٍ تحميل المكتبة…</p><div id="mediaItems" class="editorial-library"></div>
         </section>
+
+        <section id="archive" hidden tabindex="-1" class="scene">
+          <header class="scene-heading"><p class="eyebrow">الأقسام العلمية</p><h2>الأقسام <em>والشروح</em></h2><p>دفعة أولى من قناة الدكتور خالد على يوتيوب. حالة كل شرح غير محددة حتى تُراجع، ولا يُدّعى اكتمال أي سلسلة.</p></header>
+          <div class="library-tools"><div aria-label="القسم" class="media-filters" id="archiveSubjectFilters"></div></div>
+          <div class="library-tools"><div aria-label="الحالة" class="media-filters" id="archiveProgressFilters"></div></div>
+          <div class="library-tools"><div aria-label="نوع المادة" class="media-filters" id="archiveMediaFilters"></div></div>
+          <p id="archiveStatus" class="status" role="status" aria-live="polite">جارٍ تحميل الأقسام…</p><div class="v3-archive" id="archiveItems"></div>
+        </section>
+
+        <section id="haressVideoPlayer" hidden class="scene-card" aria-label="مشغّل الفيديو والبث"></section>
 
         <section id="q" hidden tabindex="-1" class="scene consultation">
           <div class="consultation-art" aria-hidden="true"><span>س</span><i></i></div>
@@ -174,11 +204,10 @@
     </div>
   </main>
 
-  <footer class="colophon"><span>استراحة أهل الأثر</span><span>القرآن والسنة بفهم أهل السنة</span><span>تصميم محمد سراج</span><div class="footer-actions"><button class="text-button" type="button" onclick="share()">مشاركة المجلس ↗</button><button class="text-button" type="button" onclick="document.getElementById('supportDialog').showModal()">دعم المجلس ↗</button></div></footer>
+  <footer class="colophon"><span>استراحة أهل الأثر</span><span>القرآن والسنة بفهم أهل السنة</span><span>تصميم محمد سراج</span><div class="footer-actions"><button class="text-button" type="button" onclick="share()">مشاركة المجلس ↗</button><button class="text-button" type="button" onclick="document.getElementById('supportDialog').showModal()">دعم المجلس ↗</button><button id="inst" class="install-fab" type="button" onclick="install()" hidden>تثبيت التطبيق</button></div></footer>
 </div>
 
 <button class="mobile-support" type="button" onclick="document.getElementById('supportDialog').showModal()">دعم المجلس <span>↗</span></button>
-<button id="inst" class="install-fab" type="button" onclick="install()" hidden>تثبيت التطبيق</button>
 <dialog class="support-dialog" id="supportDialog" aria-labelledby="supportDialogTitle">
   <div class="dialog-ornament" aria-hidden="true">✳</div><h2 id="supportDialogTitle">ساهم في استمرار نشر العلم</h2><p>يمكنك دعم استراحة أهل الأثر عبر فودافون كاش. جزاك الله خيرًا على مساهمتك.</p>
   <div class="wallet-detail"><strong>فودافون كاش</strong><div class="wallet-number"><b dir="ltr">01020744923</b><button class="outline-action" type="button" data-support-number="01020744923" onclick="copySupportNumber(this)">نسخ الرقم</button></div><p>حوّل المبلغ إلى الرقم أعلاه من محفظة فودافون كاش، ثم احتفظ بإيصال التحويل.</p><span class="copy-feedback" role="status" aria-live="polite"></span></div>

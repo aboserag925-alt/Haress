@@ -39,7 +39,7 @@ const HOP_BY_HOP_HEADERS = new Set([
 // app/admin.html still use inline <script> blocks and onclick="" handlers. Remove it after
 // moving them to external files, then switch script-src to 'self' only.
 export const SECURITY_HEADERS = {
-  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https:; connect-src 'self' https://*.supabase.co https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https:; connect-src 'self' https://*.supabase.co https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com https://www.youtube-nocookie.com; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -212,6 +212,27 @@ async function proxyToBackend(request, backendUrl, fetchImpl, env) {
   }
 }
 
+const LIBRARY_BACKEND_ORIGIN = 'https://haress-production.up.railway.app';
+const LIBRARY_PATH = /^\/api\/library(?:\/files\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})?$/i;
+
+async function proxyPublicLibraryRoutes(request, env, fetchImpl, url) {
+  if (!env || env.DEPLOYMENT_ENV !== 'production' || !env.LIBRARY_BACKEND_URL) return null;
+  const isLibrary = LIBRARY_PATH.test(url.pathname);
+  const isQuestions = url.pathname === '/api/questions';
+  if (!isLibrary && !isQuestions) return null;
+  const allowed = isLibrary ? ['GET', 'HEAD'] : ['POST'];
+  if (!allowed.includes(request.method)) {
+    return new Response(null, { status: 405, headers: { Allow: allowed.join(', ') } });
+  }
+  // Only the recovered existing source, not an arbitrary destination.
+  if (String(env.LIBRARY_BACKEND_URL) !== LIBRARY_BACKEND_ORIGIN) return new Response(null, { status: 503 });
+  const forwarded = new Request(request);
+  forwarded.headers.delete('authorization');
+  forwarded.headers.delete('cookie');
+  forwarded.headers.delete('apikey');
+  return proxyToBackend(forwarded, LIBRARY_BACKEND_ORIGIN, fetchImpl, {});
+}
+
 // Only explicitly public, static representations participate in negotiation.
 function prefersMarkdown(accept) {
   const qualities = new Map();
@@ -268,6 +289,11 @@ export async function handleRequest(request, env, fetchImpl = globalThis.fetch) 
   }
   const supabaseProxied = await proxyToSupabaseFunction(request, env, fetchImpl);
   if (supabaseProxied) return supabaseProxied;
+
+  // Production-only public routes (library list/files, question form) go to the recovered
+  // Railway service. They drop credentials and never receive the proxy secret.
+  const libraryPublic = await proxyPublicLibraryRoutes(request, env, fetchImpl, entryUrl);
+  if (libraryPublic) return libraryPublic;
 
   const backendUrl = env && env.API_BACKEND_URL ? String(env.API_BACKEND_URL) : '';
   const proxied = await proxyToBackend(request, backendUrl, fetchImpl, env);

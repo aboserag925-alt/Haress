@@ -1,0 +1,23 @@
+/* Scientific archive and rebuttals */
+.v3-archive{display:grid;gap:26px}.v3-subject{border:1px solid var(--line);background:var(--paper-white);padding:clamp(16px,3vw,28px)}
+.v3-subject-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:10px}.v3-subject-head h3{margin:0;color:var(--forest);font:600 26px var(--serif)}
+.v3-subject-count{margin:0;color:var(--muted);font-size:12px}
+.v3-lesson{border-top:1px solid var(--line);padding:4px 0}.v3-lesson>summary{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 0;cursor:pointer;list-style:none}.v3-lesson>summary::-webkit-details-marker{display:none}
+.v3-lesson>summary b{color:var(--forest);font-size:17px;font-weight:600}.v3-lesson>summary:focus-visible{outline:3px solid var(--bronze);outline-offset:2px}
+.v3-badge{padding:3px 11px;border:1px solid var(--bronze-soft);border-radius:999px;font-size:11px;color:var(--muted);white-space:nowrap}
+.v3-badge-ongoing{background:var(--bronze);border-color:var(--bronze);color:#181818}.v3-badge-completed{background:var(--forest);border-color:var(--forest);color:var(--paper)}
+.v3-lesson-note{margin:0 0 10px;color:var(--muted);font-size:13px;line-height:2}.v3-empty{font-size:12px}
+.v3-resources{display:grid;gap:12px;padding:4px 0 14px}.v3-resource{display:grid;gap:7px;padding:12px 14px;border:1px solid var(--line-soft);background:var(--paper-deep)}
+.v3-resource-type{color:var(--bronze);font-size:11px}.v3-resource b{color:var(--forest);font-weight:600}
+.v3-resource audio,.v3-resource video{width:100%;max-width:100%}.v3-resource a{color:var(--forest);text-decoration:underline;text-decoration-color:var(--bronze-soft);text-underline-offset:4px;font-size:13px}
+.v3-transcript summary{cursor:pointer;color:var(--forest);font-size:13px}.v3-transcript p{margin:8px 0 0;white-space:pre-wrap;line-height:2;max-height:320px;overflow:auto;font-size:14px}
+.v3-rebuttal a{display:inline-flex;margin-top:8px;color:var(--forest);text-decoration:underline;text-underline-offset:4px;font-size:13px}
+@media(max-width:680px){.editorial-library{grid-template-columns:1fr}.v3-subject-head h3{font-size:22px}}
+/* Live broadcast status strip. Red only when a verified live broadcast is reported. */
+.v3-live{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 auto;max-width:1180px;padding:10px 24px;border-bottom:1px solid var(--line);font-size:13px;color:var(--muted)}
+.v3-live b{color:var(--ink);font-weight:600}.v3-live a.v3-live-go{display:inline-flex;align-items:center;gap:8px;padding:7px 16px;border-radius:999px;background:#c62828;color:#fff;text-decoration:none;font-weight:700}
+.v3-live-dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}.v3-live[data-state=live] .v3-live-dot{background:#fff;box-shadow:0 0 0 0 rgba(255,255,255,.7);animation:v3-live-pulse 1.6s infinite}
+.v3-live[data-state=live]{color:var(--ink)}.v3-live .v3-live-sched{background:none;border:0;color:var(--forest);text-decoration:underline;text-underline-offset:4px;cursor:pointer;font:inherit}
+@keyframes v3-live-pulse{70%{box-shadow:0 0 0 8px rgba(255,255,255,0)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}}
+@media(prefers-reduced-motion:reduce){.v3-live-dot{animation:none!important}}
+#haressVideoPlayer iframe{width:100%;aspect-ratio:16/9;border:0}

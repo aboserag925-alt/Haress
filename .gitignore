@@ -15,3 +15,7 @@ skills-lock.json
 wrangler-dry-run.log
 wrangler-error.txt
 hares-preview.zip
+
+# Build-time library assets (reproduced by scripts/vendor-pdfjs.sh and scripts/prepare-pdf-books.py)
+app/vendor/pdfjs/
+app/books/

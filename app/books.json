@@ -1,0 +1,299 @@
+[
+  {
+    "id": "columbia_aco001785",
+    "title": "منهاج السنة النبوية",
+    "scope": "المجلدان ١–٢ حسب الفهرس، ليست دعوى اكتمال الكتاب",
+    "pages": 568,
+    "parts": [
+      {
+        "file": "/books/columbia_aco001785-part-1.pdf",
+        "start": 1,
+        "end": 70,
+        "bytes": 11015909,
+        "sha256": "8b03ced71a38be5b7416e5e467f67bf19607fb8b25e46d5f02ecaded48802ea1"
+      },
+      {
+        "file": "/books/columbia_aco001785-part-2.pdf",
+        "start": 71,
+        "end": 140,
+        "bytes": 12726045,
+        "sha256": "3e683e1e20f560a912deb75acd7b3fefb178c5e80eaaef92eae204347c74d9e1"
+      },
+      {
+        "file": "/books/columbia_aco001785-part-3.pdf",
+        "start": 141,
+        "end": 210,
+        "bytes": 12684110,
+        "sha256": "540d7be28024553e67af59f1f2571d3e1f0702364c6ccce73bb83c358ccfbe2f"
+      },
+      {
+        "file": "/books/columbia_aco001785-part-4.pdf",
+        "start": 211,
+        "end": 280,
+        "bytes": 12358860,
+        "sha256": "2c4748ca5eca5cb060d58f3b87ddfc20cda12f5fbc9ac7e067e83116c33e9f7a"
+      },
+      {
+        "file": "/books/columbia_aco001785-part-5.pdf",
+        "start": 281,
+        "end": 350,
+        "bytes": 11956356,
+        "sha256": "a94909732481a16b764fcbfae747f89805f8e48f4088b07ee727346da212e5c8"
+      },
+      {
+        "file": "/books/columbia_aco001785-part-6.pdf",
+        "start": 351,
+        "end": 420,
+        "bytes": 12724863,
+        "sha256": "506982a3c26863a75bc41564b3f58662305a6ee4fda26c23f25df5e4061e96f2"
+      },
+      {
+        "file": "/books/columbia_aco001785-part-7.pdf",
+        "start": 421,
+        "end": 490,
+        "bytes": 12390281,
+        "sha256": "010c9fef80affa6f07e24457e8875afe05b2c7dbdfff342101cf3c8fdb8ed6e8"
+      },
+      {
+        "file": "/books/columbia_aco001785-part-8.pdf",
+        "start": 491,
+        "end": 560,
+        "bytes": 11141173,
+        "sha256": "9869170ed38e1f8b46d0c5b87267f06274408fca39af989caa6a75f613517c69"
+      },
+      {
+        "file": "/books/columbia_aco001785-part-9.pdf",
+        "start": 561,
+        "end": 568,
+        "bytes": 877108,
+        "sha256": "1db23cd45ad6826cb2be90660b88d71a94c30422d33cc249a21324e94413626f"
+      }
+    ],
+    "source": "https://sites.dlib.nyu.edu/viewer/books/columbia_aco001785/1",
+    "sourceLabel": "NYU Arabic Collections Online / Columbia University Libraries",
+    "note": "صور صفحات، بلا بحث نصي. قُسّم الملف إلى أجزاء للعرض دون إعادة تصوير الصفحات.",
+    "rights": "تقدير NYU: المواد في الملك العام، مع مسار لطلب الإزالة.",
+    "originalSha256": "3c20870f720365642e9e7e2bfb8baad8fde96e8ecd65a7ccc7fc51b461a941b6"
+  },
+  {
+    "id": "columbia_aco003751",
+    "title": "صحيح مسلم، الجزء الأول",
+    "scope": "الجزء الأول، مصر: عيسى البابي الحلبي وشركاه، ١٣٤٩هـ / ١٩٣١م",
+    "pages": 680,
+    "parts": [
+      {
+        "file": "/books/columbia_aco003751-part-1.pdf",
+        "start": 1,
+        "end": 70,
+        "bytes": 9679054,
+        "sha256": "0f41fd098a115445e096cdda15662140c6eff9ee51c0016e9d241614db181e07"
+      },
+      {
+        "file": "/books/columbia_aco003751-part-2.pdf",
+        "start": 71,
+        "end": 140,
+        "bytes": 10289490,
+        "sha256": "2fe6bcee868334f521c1a5a1c12328a50575e46af590f87c9cf8d71815106a6d"
+      },
+      {
+        "file": "/books/columbia_aco003751-part-3.pdf",
+        "start": 141,
+        "end": 210,
+        "bytes": 10153494,
+        "sha256": "63cdc11e8915c7d7ca103ab0934ee673d8e6bff3fe07c9b56705ba420df530d9"
+      },
+      {
+        "file": "/books/columbia_aco003751-part-4.pdf",
+        "start": 211,
+        "end": 280,
+        "bytes": 10084157,
+        "sha256": "79b8a1151230c3e5fde081cbf7b27edd045f2e602dfdaa73eb7a09d7bc9d9b5e"
+      },
+      {
+        "file": "/books/columbia_aco003751-part-5.pdf",
+        "start": 281,
+        "end": 350,
+        "bytes": 10096173,
+        "sha256": "c9d0093048655290b4843f6c1399485c94a485e3dc27c411086775807d8ae80f"
+      },
+      {
+        "file": "/books/columbia_aco003751-part-6.pdf",
+        "start": 351,
+        "end": 420,
+        "bytes": 10138404,
+        "sha256": "728de419894a3241327d84755c237972de465428d58449bca8f03fe0fa6eadd0"
+      },
+      {
+        "file": "/books/columbia_aco003751-part-7.pdf",
+        "start": 421,
+        "end": 490,
+        "bytes": 10072681,
+        "sha256": "0b7118dbd2473222c9b7163efc2a7ddcc948f89000d683b56ef1ed62cb1df604"
+      },
+      {
+        "file": "/books/columbia_aco003751-part-8.pdf",
+        "start": 491,
+        "end": 560,
+        "bytes": 10136318,
+        "sha256": "cb3e541c088c65c44a7aa05b31a6aefd21cd3f7fd402005efc903679b0c3c67b"
+      },
+      {
+        "file": "/books/columbia_aco003751-part-9.pdf",
+        "start": 561,
+        "end": 630,
+        "bytes": 9976122,
+        "sha256": "83dceabe175725a8b9e058f6b032e34ab743dab9c107f9b114bcd31e3fabbbd1"
+      },
+      {
+        "file": "/books/columbia_aco003751-part-10.pdf",
+        "start": 631,
+        "end": 680,
+        "bytes": 5916319,
+        "sha256": "fec7e54541e806ec02b4943be7dddd454463acb830768f07df874f0b72985bb0"
+      }
+    ],
+    "source": "https://sites.dlib.nyu.edu/viewer/books/columbia_aco003751/1",
+    "sourceLabel": "NYU Arabic Collections Online / Columbia University Libraries",
+    "note": "صور صفحات، بلا بحث نصي. قُسّم الملف إلى أجزاء للعرض دون إعادة تصوير الصفحات.",
+    "rights": "تقدير NYU: المواد في الملك العام، مع مسار لطلب الإزالة.",
+    "originalSha256": "f6aeb641237f0ec3afd89742394345c5d9a2b31cc607f7c6f4a4d9c1e25ddd3d"
+  },
+  {
+    "id": "columbia_aco003752",
+    "title": "صحيح مسلم، الجزء الثاني",
+    "scope": "الجزء الثاني، مصر: عيسى البابي الحلبي، ١٣٤٩هـ / ١٩٣١م",
+    "pages": 584,
+    "parts": [
+      {
+        "file": "/books/columbia_aco003752-part-1.pdf",
+        "start": 1,
+        "end": 70,
+        "bytes": 9341875,
+        "sha256": "1ec8ec0c0067a1570b96b31f4d72c1c6588cac8aec72625e8f447b121b8f3d5b"
+      },
+      {
+        "file": "/books/columbia_aco003752-part-2.pdf",
+        "start": 71,
+        "end": 140,
+        "bytes": 9658086,
+        "sha256": "529149774cc82bd19e488b6f351dd3b702883e146cec28efdeaf3d752cc059d2"
+      },
+      {
+        "file": "/books/columbia_aco003752-part-3.pdf",
+        "start": 141,
+        "end": 210,
+        "bytes": 9693592,
+        "sha256": "459f3823871b795f982d9ef67e49e635e45f8ca53d01d2887649f1fd75710ce9"
+      },
+      {
+        "file": "/books/columbia_aco003752-part-4.pdf",
+        "start": 211,
+        "end": 280,
+        "bytes": 9773926,
+        "sha256": "19915d471d3675ec9ca8ee2fccc6d981e21b6b30fba44b36e90a54fd5ccfca76"
+      },
+      {
+        "file": "/books/columbia_aco003752-part-5.pdf",
+        "start": 281,
+        "end": 350,
+        "bytes": 9498277,
+        "sha256": "7c19e6e97817a01770741dd3b6359a00e04d75099db0162c556149bd0aec0b35"
+      },
+      {
+        "file": "/books/columbia_aco003752-part-6.pdf",
+        "start": 351,
+        "end": 420,
+        "bytes": 9668436,
+        "sha256": "0826451a3528417eb8276daf33a703e33d5c655f85de4bdf60bde796f5df598e"
+      },
+      {
+        "file": "/books/columbia_aco003752-part-7.pdf",
+        "start": 421,
+        "end": 490,
+        "bytes": 9551210,
+        "sha256": "d77baa5472b64e07d9aa7d26c2eaca3058e745555125b1a82cf0b6a2f8d90c18"
+      },
+      {
+        "file": "/books/columbia_aco003752-part-8.pdf",
+        "start": 491,
+        "end": 560,
+        "bytes": 9135877,
+        "sha256": "2bb1b928fd388dafe1f40c5e94f94839784d061994877a94f723e980f1b1b62b"
+      },
+      {
+        "file": "/books/columbia_aco003752-part-9.pdf",
+        "start": 561,
+        "end": 584,
+        "bytes": 2388285,
+        "sha256": "d789672d7dae6903fcdd45b1640ab480d7e3a4e0f4963741d17fb12b89b43fcb"
+      }
+    ],
+    "source": "https://sites.dlib.nyu.edu/viewer/books/columbia_aco003752/1",
+    "sourceLabel": "NYU Arabic Collections Online / Columbia University Libraries",
+    "note": "صور صفحات، بلا بحث نصي. قُسّم الملف إلى أجزاء للعرض دون إعادة تصوير الصفحات.",
+    "rights": "تقدير NYU: المواد في الملك العام، مع مسار لطلب الإزالة.",
+    "originalSha256": "ab9f8e284b6838f1f65c992ebfa8584b6ff7848c809b3f998a2fdc9715e2bd5e"
+  },
+  {
+    "id": "columbia_aco003165",
+    "title": "صحيح البخاري مع حاشية السندي",
+    "scope": "المجلدان ١–٢ حسب الفهرس فقط، مجموعة جزئية",
+    "pages": 450,
+    "parts": [
+      {
+        "file": "/books/columbia_aco003165-part-1.pdf",
+        "start": 1,
+        "end": 70,
+        "bytes": 18329028,
+        "sha256": "46bb0710467bdf0168f3cb99fe19b299813100a4413db777de41bb7fcdd5e93a"
+      },
+      {
+        "file": "/books/columbia_aco003165-part-2.pdf",
+        "start": 71,
+        "end": 140,
+        "bytes": 19296438,
+        "sha256": "11ff1ad9a647c26525091d6863a2659d361bda0011d87ff4d1825cce223e5ac7"
+      },
+      {
+        "file": "/books/columbia_aco003165-part-3.pdf",
+        "start": 141,
+        "end": 210,
+        "bytes": 18777801,
+        "sha256": "2bee07aeaa386ce0d99178b0278fb5f727c990fe9f8595b36faa79bf5af66b5a"
+      },
+      {
+        "file": "/books/columbia_aco003165-part-4.pdf",
+        "start": 211,
+        "end": 280,
+        "bytes": 18110739,
+        "sha256": "ee382fb8af2e51d3bda947ea7b00488f7db777368118c3845d8e4f6020f3bf2a"
+      },
+      {
+        "file": "/books/columbia_aco003165-part-5.pdf",
+        "start": 281,
+        "end": 350,
+        "bytes": 18629141,
+        "sha256": "1432bf564dc54a173e471653425df61cf0bcdf4c531f12d42d4926ff225109f1"
+      },
+      {
+        "file": "/books/columbia_aco003165-part-6.pdf",
+        "start": 351,
+        "end": 420,
+        "bytes": 18848514,
+        "sha256": "6576c4a7f85b0d57915e74a30307add4c6e666235e8f3e3a0078de2145697122"
+      },
+      {
+        "file": "/books/columbia_aco003165-part-7.pdf",
+        "start": 421,
+        "end": 450,
+        "bytes": 7385847,
+        "sha256": "87094b8ffba7794e2796694304d9f249249d5ebac2fba7132cc6441132e33f07"
+      }
+    ],
+    "source": "https://sites.dlib.nyu.edu/viewer/books/columbia_aco003165/1",
+    "sourceLabel": "NYU Arabic Collections Online / Columbia University Libraries",
+    "note": "صور صفحات، بلا بحث نصي. قُسّم الملف إلى أجزاء للعرض دون إعادة تصوير الصفحات.",
+    "rights": "تقدير NYU: المواد في الملك العام، مع مسار لطلب الإزالة.",
+    "originalSha256": "abe5b48d1d7d7b315f0a41bd8415a043c86d039120fb100b82d98bf03f2f1150"
+  }
+]

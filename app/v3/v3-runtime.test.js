@@ -59,7 +59,7 @@ test('Reference-led identity loads one active stylesheet and preserves accessibl
   assert.match(css, /:root\[data-theme=dark\]/);
   assert.match(css, /\.discovery-grid\{display:grid;grid-template-columns:repeat\(2,/);
   assert.match(html, /<html lang="ar" dir="rtl"/);
-  assert.match(html, /src="\/v3\/council\.jpg"/);
+  assert.match(html, /src="\/v3\/hero-featured\.jpg"/);
   for (const target of ['sched','prayers','qibla','adhkar','media','q','about','account']) {
     assert.ok(html.includes('data-v3-target="' + target + '"'));
     assert.ok(html.includes('id="' + target + '"'));
