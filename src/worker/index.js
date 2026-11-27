@@ -4,9 +4,9 @@
  * Haress Cloudflare Worker.
  *
  * المسارات:
- * - مسارات المحاضرات وإدارة الاقتراحات وموافقات الذكاء الاصطناعي المحددة: تُوجّه
+ * - مسارات المحاضرات وإدارة الاقتراحات ومهام/موافقات الذكاء الاصطناعي المحددة: تُوجّه
  *   إلى Supabase Edge Functions في Preview مع تمرير مفتاح publishable القادم من العميل فقط.
- *   يُفرض نطاق مشروع الاختبار المعتمد ولا يُقبل عنوان الإنتاج.
+ *   يُفرض نطاق مشروع الاختبار المعتمد؛ يظل Production fail-closed حتى تجهيز قاعدة الإنتاج ووظائفها.
  * - بقية /api/*: تُوجّه إلى API_BACKEND_URL؛ وعند غيابه تُرفض بأمان (503).
  * - المسارات الأخرى: تُخدم من الأصول الثابتة (دليل ./app) عبر ربط ASSETS.
  *
@@ -83,6 +83,8 @@ function supabaseFunctionRoute(pathname) {
   if (pathname === '/api/suggestions') return { name: 'submit-suggestion', path: '' };
   if (pathname === '/api/admin/suggestions') return { name: 'admin-operations', path: '/admin/suggestions' };
   if (/^\/api\/admin\/suggestions\/[0-9a-f-]{36}$/i.test(pathname)) return { name: 'admin-operations', path: pathname.slice(4) };
+  if (pathname === '/api/admin/ai/tasks') return { name: 'admin-operations', path: '/admin/ai/tasks' };
+  if (/^\/api\/admin\/ai\/tasks\/[0-9a-f-]{36}\/artifact$/i.test(pathname)) return { name: 'admin-operations', path: pathname.slice(4) };
   if (/^\/api\/admin\/ai\/tasks\/[0-9a-f-]{36}\/approval$/i.test(pathname)) return { name: 'admin-operations', path: pathname.slice(4) };
   return null;
 }

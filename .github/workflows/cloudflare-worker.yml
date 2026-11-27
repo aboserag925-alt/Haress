@@ -195,6 +195,10 @@ jobs:
           test "$admin_status" = "401" || { echo "Unauthenticated lecture-admin route must return HTTP 401; got $admin_status"; exit 1; }
           suggestions_status=$(curl --silent --show-error --output /tmp/preview-suggestions.json --write-out '%{http_code}' -H "apikey: $publishable_key" "$PREVIEW_URL/api/admin/suggestions")
           test "$suggestions_status" = "401" || { echo "Unauthenticated suggestions admin route must return HTTP 401; got $suggestions_status"; exit 1; }
+          ai_task_status=$(curl --silent --show-error --output /tmp/preview-ai-task.json --write-out '%{http_code}' -H "apikey: $publishable_key" -H 'content-type: application/json' --data '{}' "$PREVIEW_URL/api/admin/ai/tasks")
+          test "$ai_task_status" = "401" || { echo "Unauthenticated AI task creation must return HTTP 401; got $ai_task_status"; cat /tmp/preview-ai-task.json; exit 1; }
+          ai_artifact_status=$(curl --silent --show-error --output /tmp/preview-ai-artifact.json --write-out '%{http_code}' -H "apikey: $publishable_key" "$PREVIEW_URL/api/admin/ai/tasks/123e4567-e89b-42d3-a456-426614174000/artifact")
+          test "$ai_artifact_status" = "401" || { echo "Unauthenticated AI artifact read must return HTTP 401; got $ai_artifact_status"; cat /tmp/preview-ai-artifact.json; exit 1; }
           api_status=$(curl --silent --show-error --output /tmp/preview-api.json --write-out '%{http_code}' "$PREVIEW_URL/api/health")
           test "$api_status" = "503" || { echo "Unmigrated API routes must remain fail-closed with HTTP 503; got $api_status"; exit 1; }
           echo "Preview HTML, security headers, Supabase public read, admin authentication, and legacy API isolation verified."
