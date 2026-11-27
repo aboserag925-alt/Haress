@@ -77,7 +77,12 @@ SQL
 
 echo "Replaying ${#migrations[@]} migration files in filename order..."
 for migration in "${migrations[@]}"; do
-  echo "::group::$(basename "$migration")"
+  migration_name="$(basename "$migration")"
+  if [[ "${SKIP_AI_APPROVAL_GUARDS:-0}" == "1" && "$migration_name" == "20261127123000_restore_ai_approval_rpc_guards.sql" ]]; then
+    echo "SKIP (negative control without #128): $migration_name"
+    continue
+  fi
+  echo "::group::$migration_name"
   psql --no-psqlrc --set ON_ERROR_STOP=1 --file "$migration"
   echo "::endgroup::"
 done
@@ -93,4 +98,4 @@ psql --no-psqlrc --set ON_ERROR_STOP=1 --tuples-only --command="
   SELECT 'migrations=' || ${#migrations[@]};
 "
 
-echo "PASS: all ${#migrations[@]} Supabase migration files replayed on isolated PostgreSQL."
+echo "PASS: migrations replayed on isolated PostgreSQL (SKIP_AI_APPROVAL_GUARDS=${SKIP_AI_APPROVAL_GUARDS:-0})."
