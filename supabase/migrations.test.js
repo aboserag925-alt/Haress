@@ -5,6 +5,35 @@ const fs=require('node:fs');
 const path=require('node:path');
 
 const migration=fs.readFileSync(path.join(__dirname,'migrations','202611140001_suggestions_ai_storage.sql'),'utf8');
+const approvalGuard=fs.readFileSync(path.join(__dirname,'migrations','20261127123000_restore_ai_approval_rpc_guards.sql'),'utf8');
+
+test('latest AI approval RPC enforces taint, administrator, and task-state guards in the database',()=>{
+  assert.match(approvalGuard,/security definer\\s+set search_path = ''/i);
+  assert.match(approvalGuard,/v_task\.tainted is distinct from false/i);
+  assert.match(approvalGuard,/from public\.admin_users/i);
+  assert.match(approvalGuard,/for update/i);
+  assert.match(approvalGuard,/p_action = 'IMPLEMENT' and v_task\.status <> 'WAITING_APPROVAL'/i);
+  assert.match(approvalGuard,/p_action = 'MERGE' and v_task\.status <> 'READY_FOR_REVIEW'/i);
+  assert.match(approvalGuard,/p_decision = 'REJECTED' and pg_catalog\.char_length\(pg_catalog\.btrim\(v_reason\)\) = 0/i);
+});
+
+test('latest AI approval RPC clears stale approval booleans and writes an audit event for each decision',()=>{
+  assert.match(approvalGuard,/on conflict \(task_id, action\) do update/i);
+  assert.match(approvalGuard,/approved = \(p_decision = 'APPROVED'\)/i);
+  assert.match(approvalGuard,/human_approved = \(p_decision = 'APPROVED'\)/i);
+  assert.match(approvalGuard,/insert into public\.ai_audit_events/i);
+  assert.match(approvalGuard,/ai\.approval\.rejected/i);
+  assert.match(approvalGuard,/ai\.approval\.granted/i);
+});
+
+test('latest AI approval RPC remains service-role-only and transactional',()=>{
+  assert.match(approvalGuard,/^\\s*(?:--[^\\n]*\\n\\s*)*begin;/i);
+  assert.match(approvalGuard,/commit;\\s*$/i);
+  assert.match(approvalGuard,/revoke all on function public\.record_ai_approval[\\s\\S]*?from public, anon, authenticated/i);
+  assert.match(approvalGuard,/grant execute on function public\.record_ai_approval[\\s\\S]*?to service_role/i);
+  assert.doesNotMatch(approvalGuard,/\\b(drop table|truncate|delete from)\\b/i);
+});
+
 
 test('suggestions and AI storage migration creates the required service-side tables',()=>{
   for(const table of ['suggestions','ai_tasks','ai_reviews','ai_approvals','ai_audit_events']){
