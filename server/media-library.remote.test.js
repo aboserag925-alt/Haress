@@ -138,3 +138,17 @@ test('remote media library fails closed when its manifest is corrupt', async fun
   const library = createLibrary(storage);
   await assert.rejects(library.listApproved(), /Invalid remote media library index/);
 });
+
+test('remote media library rejects structurally invalid manifests instead of loading unsafe metadata', async function () {
+  const invalidManifests = [
+    { offset: -1, items: [] },
+    { offset: null, items: [{ id: 'not-a-uuid', status: 'approved' }] },
+    { offset: null, items: [{ id: 'a8e0c2d1-91b4-4f37-8b11-3c9e4b9e9a11', status: 'unknown' }] }
+  ];
+  for (const manifest of invalidManifests) {
+    const storage = new MemoryStore();
+    await storage.put(MANIFEST_KEY, Buffer.from(JSON.stringify(manifest)), 'application/json');
+    const library = createLibrary(storage);
+    await assert.rejects(library.listApproved(), /Invalid remote media library index/);
+  }
+});
