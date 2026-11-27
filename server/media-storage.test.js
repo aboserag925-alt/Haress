@@ -33,6 +33,28 @@ test('MemoryStore: explicit upsert replaces an existing object', async function 
   assert.equal(got.contentType, 'application/json');
 });
 
+test('SupabaseMediaStorage: only explicit upserts enable overwrite', async function () {
+  const originalFetch = global.fetch;
+  const requests = [];
+  global.fetch = async function (url, options) {
+    requests.push({ url: url, options: options });
+    return { ok: true, status: 200, statusText: 'OK', text: async function () { return ''; } };
+  };
+  try {
+    const storage = new SupabaseMediaStorage({
+      bucket: 'haress-media',
+      supabaseUrl: 'https://example.supabase.co',
+      serviceRoleKey: 'test-service-role-key'
+    });
+    await storage.put('library/audio/1/file.mp3', Buffer.from('media'), 'audio/mpeg');
+    await storage.put('library/media-index.json', Buffer.from('{}'), 'application/json', { upsert: true });
+    assert.equal(requests[0].options.headers['x-upsert'], 'false');
+    assert.equal(requests[1].options.headers['x-upsert'], 'true');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test('buildKey: object key shape', async function () {
   assert.equal(buildKey('audio', 'abc', 'lesson.mp3'), 'library/audio/abc/lesson.mp3');
   assert.equal(buildKey('video', 'abc', 'v.mp4'), 'library/video/abc/v.mp4');
