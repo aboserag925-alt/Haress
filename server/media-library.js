@@ -187,7 +187,7 @@ function createMediaLibrary(options) {
   async function save() {
     const contents = JSON.stringify({ offset: offset, items: items });
     if (useRemote) {
-      await storage.put(MANIFEST_KEY, Buffer.from(contents, 'utf8'), 'application/json', { upsert: true });
+      await storage.put(MANIFEST_KEY, Buffer.from(contents, 'utf8'), 'text/plain', { upsert: true });
       return;
     }
     await fs.mkdir(storageDirectory, { recursive: true });

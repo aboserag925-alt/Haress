@@ -285,3 +285,37 @@ test('Supabase storage: legacy document object keys remain readable', async func
   assert.equal(file.data.toString('utf8'), 'legacy document bytes');
   assert.equal(file.item.objectKey, legacyKey);
 });
+
+test('every content type the library uploads is in the haress-media bucket MIME allow-list', async function () {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const sql = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations',
+    '20261118172423_haress_ai_workflow_storage_hardening.sql'), 'utf8');
+  const block = sql.match(/allowed_mime_types\s*=\s*array\[([\s\S]*?)\]/);
+  assert.ok(block, 'bucket allow-list not found in migration');
+  const allowed = new Set(block[1].match(/'([^']+)'/g).map(function (value) { return value.slice(1, -1); }));
+  assert.ok(!allowed.has('application/json'), 'this test documents that application/json is NOT allowed');
+
+  class RecordingStore extends MemoryStore {
+    constructor() { super(); this.contentTypes = []; }
+    async put(key, buffer, contentType, options) {
+      this.contentTypes.push({ key: key, contentType: contentType });
+      return super.put(key, buffer, contentType, options);
+    }
+  }
+  const storage = new RecordingStore();
+  const library = createLibrary(storage);
+  await library.processUpdate({
+    update_id: 1,
+    message: {
+      chat: { id: -100123 },
+      caption: 'درس',
+      document: { file_id: 'f', file_unique_id: 'u', file_name: 'lesson.mp3', mime_type: 'audio/mpeg', file_size: 11 }
+    }
+  });
+  const manifestPuts = storage.contentTypes.filter(function (entry) { return entry.key === MANIFEST_KEY; });
+  assert.ok(manifestPuts.length > 0, 'manifest should be uploaded');
+  storage.contentTypes.forEach(function (entry) {
+    assert.ok(allowed.has(entry.contentType), entry.key + ' uses ' + entry.contentType + ' which the bucket rejects');
+  });
+});
