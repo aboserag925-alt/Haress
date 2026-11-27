@@ -230,7 +230,7 @@ async function proxyPublicLibraryRoutes(request, env, fetchImpl, url) {
   forwarded.headers.delete('authorization');
   forwarded.headers.delete('cookie');
   forwarded.headers.delete('apikey');
-  return proxyToBackend(forwarded, LIBRARY_BACKEND_ORIGIN, fetchImpl, {});
+  return proxyToBackend(forwarded, LIBRARY_BACKEND_ORIGIN, fetchImpl, env);
 }
 
 // Only explicitly public, static representations participate in negotiation.
