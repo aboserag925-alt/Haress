@@ -226,11 +226,19 @@ async function proxyPublicLibraryRoutes(request, env, fetchImpl, url) {
   }
   // Only the recovered existing source, not an arbitrary destination.
   if (String(env.LIBRARY_BACKEND_URL) !== LIBRARY_BACKEND_ORIGIN) return new Response(null, { status: 503 });
+  // Railway trusts the forwarded visitor IP only when this Worker-only secret matches.
+  // Fail closed rather than collapsing all visitors into the proxy socket's rate-limit bucket.
+  if (typeof env.PROXY_SHARED_SECRET !== 'string' || !env.PROXY_SHARED_SECRET.trim()) {
+    return new Response(JSON.stringify({ error: 'خدمة المكتبة غير متاحة حاليًا.' }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }
+    });
+  }
   const forwarded = new Request(request);
   forwarded.headers.delete('authorization');
   forwarded.headers.delete('cookie');
   forwarded.headers.delete('apikey');
-  return proxyToBackend(forwarded, LIBRARY_BACKEND_ORIGIN, fetchImpl, {});
+  return proxyToBackend(forwarded, LIBRARY_BACKEND_ORIGIN, fetchImpl, env);
 }
 
 // Only explicitly public, static representations participate in negotiation.
@@ -291,7 +299,7 @@ export async function handleRequest(request, env, fetchImpl = globalThis.fetch) 
   if (supabaseProxied) return supabaseProxied;
 
   // Production-only public routes (library list/files, question form) go to the recovered
-  // Railway service. They drop credentials and never receive the proxy secret.
+  // Railway service. Client credentials are dropped; the Worker injects its own proxy secret.
   const libraryPublic = await proxyPublicLibraryRoutes(request, env, fetchImpl, entryUrl);
   if (libraryPublic) return libraryPublic;
 
