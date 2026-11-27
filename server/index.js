@@ -14,7 +14,6 @@ const { staticSecurityHeaders } = require('./security-headers');
 const PUBLIC_ROOT = path.resolve(__dirname, '..');
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_QUESTION_LENGTH = 1600;
-const MAX_DRAFT_LENGTH = 1800;
 const RATE_WINDOW_MS = 15 * 60 * 1000;
 const RATE_LIMIT = 5;
 const DEFAULT_QUESTIONS_DAILY_CAP = 200;
@@ -200,7 +199,7 @@ function consumeRateLimit(limits, address, now) {
 }
 
 // Global (all visitors) daily budget for the questions form, so a botnet that rotates IP
-// addresses still cannot exhaust the Gemini quota or flood the Telegram group.
+// addresses still cannot flood the Telegram group.
 function questionsDailyCap(env) {
   const parsed = Number.parseInt(env && env.QUESTIONS_DAILY_CAP, 10);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_QUESTIONS_DAILY_CAP;
@@ -221,12 +220,15 @@ async function consumeSharedDailyCap(env, cap, now, fetchImpl) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error('Shared daily question budget storage is not configured');
   }
-  const base = env.SUPABASE_URL.replace(/\/$/, '');
+  // Pasted env values can carry an invisible BOM or whitespace, which fetch rejects in headers.
+  const clean = (value) => String(value).replace(/[\uFEFF\u200B\s]/g, '');
+  const serviceKey = clean(env.SUPABASE_SERVICE_ROLE_KEY);
+  const base = clean(env.SUPABASE_URL).replace(/\/$/, '');
   const response = await fetchImpl(base + '/rest/v1/rpc/consume_question_daily_cap', {
     method: 'POST',
     headers: {
-      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY,
+      apikey: serviceKey,
+      Authorization: 'Bearer ' + serviceKey,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
@@ -235,13 +237,17 @@ async function consumeSharedDailyCap(env, cap, now, fetchImpl) {
     }),
     signal: AbortSignal.timeout(10000)
   });
-  if (!response.ok) throw new Error('Shared daily question budget request failed');
+  if (!response.ok) {
+    let detail = '';
+    try { detail = (await response.text()).slice(0, 120); } catch { detail = ''; }
+    throw new Error('Shared daily question budget request failed: HTTP ' + response.status + ' ' + detail);
+  }
   return await response.json() === true;
 }
 
 // In production the questions form must be protected by Turnstile.
 function assertProductionConfig(env) {
-  const questionsConfigured = Boolean(env.GEMINI_API_KEY && env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID);
+  const questionsConfigured = Boolean(env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID);
   if (env.NODE_ENV === 'production' && questionsConfigured && !env.TURNSTILE_SECRET_KEY) {
     throw new Error('TURNSTILE_SECRET_KEY is required in production when the questions form is enabled.');
   }
@@ -321,52 +327,8 @@ function staticFilePath(requestUrl) {
     : null;
 }
 
-async function createQuestionDraft(question, env, fetchImpl) {
-  const model = env.GEMINI_MODEL || 'gemini-3.8-flash';
-  if (!/^[A-Za-z0-9._-]{1,80}$/.test(model)) throw new Error('Invalid Gemini model configuration');
-
-  const result = await fetchImpl(
-    'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        Accept: 'application/json; charset=utf-8',
-        'x-goog-api-key': env.GEMINI_API_KEY
-      },
-      signal: AbortSignal.timeout(30000),
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: question }] }],
-        systemInstruction: {
-          parts: [{
-            text: 'أنت مساعد يصوغ مسودة أولية باللغة العربية لعرضها على عالم شرعي للمراجعة. لا تقدّم المسودة كفتوى أو حكم معتمد، ولا تدّع أنك عالم. إذا احتاج السؤال إلى فتوى خاصة أو كان الدليل غير متحقق، فصرّح بذلك وأحل السائل إلى الدكتور خالد للمراجعة. لا تختلق آيات أو أحاديث أو مراجع. اجعل الرد موجزًا ومحترمًا، واختم بالتنبيه أن المسودة غير معتمدة حتى يراجعها الدكتور خالد.'
-          }]
-        },
-        generationConfig: { maxOutputTokens: 700, temperature: 0.2 }
-      })
-    }
-  );
-  if (!result.ok) {
-    console.error('Gemini request failed with status ' + result.status);
-    throw new Error('تعذر إنشاء مسودة الآن. حاول لاحقًا.');
-  }
-
-  const payload = await readUtf8Json(result);
-  const draft = payload.candidates && payload.candidates[0] &&
-    payload.candidates[0].content && payload.candidates[0].content.parts
-      ? payload.candidates[0].content.parts
-        .map(function (part) { return typeof part.text === 'string' ? part.text : ''; })
-        .join('')
-        .trim()
-      : '';
-  if (!draft) throw new Error('لم تُنتج الخدمة مسودة صالحة. حاول لاحقًا.');
-  if (draft.length <= MAX_DRAFT_LENGTH) return draft;
-  return draft.slice(0, MAX_DRAFT_LENGTH).trimEnd() + '\n[اختُصر الرد لطوله.]';
-}
-
-async function sendToTelegram(question, draft, env, fetchImpl) {
-  const message = 'سؤال للمراجعة من التطبيق:\n\n' + question +
-    '\n\nمسودة Gemini غير معتمدة:\n' + draft;
+async function sendToTelegram(question, env, fetchImpl) {
+  const message = 'سؤال جديد من الموقع:\n\n' + question;
   let result;
   try {
     result = await fetchImpl(
@@ -531,8 +493,8 @@ function createServer(options) {
         sendJson(response, 403, { error: 'مصدر الطلب غير مسموح.' });
         return;
       }
-      if (!env.GEMINI_API_KEY || !env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
-        sendJson(response, 503, { error: 'إعدادات Gemini وTelegram غير مكتملة على الخادم.' });
+      if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
+        sendJson(response, 503, { error: 'إعدادات Telegram غير مكتملة على الخادم.' });
         return;
       }
       if (!consumeRateLimit(limits, clientAddress(request, env), Date.now())) {
@@ -582,8 +544,8 @@ function createServer(options) {
       if (env.NODE_ENV === 'production') {
         try {
           withinDailyBudget = await consumeSharedDailyCap(env, questionsDailyCap(env), Date.now(), fetchImpl);
-        } catch {
-          console.error('Shared daily question budget is unavailable');
+        } catch (error) {
+          console.error('Shared daily question budget is unavailable:', String((error && error.message) || error).slice(0, 300));
           sendJson(response, 503, { error: 'تعذر التحقق من الحد اليومي للأسئلة الآن. حاول لاحقًا.' });
           return;
         }
@@ -596,26 +558,11 @@ function createServer(options) {
       }
 
       try {
-        const draft = await createQuestionDraft(question, env, fetchImpl);
-        try {
-          await sendToTelegram(question, draft, env, fetchImpl);
-        } catch (error) {
-          sendJson(response, 502, {
-            error: error.message,
-            draft: draft,
-            telegramSent: false
-          });
-          return;
-        }
-        sendJson(response, 200, { draft: draft, telegramSent: true });
+        await sendToTelegram(question, env, fetchImpl);
+        sendJson(response, 200, { telegramSent: true });
       } catch (error) {
-        if (error.name === 'TimeoutError' || error.name === 'AbortError') {
-          sendJson(response, 504, { error: 'انتهت مهلة الاتصال بالخدمة. حاول لاحقًا.' });
-          return;
-        }
-        if (error.message === 'تعذر إنشاء مسودة الآن. حاول لاحقًا.' ||
-            error.message === 'لم تُنتج الخدمة مسودة صالحة. حاول لاحقًا.') {
-          sendJson(response, 502, { error: error.message });
+        if (error.message === 'تعذر تأكيد إرسال السؤال إلى Telegram.') {
+          sendJson(response, 502, { error: error.message, telegramSent: false });
           return;
         }
         console.error('Question processing failed');

@@ -11,7 +11,6 @@ const {
 const { staticSecurityHeaders } = require('./security-headers');
 
 const questionsEnv = {
-  GEMINI_API_KEY: 'test-gemini-key',
   TELEGRAM_BOT_TOKEN: 'test-telegram-token',
   TELEGRAM_CHAT_ID: '-1002660217755'
 };
@@ -30,38 +29,14 @@ async function withServer(options, run) {
 }
 
 function okFetch() {
-  function jsonResponse(payload) {
+  return async function () {
     return {
       ok: true,
       status: 200,
-      arrayBuffer: async function () { return Buffer.from(JSON.stringify(payload), 'utf8'); }
+      arrayBuffer: async function () { return Buffer.from(JSON.stringify({ ok: true }), 'utf8'); }
     };
-  }
-  return async function (url) {
-    let hostname = '';
-    try {
-      hostname = new URL(url).hostname.toLowerCase();
-    } catch {
-      // Invalid URLs are not treated as requests to the Gemini API.
-    }
-    if (hostname === 'generativelanguage.googleapis.com') {
-      return jsonResponse({ candidates: [{ content: { parts: [{ text: 'مسودة للمراجعة.' }] } }] });
-    }
-    return jsonResponse({ ok: true });
   };
 }
-
-test('mock fetch recognizes only the exact Gemini API hostname', async function () {
-  const mockFetch = okFetch();
-  const valid = await mockFetch('https://generativelanguage.googleapis.com/v1beta/models/test:generateContent');
-  assert.equal((await readMockJson(valid)).candidates[0].content.parts[0].text, 'مسودة للمراجعة.');
-
-  const lookalike = await mockFetch('https://generativelanguage.googleapis.com.attacker.example/v1');
-  assert.deepEqual(await readMockJson(lookalike), { ok: true });
-
-  const pathLookalike = await mockFetch('https://attacker.example/generativelanguage.googleapis.com');
-  assert.deepEqual(await readMockJson(pathLookalike), { ok: true });
-});
 
 async function readMockJson(response) {
   return JSON.parse(Buffer.from(await response.arrayBuffer()).toString('utf8'));

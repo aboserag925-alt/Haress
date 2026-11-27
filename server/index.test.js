@@ -6,7 +6,6 @@ const test = require('node:test');
 const { createServer } = require('./index');
 
 const configuredEnv = {
-  GEMINI_API_KEY: 'test-gemini-key',
   TELEGRAM_BOT_TOKEN: 'test-telegram-token',
   TELEGRAM_CHAT_ID: '-1002660217755'
 };
@@ -39,11 +38,6 @@ function mockFetch() {
     calls: calls,
     fetch: async function (url, options) {
       calls.push({ url: url, options: options });
-      if (url.includes('generativelanguage.googleapis.com')) {
-        return jsonResponse({
-          candidates: [{ content: { parts: [{ text: 'هذه مسودة للمراجعة.' }] } }]
-        });
-      }
       return jsonResponse({ ok: true });
     }
   };
@@ -429,7 +423,7 @@ test('rejects successful Turnstile responses with the wrong action or hostname',
   }
 });
 
-test('verifies Turnstile before contacting Gemini or Telegram and checks action and hostname', async function () {
+test('verifies Turnstile before contacting Telegram and checks action and hostname', async function () {
   const calls = [];
   const provider = async function (url, options) {
     calls.push({ url: url, options: options });
@@ -441,16 +435,6 @@ test('verifies Turnstile before contacting Gemini or Telegram and checks action 
             success: true,
             action: 'submit_question',
             hostname: '127.0.0.1'
-          }), 'utf8');
-        }
-      };
-    }
-    if (url.includes('generativelanguage.googleapis.com')) {
-      return {
-        ok: true,
-        arrayBuffer: async function () {
-          return Buffer.from(JSON.stringify({
-            candidates: [{ content: { parts: [{ text: 'هذه مسودة للمراجعة.' }] } }]
           }), 'utf8');
         }
       };
@@ -468,45 +452,50 @@ test('verifies Turnstile before contacting Gemini or Telegram and checks action 
       body: JSON.stringify({ question: 'ما حكم هذا السؤال؟', turnstileToken: 'valid-test-token' })
     });
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { draft: 'هذه مسودة للمراجعة.', telegramSent: true });
-    assert.equal(calls.length, 3);
+    assert.deepEqual(await response.json(), { telegramSent: true });
+    assert.equal(calls.length, 2);
     assert.match(calls[0].url, /siteverify/);
-    assert.match(calls[1].url, /generativelanguage\.googleapis\.com/);
-    assert.match(calls[2].url, /api\.telegram\.org/);
+    assert.match(calls[1].url, /api\.telegram\.org/);
     const verifyBody = new URLSearchParams(calls[0].options.body);
     assert.equal(verifyBody.get('secret'), 'test-turnstile-secret');
     assert.equal(verifyBody.get('response'), 'valid-test-token');
     assert.equal(verifyBody.get('remoteip'), '127.0.0.1');
     assert.equal(calls[1].options.body.includes('valid-test-token'), false);
-    assert.equal(calls[2].options.body.includes('valid-test-token'), false);
   });
 });
 
-test('sends an Arabic question to Gemini and the draft to the configured Telegram chat', async function () {
+test('sends the visitor question as-is to the configured Telegram chat with no AI step', async function () {
   const provider = mockFetch();
+  const question = 'ما حكم هذا السؤال؟';
   await withServer({ env: configuredEnv, fetch: provider.fetch }, async function (baseUrl) {
     const response = await fetch(baseUrl + '/api/questions', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Origin: baseUrl
-      },
-      body: JSON.stringify({ question: 'ما حكم هذا السؤال؟' })
+      headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+      body: JSON.stringify({ question: question })
     });
-
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), {
-      draft: 'هذه مسودة للمراجعة.',
-      telegramSent: true
-    });
-    assert.equal(provider.calls.length, 2);
-    assert.equal(provider.calls[0].options.headers['x-goog-api-key'], configuredEnv.GEMINI_API_KEY);
+    assert.deepEqual(await response.json(), { telegramSent: true });
+    assert.equal(provider.calls.length, 1);
+    assert.match(provider.calls[0].url, /^https:\/\/api\.telegram\.org\/bot/);
+    assert.equal(provider.calls.some(function (c) { return /google|gemini|openai|anthropic/i.test(c.url); }), false);
     assert.equal(provider.calls[0].options.headers.Accept, 'application/json; charset=utf-8');
-    assert.equal(provider.calls[1].options.headers.Accept, 'application/json; charset=utf-8');
-    const telegramBody = JSON.parse(provider.calls[1].options.body);
+    const telegramBody = JSON.parse(provider.calls[0].options.body);
     assert.equal(telegramBody.chat_id, configuredEnv.TELEGRAM_CHAT_ID);
-    assert.match(telegramBody.text, /ما حكم هذا السؤال؟/);
-    assert.match(telegramBody.text, /هذه مسودة للمراجعة/);
+    assert.equal(telegramBody.text, 'سؤال جديد من الموقع:\n\n' + question);
+  });
+});
+
+test('does not need or use a Gemini key', async function () {
+  const provider = mockFetch();
+  const env = { ...configuredEnv, GEMINI_API_KEY: 'should-be-ignored' };
+  await withServer({ env: env, fetch: provider.fetch }, async function (baseUrl) {
+    const response = await fetch(baseUrl + '/api/questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: baseUrl },
+      body: JSON.stringify({ question: 'سؤال بدون ذكاء اصطناعي' })
+    });
+    assert.equal(response.status, 200);
+    assert.equal(provider.calls.length, 1);
   });
 });
 
@@ -532,26 +521,15 @@ test('rejects provider responses that are not valid UTF-8', async function () {
     });
     assert.equal(response.status, 502);
     assert.deepEqual(await response.json(), {
-      error: 'تعذر معالجة السؤال الآن. حاول لاحقًا.'
+      error: 'تعذر تأكيد إرسال السؤال إلى Telegram.',
+      telegramSent: false
     });
   });
 });
 
-test('reports Telegram delivery failure while preserving the generated draft', async function () {
+test('reports Telegram delivery failure without any draft', async function () {
   const provider = mockFetch();
-  provider.fetch = async function (url) {
-    if (url.includes('generativelanguage.googleapis.com')) {
-      return {
-        ok: true,
-        arrayBuffer: async function () {
-          return Buffer.from(JSON.stringify({
-            candidates: [{ content: { parts: [{ text: 'مسودة صالحة للمراجعة.' }] } }]
-          }), 'utf8');
-        }
-      };
-    }
-    return { ok: false, status: 503 };
-  };
+  provider.fetch = async function () { return { ok: false, status: 503 }; };
 
   await withServer({ env: configuredEnv, fetch: provider.fetch }, async function (baseUrl) {
     const response = await fetch(baseUrl + '/api/questions', {
@@ -565,7 +543,6 @@ test('reports Telegram delivery failure while preserving the generated draft', a
     assert.equal(response.status, 502);
     assert.deepEqual(await response.json(), {
       error: 'تعذر تأكيد إرسال السؤال إلى Telegram.',
-      draft: 'مسودة صالحة للمراجعة.',
       telegramSent: false
     });
   });
@@ -604,7 +581,7 @@ test('limits each client to five question requests per fifteen-minute window', a
     }
 
     assert.deepEqual(statuses, [200, 200, 200, 200, 200, 429]);
-    assert.equal(provider.calls.length, 10);
+    assert.equal(provider.calls.length, 5);
   });
 });
 
