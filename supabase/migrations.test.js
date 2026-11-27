@@ -19,7 +19,8 @@ test('latest AI approval RPC enforces taint, administrator, and task-state guard
 
 test('latest AI approval RPC clears stale approval booleans and writes an audit event for each decision',()=>{
   assert.match(approvalGuard,/insert into public\.ai_approvals\(task_id, actor_user_id, action, decision, reason\)/i);
-  assert.doesNotMatch(approvalGuard,/on conflict \(task_id, action\)/i);
+  assert.match(approvalGuard,/on conflict \(task_id, action\) do update/i);
+  assert.match(approvalGuard,/insert into public\.ai_audit_events\(event_type, actor_user_id, metadata\)/i);
   assert.match(approvalGuard,/approved = \(p_decision = 'APPROVED'\)/i);
   assert.match(approvalGuard,/human_approved = \(p_decision = 'APPROVED'\)/i);
   assert.match(approvalGuard,/insert into public\.ai_approvals\(task_id, actor_user_id, action, decision, reason\)/i);
@@ -83,7 +84,7 @@ test('the canonical AI storage migration is unique and keeps tasks tainted by de
 });
 
 test('every SECURITY DEFINER migration function uses an empty search_path',()=>{
-  for(const [name,sql] of [['AI storage',migration],['question cap',questionCap],['suggestion cap',suggestionCap]]){
+  for(const [name,sql] of [['AI storage',migration],['AI approval guard',approvalGuard],['question cap',questionCap],['suggestion cap',suggestionCap]]){
     assert.match(sql,/security definer\s+set search_path = ''/i, name+' must pin an empty search_path');
     const paths = [...sql.matchAll(/security definer\s+set search_path\s*=\s*([^;\n]+)/gi)];
     assert.ok(paths.length > 0, name+' must contain a SECURITY DEFINER function with a pinned search_path');
@@ -94,7 +95,7 @@ test('every SECURITY DEFINER migration function uses an empty search_path',()=>{
 
 test('suggestion quota reservation and insertion are one atomic service-only RPC',()=>{
   assert.match(suggestionCap,/create or replace function public\.submit_suggestion_with_daily_cap/i);
-  assert.match(approvalGuard,/insert into public\.ai_approvals\(task_id, actor_user_id, action, decision, reason\)/i);
+  assert.match(suggestionCap,/insert into public\.suggestion_daily_usage[\s\S]*?insert into public\.suggestions/i);
   assert.match(suggestionCap,/security definer\s+set search_path = ''/i);
   assert.match(suggestionCap,/revoke all on function public\.submit_suggestion_with_daily_cap[\s\S]*?from public, anon, authenticated/i);
   assert.match(suggestionCap,/grant execute on function public\.submit_suggestion_with_daily_cap[\s\S]*?to service_role/i);
@@ -114,7 +115,7 @@ test('AI migration reconciles legacy production columns without replacing existi
   assert.match(migration,/add column if not exists confidence numeric/i);
   assert.match(migration,/add column if not exists ai_analysis jsonb/i);
   assert.match(migration,/actor_user_id uuid not null references auth\.users\(id\)/i);
-  assert.match(approvalGuard,/insert into public\.ai_approvals\(task_id, actor_user_id, action, decision, reason\)/i);
+  assert.match(migration,/insert into public\.ai_approvals\(task_id,actor_user_id,action,decision,reason\)/i);
   assert.doesNotMatch(migration,/approved_by uuid|ai_approvals\(task_id,approved_by/i);
   assert.match(migration,/ai_tasks_human_approval_id_fkey','ai_tasks_human_approval_fk/i);
   assert.match(migration,/ai_audit_events_id_seq/i);
