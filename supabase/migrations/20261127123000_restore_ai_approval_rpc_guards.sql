@@ -75,17 +75,13 @@ begin
   for update;
 
   if found then
-    update public.ai_approvals
-    set actor_user_id = p_actor_user_id,
-        decision = p_decision,
-        reason = v_reason,
-        created_at = pg_catalog.now()
-    where id = v_approval_id;
-  else
-    insert into public.ai_approvals(task_id, actor_user_id, action, decision, reason)
-    values (p_task_id, p_actor_user_id, p_action, p_decision, v_reason)
-    returning id into v_approval_id;
+    raise exception 'Approval already recorded for this task and action'
+      using errcode = '23505';
   end if;
+
+  insert into public.ai_approvals(task_id, actor_user_id, action, decision, reason)
+  values (p_task_id, p_actor_user_id, p_action, p_decision, v_reason)
+  returning id into v_approval_id;
 
   if p_action = 'IMPLEMENT' then
     update public.ai_tasks
