@@ -61,15 +61,10 @@ begin
     raise exception 'Task is not ready for human review' using errcode = '55000';
   end if;
 
-  -- The table intentionally has one current decision per task/action.
-  -- Preserve the full decision history in ai_audit_events below.
+  -- Keep each decision as an immutable approval row. The base schema
+  -- does not guarantee a unique (task_id, action) constraint.
   insert into public.ai_approvals(task_id, actor_user_id, action, decision, reason)
   values (p_task_id, p_actor_user_id, p_action, p_decision, v_reason)
-  on conflict (task_id, action) do update
-    set actor_user_id = excluded.actor_user_id,
-        decision = excluded.decision,
-        reason = excluded.reason,
-        created_at = pg_catalog.now()
   returning id into v_approval_id;
 
   if p_action = 'IMPLEMENT' then
