@@ -15,7 +15,7 @@ See `.env.example`. Typical production needs depend on enabled features:
 - Core: `HOST`, `PORT`, `ALLOWED_ORIGINS` (include the real frontend origin(s)).
 - Storage: `STORAGE_DIRECTORY` (optional; set to a persistent-volume mount path when Telegram/media library persistence is required).
 - Supabase/admin/AI/suggestions features: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (service role server-only).
-- Questions/AI/Telegram as applicable: `GEMINI_API_KEY`, `GEMINI_MODEL`, `TELEGRAM_*`, `TURNSTILE_*`.
+- Questions/Telegram (no AI step): `TELEGRAM_*`, `TURNSTILE_*`.
 - Proxy/trust: set `TRUST_PROXY=true` only behind a trusted Cloudflare/reverse proxy that correctly sets client IP headers.
 
 ## Frontend integration (external configuration)
