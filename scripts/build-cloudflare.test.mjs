@@ -44,6 +44,7 @@ describe('scripts/build-cloudflare.mjs', () => {
   it('يضبط Cloudflare Assets binding ومسار API في موضعهما الصحيح', async () => {
     const config = JSON.parse(await readFile(wranglerConfig, 'utf8'));
     assert.equal(config.main, 'src/worker/index.js');
+    assert.equal(config.vars?.API_BACKEND_URL, 'https://haress-production.up.railway.app', 'يجب ربط /api/* بخادم Railway الإنتاجي عبر إعداد Worker الإنتاج');
     assert.equal(config.assets?.directory, './app');
     assert.equal(config.assets?.binding, 'ASSETS');
     assert.equal(config.assets?.run_worker_first, true, 'يجب تمرير كل الطلبات عبر Worker لتطبيق ترويسات الحماية على الأصول الثابتة وترك /api/* تحت توجيه العامل');
