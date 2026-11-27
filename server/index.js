@@ -220,12 +220,15 @@ async function consumeSharedDailyCap(env, cap, now, fetchImpl) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error('Shared daily question budget storage is not configured');
   }
-  const base = env.SUPABASE_URL.replace(/\/$/, '');
+  // Pasted env values can carry an invisible BOM or whitespace, which fetch rejects in headers.
+  const clean = (value) => String(value).replace(/[\uFEFF\u200B\s]/g, '');
+  const serviceKey = clean(env.SUPABASE_SERVICE_ROLE_KEY);
+  const base = clean(env.SUPABASE_URL).replace(/\/$/, '');
   const response = await fetchImpl(base + '/rest/v1/rpc/consume_question_daily_cap', {
     method: 'POST',
     headers: {
-      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: 'Bearer ' + env.SUPABASE_SERVICE_ROLE_KEY,
+      apikey: serviceKey,
+      Authorization: 'Bearer ' + serviceKey,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
