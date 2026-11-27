@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+export LC_ALL=C
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MIGRATIONS_DIR="$ROOT_DIR/supabase/migrations"
@@ -78,7 +79,7 @@ SQL
 echo "Replaying ${#migrations[@]} migration files in filename order..."
 for migration in "${migrations[@]}"; do
   echo "::group::$(basename "$migration")"
-  psql --no-psqlrc --set ON_ERROR_STOP=1 --single-transaction --file "$migration"
+  psql --no-psqlrc --set ON_ERROR_STOP=1 --file "$migration"
   echo "::endgroup::"
 done
 
