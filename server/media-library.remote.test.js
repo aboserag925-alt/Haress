@@ -143,7 +143,22 @@ test('remote media library rejects structurally invalid manifests instead of loa
   const invalidManifests = [
     { offset: -1, items: [] },
     { offset: null, items: [{ id: 'not-a-uuid', status: 'approved' }] },
-    { offset: null, items: [{ id: 'a8e0c2d1-91b4-4f37-8b11-3c9e4b9e9a11', status: 'unknown' }] }
+    { offset: null, items: [{ id: 'a8e0c2d1-91b4-4f37-8b11-3c9e4b9e9a11', status: 'unknown' }] },
+    {
+      offset: null,
+      items: [{
+        id: 'a8e0c2d1-91b4-4f37-8b11-3c9e4b9e9a11',
+        storedName: '../../outside.mp3',
+        fileName: 'lesson.mp3',
+        fileUniqueId: 'telegram-unique-id',
+        mimeType: 'audio/mpeg',
+        kind: 'audio',
+        category: 'audio',
+        title: 'درس',
+        status: 'approved',
+        uploadedAt: '2026-11-27T12:00:00.000Z'
+      }]
+    }
   ];
   for (const manifest of invalidManifests) {
     const storage = new MemoryStore();
