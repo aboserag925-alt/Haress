@@ -5,6 +5,54 @@ const fs=require('node:fs');
 const path=require('node:path');
 
 const migration=fs.readFileSync(path.join(__dirname,'migrations','202611140001_suggestions_ai_storage.sql'),'utf8');
+const approvalGuard=fs.readFileSync(path.join(__dirname,'migrations','20261127123000_restore_ai_approval_rpc_guards.sql'),'utf8');
+const approvalSchema=fs.readFileSync(path.join(__dirname,'migrations','20261118172423_haress_ai_workflow_storage_hardening.sql'),'utf8');
+const approvalAlignment=fs.readFileSync(path.join(__dirname,'migrations','20261118172518_haress_ai_approval_state_alignment.sql'),'utf8');
+
+test('approval guard supports legacy approval tables without assuming a task/action unique constraint',()=>{
+  assert.match(approvalSchema,/Recovered verbatim from Production PostgreSQL statement logs/i);
+  assert.match(approvalSchema,/Applied at 2026-11-18 17:24:23 UTC; SQLSTATE 00000/i);
+  assert.match(approvalGuard,/from public\.ai_approvals a[\s\S]*?where a\.task_id = p_task_id[\s\S]*?and a\.action = p_action[\s\S]*?order by a\.created_at desc, a\.id desc[\s\S]*?limit 1[\s\S]*?for update/i);
+  assert.match(approvalGuard,/if found then[\s\S]*?update public\.ai_approvals[\s\S]*?else[\s\S]*?insert into public\.ai_approvals/i);
+  assert.doesNotMatch(approvalGuard,/on conflict \(task_id, action\)/i);
+});
+
+test('approval_id and human_approval_id columns exist before the guarded RPC writes them',()=>{
+  assert.match(approvalAlignment,/add column if not exists approval_id uuid references public\.ai_approvals\(id\)/i);
+  assert.match(approvalSchema,/human_approval_id uuid/i);
+  assert.match(approvalGuard,/approval_id = v_approval_id/i);
+  assert.match(approvalGuard,/human_approval_id = v_approval_id/i);
+});
+
+test('latest AI approval RPC enforces taint, administrator, and task-state guards in the database',()=>{
+  assert.match(approvalGuard,/security definer\s+set search_path = ''/i);
+  assert.match(approvalGuard,/v_task\.tainted is distinct from false/i);
+  assert.match(approvalGuard,/from public\.admin_users/i);
+  assert.match(approvalGuard,/for update/i);
+  assert.match(approvalGuard,/p_action = 'IMPLEMENT' and v_task\.status <> 'WAITING_APPROVAL'/i);
+  assert.match(approvalGuard,/p_action = 'MERGE' and v_task\.status <> 'READY_FOR_REVIEW'/i);
+  assert.match(approvalGuard,/p_decision = 'REJECTED' and pg_catalog\.char_length\(pg_catalog\.btrim\(v_reason\)\) = 0/i);
+});
+
+test('latest AI approval RPC clears stale approval booleans and writes an audit event for each decision',()=>{
+  assert.match(approvalGuard,/insert into public\.ai_approvals\(task_id, actor_user_id, action, decision, reason\)/i);
+  assert.match(approvalGuard,/if found then[\s\S]*?update public\.ai_approvals/i);
+  assert.match(approvalGuard,/insert into public\.ai_audit_events\(event_type, actor_user_id, metadata\)/i);
+  assert.match(approvalGuard,/approved = \(p_decision = 'APPROVED'\)/i);
+  assert.match(approvalGuard,/human_approved = \(p_decision = 'APPROVED'\)/i);
+  assert.match(approvalGuard,/insert into public\.ai_approvals\(task_id, actor_user_id, action, decision, reason\)/i);
+  assert.match(approvalGuard,/ai\.approval\.rejected/i);
+  assert.match(approvalGuard,/ai\.approval\.granted/i);
+});
+
+test('latest AI approval RPC remains service-role-only and transactional',()=>{
+  assert.match(approvalGuard,/^\s*(?:--[^\n]*\n\s*)*begin;/i);
+  assert.match(approvalGuard,/commit;\s*$/i);
+  assert.match(approvalGuard,/revoke all on function public\.record_ai_approval[\s\S]*?from public, anon, authenticated/i);
+  assert.match(approvalGuard,/grant execute on function public\.record_ai_approval[\s\S]*?to service_role/i);
+  assert.doesNotMatch(approvalGuard,/\b(drop table|truncate|delete from)\b/i);
+});
+
 
 test('suggestions and AI storage migration creates the required service-side tables',()=>{
   for(const table of ['suggestions','ai_tasks','ai_reviews','ai_approvals','ai_audit_events']){
@@ -53,7 +101,7 @@ test('the canonical AI storage migration is unique and keeps tasks tainted by de
 });
 
 test('every SECURITY DEFINER migration function uses an empty search_path',()=>{
-  for(const [name,sql] of [['AI storage',migration],['question cap',questionCap],['suggestion cap',suggestionCap]]){
+  for(const [name,sql] of [['AI storage',migration],['AI approval guard',approvalGuard],['question cap',questionCap],['suggestion cap',suggestionCap]]){
     assert.match(sql,/security definer\s+set search_path = ''/i, name+' must pin an empty search_path');
     const paths = [...sql.matchAll(/security definer\s+set search_path\s*=\s*([^;\n]+)/gi)];
     assert.ok(paths.length > 0, name+' must contain a SECURITY DEFINER function with a pinned search_path');
