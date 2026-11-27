@@ -30,3 +30,10 @@ test('buildKey: object key shape', async function () {
   assert.equal(buildKey('images', 'abc', 'i.jpg'), 'library/images/abc/i.jpg');
   assert.equal(buildKey('unknown', 'abc', 'x.bin'), 'library/other/abc/x.bin');
 });
+
+test('buildKey: dot-only file names never become path segments', async function () {
+  assert.equal(buildKey('audio', 'abc', '..'), 'library/audio/abc/file');
+  assert.equal(buildKey('audio', 'abc', '.'), 'library/audio/abc/file');
+  assert.equal(buildKey('audio', 'abc', 'x/..'), 'library/audio/abc/file');
+  assert.equal(buildKey('audio', 'abc', '../y.mp3'), 'library/audio/abc/y.mp3');
+});
