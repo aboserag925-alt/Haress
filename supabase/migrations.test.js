@@ -6,6 +6,14 @@ const path=require('node:path');
 
 const migration=fs.readFileSync(path.join(__dirname,'migrations','202611140001_suggestions_ai_storage.sql'),'utf8');
 const approvalGuard=fs.readFileSync(path.join(__dirname,'migrations','20261127123000_restore_ai_approval_rpc_guards.sql'),'utf8');
+const approvalSchema=fs.readFileSync(path.join(__dirname,'migrations','20261118172423_haress_ai_workflow_storage_hardening.sql'),'utf8');
+
+test('approval guard upsert target is backed by the recovered production unique constraint',()=>{
+  assert.match(approvalSchema,/Recovered verbatim from Production PostgreSQL statement logs/i);
+  assert.match(approvalSchema,/Applied at 2026-11-18 17:24:23 UTC; SQLSTATE 00000/i);
+  assert.match(approvalSchema,/unique\s*\(task_id,\s*action\)/i);
+  assert.match(approvalGuard,/on conflict \(task_id, action\) do update/i);
+});
 
 test('latest AI approval RPC enforces taint, administrator, and task-state guards in the database',()=>{
   assert.match(approvalGuard,/security definer\s+set search_path = ''/i);
