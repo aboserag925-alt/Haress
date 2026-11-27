@@ -6,6 +6,7 @@ const { randomUUID } = require('node:crypto');
 const { resolveStorage, buildKey } = require('./media-storage');
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
+const MANIFEST_KEY = 'library/media-index.json';
 const MAX_LIBRARY_ITEMS = 500;
 const CATEGORY_NAMES = {
   audio: 'صوتيات',
@@ -92,6 +93,33 @@ function getAttachment(message) {
   };
 }
 
+function isValidManifest(manifest) {
+  if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest) ||
+      !Array.isArray(manifest.items) ||
+      (manifest.offset !== null &&
+        (!Number.isSafeInteger(manifest.offset) || manifest.offset < 0))) {
+    return false;
+  }
+  const validStatuses = new Set(['pending', 'approved', 'rejected', 'removed']);
+  const validKinds = new Set(['audio', 'video', 'document', 'image']);
+  const validCategories = new Set(['audio', 'video', 'books', 'images', 'other']);
+  return manifest.items.every(function (item) {
+    return item && typeof item === 'object' && !Array.isArray(item) &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(item.id || '') &&
+      typeof item.storedName === 'string' &&
+      item.storedName === item.id + path.extname(item.storedName) &&
+      Object.prototype.hasOwnProperty.call(TYPES, path.extname(item.storedName)) &&
+      typeof item.fileName === 'string' && item.fileName.length > 0 &&
+      typeof item.fileUniqueId === 'string' && item.fileUniqueId.length > 0 &&
+      typeof item.mimeType === 'string' && item.mimeType.length > 0 &&
+      validKinds.has(item.kind) && validCategories.has(item.category) &&
+      typeof item.title === 'string' && item.title.length > 0 &&
+      validStatuses.has(item.status) &&
+      typeof item.uploadedAt === 'string' && Number.isFinite(Date.parse(item.uploadedAt)) &&
+      (item.objectKey === undefined || (typeof item.objectKey === 'string' && (item.objectKey === buildKey(item.kind, item.id, item.fileName) || ((item.kind === 'document' || item.kind === 'image') && item.objectKey === buildKey('other', item.id, item.fileName)))));
+  });
+}
+
 function createMediaLibrary(options) {
   options = options || {};
   const env = options.env || process.env;
@@ -118,6 +146,25 @@ function createMediaLibrary(options) {
   async function initialize() {
     if (initialized) return;
     if (useRemote) {
+      const stored = await storage.get(MANIFEST_KEY);
+      if (stored) {
+        let manifest;
+        try {
+          const contents = typeof stored.body === 'string'
+            ? stored.body
+            : Buffer.from(stored.body).toString('utf8');
+          manifest = JSON.parse(contents);
+        } catch {
+          throw new Error('Invalid remote media library index.');
+        }
+        if (!isValidManifest(manifest)) {
+          throw new Error('Invalid remote media library index.');
+        }
+        items = manifest.items;
+        offset = manifest.offset;
+      } else {
+        await save();
+      }
       initialized = true;
       return;
     }
@@ -125,8 +172,7 @@ function createMediaLibrary(options) {
     try {
       const contents = await fs.readFile(indexPath, 'utf8');
       const stored = JSON.parse(contents);
-      if (!stored || !Array.isArray(stored.items) ||
-          (stored.offset !== null && !Number.isSafeInteger(stored.offset))) {
+      if (!isValidManifest(stored)) {
         throw new Error('Invalid media library index.');
       }
       items = stored.items;
@@ -139,10 +185,14 @@ function createMediaLibrary(options) {
   }
 
   async function save() {
-    if (useRemote) return;
+    const contents = JSON.stringify({ offset: offset, items: items });
+    if (useRemote) {
+      await storage.put(MANIFEST_KEY, Buffer.from(contents, 'utf8'), 'text/plain', { upsert: true });
+      return;
+    }
     await fs.mkdir(storageDirectory, { recursive: true });
     const temporaryPath = indexPath + '.' + randomUUID() + '.tmp';
-    await fs.writeFile(temporaryPath, JSON.stringify({ offset: offset, items: items }), 'utf8');
+    await fs.writeFile(temporaryPath, contents, 'utf8');
     await fs.rename(temporaryPath, indexPath);
   }
 
@@ -161,8 +211,24 @@ function createMediaLibrary(options) {
   }
 
   async function deleteStoredFile(item) {
-    if (useRemote && item.objectKey) await storage.delete(item.objectKey);
-    else await fs.rm(path.join(filesDirectory, item.storedName), { force: true });
+    if (useRemote) {
+      let objectKey = item.objectKey;
+      if (!objectKey) {
+        objectKey = buildKey(item.kind, item.id, item.fileName);
+        let stored = await storage.get(objectKey);
+        // Older document/image objects may still use the historical "other" folder.
+        if (!stored && (item.kind === 'document' || item.kind === 'image')) {
+          const legacyKey = buildKey('other', item.id, item.fileName);
+          if (legacyKey !== objectKey) {
+            stored = await storage.get(legacyKey);
+            if (stored) objectKey = legacyKey;
+          }
+        }
+      }
+      if (objectKey) await storage.delete(objectKey);
+      return;
+    }
+    await fs.rm(path.join(filesDirectory, item.storedName), { force: true });
   }
 
   async function telegram(method, payload, signal) {
@@ -497,7 +563,13 @@ function createMediaLibrary(options) {
     }
     if (useRemote) {
       const objectKey = buildKey(item.kind, item.id, item.fileName);
-      const obj = await storage.get(objectKey);
+      let obj = await storage.get(objectKey);
+      // Older manifests predate objectKey and stored document/image files under
+      // library/other. Preserve those files while preferring the new category path.
+      if (!obj && !item.objectKey && (item.kind === 'document' || item.kind === 'image')) {
+        const legacyKey = buildKey('other', item.id, item.fileName);
+        if (legacyKey !== objectKey) obj = await storage.get(legacyKey);
+      }
       if (!obj) return null;
       return { item: item, data: obj.body };
     }
