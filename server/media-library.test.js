@@ -7,6 +7,8 @@ const path = require('node:path');
 const test = require('node:test');
 const { createMediaLibrary } = require('./media-library');
 
+const MANIFEST_KEY = 'library/media-index.json';
+
 function telegramResponse(payload) {
   return {
     ok: true,
@@ -55,6 +57,38 @@ async function withLibrary(run, customFetch, libraryOptions) {
     await fs.rm(storageDirectory, { recursive: true, force: true });
   }
 }
+
+test('rejects local manifests with stored filenames that escape the media directory', async function () {
+  await withLibrary(async function (context) {
+    const id = 'a8e0c2d1-91b4-4f37-8b11-3c9e4b9e9a11';
+    const manifest = {
+      offset: null,
+      items: [{
+        id: id,
+        storedName: '../../outside.mp3',
+        fileName: 'lesson.mp3',
+        fileUniqueId: 'telegram-unique-id',
+        mimeType: 'audio/mpeg',
+        kind: 'audio',
+        category: 'audio',
+        title: 'درس',
+        status: 'approved',
+        uploadedAt: '2026-11-27T12:00:00.000Z'
+      }]
+    };
+    await fs.writeFile(
+      path.join(context.storageDirectory, 'media-index.json'),
+      JSON.stringify(manifest),
+      'utf8'
+    );
+    const library = createMediaLibrary({
+      env: context.env,
+      fetch: context.fetch,
+      storageDirectory: context.storageDirectory
+    });
+    await assert.rejects(library.getApprovedFile(id), /Invalid media library index/);
+  });
+});
 
 test('stores group uploads privately until an administrator approves them', async function () {
   await withLibrary(async function (context) {
@@ -461,17 +495,20 @@ test('Supabase storage: upload verifies via injected MemoryStore', async functio
     const library = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
     await library.processUpdate({ update_id: 1, message: { chat: { id: -100123 }, date: 1793500000, caption: 'درس الخميس #كتب', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', mime_type: 'audio/mpeg', file_size: 11 } } });
     const keys = await storage.listKeys('');
-    assert.equal(keys.length, 1);
-    assert.ok(keys[0].startsWith('library/audio/'));
-    assert.ok(keys[0].endsWith('lesson.mp3'));
-    // In Supabase mode there is no local media-index.json; extract id from object key path
-    const id = keys[0].split('/')[2];
+    assert.equal(keys.length, 2);
+    assert.ok(keys.includes(MANIFEST_KEY));
+    const fileKey = keys.find(function (key) { return key !== MANIFEST_KEY; });
+    assert.ok(fileKey.startsWith('library/audio/'));
+    assert.ok(fileKey.endsWith('lesson.mp3'));
+    const id = fileKey.split('/')[2];
     assert.match(id, /^[0-9a-f-]{36}$/i);
     await library.processUpdate({ update_id: 2, callback_query: { id: 'cb', data: 'media:approve:' + id, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } } });
     assert.equal((await library.listApproved()).length, 1);
     const f = await library.getApprovedFile(id);
     assert.equal(f.data.toString('utf8'), 'audio bytes');
-    assert.deepEqual(await storage.listKeys(''), [keys[0]]);
+    assert.deepEqual(await storage.listKeys(''), keys);
+    const restarted = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
+    assert.equal((await restarted.listApproved()).length, 1);
   } finally {
     await fs.rm(storageDirectory, { recursive: true, force: true });
   }
@@ -497,12 +534,16 @@ test('Supabase storage: reject deletes remote object', async function () {
     // after fix, Supabase mode does not write media-index.json locally
     await assert.rejects(fs.readFile(path.join(storageDirectory, 'media-index.json'), 'utf8'), { code: 'ENOENT' });
     const keys = await storage.listKeys('');
-    assert.equal(keys.length, 1);
-    const id = keys[0].split('/')[2];
+    assert.equal(keys.length, 2);
+    assert.ok(keys.includes(MANIFEST_KEY));
+    const fileKey = keys.find(function (key) { return key !== MANIFEST_KEY; });
+    const id = fileKey.split('/')[2];
     assert.match(id, /^[0-9a-f-]{36}$/i);
-    // clean: reject path also deletes
+    // Reject removes the media object but retains the durable manifest.
     await library.processUpdate({ update_id: 2, callback_query: { id: 'cb', data: 'media:reject:' + id, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } } });
-    assert.deepEqual(await storage.listKeys(''), []);
+    assert.deepEqual(await storage.listKeys(''), [MANIFEST_KEY]);
+    const restarted = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
+    assert.deepEqual(await restarted.listApproved(), []);
   } finally {
     await fs.rm(storageDirectory, { recursive: true, force: true });
   }
@@ -517,8 +558,9 @@ test('Supabase storage: listApproved works without local index file', async func
   try {
     const library = createMediaLibrary({ env: env, fetch: fetch, storageDirectory: storageDirectory, storage: storage });
     assert.deepEqual(await library.listApproved(), []);
-    // no files created on disk (root-owned volume simulated by empty dir)
-    assert.deepEqual(await storage.listKeys(''), []);
+    // The durable empty manifest lives in remote storage; no local writes are required.
+    assert.deepEqual(await storage.listKeys(''), [MANIFEST_KEY]);
+    assert.deepEqual(await fs.readdir(storageDirectory), []);
   } finally {
     await fs.rm(storageDirectory, { recursive: true, force: true });
   }
@@ -557,10 +599,12 @@ test('Supabase storage: works when storage directory is unwritable (Railway EACC
     // processUpdate (upload path via storeFile/save) must not touch the fs either
     await library.processUpdate({ update_id: 1, message: { chat: { id: -100123 }, date: 1793500000, caption: 'درس الخميس #كتب', document: { file_id: 'a', file_unique_id: 'u', file_name: 'lesson.mp3', mime_type: 'audio/mpeg', file_size: 11 } } });
     const keys = await storage.listKeys('');
-    assert.equal(keys.length, 1);
-    assert.ok(keys[0].startsWith('library/audio/'));
-    assert.ok(keys[0].endsWith('lesson.mp3'));
-    const id = keys[0].split('/')[2];
+    assert.equal(keys.length, 2);
+    assert.ok(keys.includes(MANIFEST_KEY));
+    const fileKey = keys.find(function (key) { return key !== MANIFEST_KEY; });
+    assert.ok(fileKey.startsWith('library/audio/'));
+    assert.ok(fileKey.endsWith('lesson.mp3'));
+    const id = fileKey.split('/')[2];
     await library.processUpdate({ update_id: 2, callback_query: { id: 'cb', data: 'media:approve:' + id, from: { id: 7 }, message: { message_id: 101, chat: { id: -100123 } } } });
     assert.equal((await library.listApproved()).length, 1);
     const f = await library.getApprovedFile(id);
