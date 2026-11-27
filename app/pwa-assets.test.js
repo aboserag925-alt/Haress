@@ -50,4 +50,5 @@ test('the approved shield logo receives standalone 3D motion without a splash ov
   assert.ok(brandCss.includes('haress-logo-3d'));
   assert.ok(brandCss.includes('perspective(720px)'));
   assert.ok(brandCss.includes('prefers-reduced-motion'));
+  assert.ok(!brandCss.includes('.haress-intro'));
 });
