@@ -183,3 +183,41 @@ test('remote media library rejects structurally invalid manifests instead of loa
     await assert.rejects(library.listApproved(), /Invalid remote media library index/);
   }
 });
+
+
+test('Supabase storage: legacy document object keys remain readable', async function () {
+  const { MemoryStore: MS } = require('./media-storage');
+  const storage = new MS();
+  const id = '123e4567-e89b-42d3-a456-426614174000';
+  const fileName = 'legacy-lesson.pdf';
+  const legacyKey = 'library/other/' + id + '/' + fileName;
+  const data = Buffer.from('legacy document bytes');
+  await storage.put(legacyKey, data, 'application/pdf');
+  await storage.put(MANIFEST_KEY, Buffer.from(JSON.stringify({
+    offset: null,
+    items: [{
+      id: id,
+      storedName: id + '.pdf',
+      fileName: fileName,
+      fileUniqueId: 'legacy-file-unique-id',
+      mimeType: 'application/pdf',
+      kind: 'document',
+      category: 'books',
+      title: 'مستند قديم',
+      status: 'approved',
+      uploadedAt: '2026-11-20T10:00:00.000Z',
+      objectKey: legacyKey
+    }]
+  }), 'utf8'), 'application/json', { upsert: true });
+
+  const library = createMediaLibrary({
+    env: { TELEGRAM_MEDIA_ENABLED: 'false' },
+    storage: storage,
+    fetch: async function () { throw new Error('Unexpected Telegram request'); }
+  });
+  const approved = await library.listApproved();
+  assert.equal(approved.length, 1);
+  const file = await library.getApprovedFile(id);
+  assert.equal(file.data.toString('utf8'), 'legacy document bytes');
+  assert.equal(file.item.objectKey, legacyKey);
+});
