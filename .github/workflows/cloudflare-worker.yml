@@ -80,7 +80,7 @@ jobs:
       - name: Build library assets (pdf.js and book PDFs)
         if: github.event_name != 'pull_request'
         run: |
-          ./scripts/vendor-pdfjs.sh
+          bash scripts/vendor-pdfjs.sh
           python -m pip install PyMuPDF==1.26.7
           cp app/books.json /tmp/books.committed.json
           python scripts/prepare-pdf-books.py
