@@ -355,6 +355,7 @@ describe('production routing with API_BACKEND_URL', () => {
     DEPLOYMENT_ENV: 'production',
     SUPABASE_URL: 'https://uzepglfimareggswjzlf.supabase.co',
     API_BACKEND_URL: 'https://haress-production.up.railway.app',
+    LIBRARY_BACKEND_URL: 'https://haress-production.up.railway.app',
     PROXY_SHARED_SECRET: 'test-shared-secret'
   };
   for (const route of ['/api/lectures', '/api/suggestions']) {
