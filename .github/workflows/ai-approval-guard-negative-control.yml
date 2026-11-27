@@ -1,0 +1,60 @@
+name: AI approval guard negative control
+
+on:
+  push:
+    branches:
+      - "validation/ai-approval-behavior-2026-11-27"
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  prove-guard-is-required:
+    name: Prove behavior test fails without #128
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: haress_migrations
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d haress_migrations"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGDATABASE: haress_migrations
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Replay migrations without #128
+        env:
+          SKIP_AI_APPROVAL_GUARDS: "1"
+        run: bash scripts/test-supabase-migrations.sh
+      - name: Require behavioral test to fail at the missing taint guard
+        shell: bash
+        run: |
+          set +e
+          EXPECT_MISSING_GUARD=tainted bash scripts/test-ai-approval-behavior.sh > /tmp/approval-negative-control.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/approval-negative-control.log
+          test "$status" -eq 42
+          grep -Fq "EXPECTED_GUARD_FAILURE:tainted" /tmp/approval-negative-control.log
+          echo "PASS: behavioral test fails without migration #128, specifically because a tainted task was accepted."
