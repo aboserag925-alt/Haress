@@ -5,6 +5,7 @@
   "vars": {
     "DEPLOYMENT_ENV": "production",
     "API_BACKEND_URL": "https://haress-production.up.railway.app",
+    "LIBRARY_BACKEND_URL": "https://haress-production.up.railway.app",
     "SUPABASE_URL": "https://uzepglfimareggswjzlf.supabase.co"
   },
   "assets": {
