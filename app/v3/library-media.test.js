@@ -39,6 +39,7 @@ test('detects audio and video from type, MIME or URL without loading a source', 
 
 test('formats duration and isolates saved playback position by item id', () => {
   assert.equal(media.durationLabel({ durationSeconds: 125 }), '2:05');
+  assert.equal(media.durationLabel({ duration_seconds: 125 }), '2:05');
   assert.equal(media.durationLabel({}), 'غير محددة');
   assert.equal(media.progressKey('lecture-1'), 'haress-media-progress-v1:lecture-1');
   assert.notEqual(media.progressKey('lecture-1'), media.progressKey('lecture-2'));

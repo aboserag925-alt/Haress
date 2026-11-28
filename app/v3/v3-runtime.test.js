@@ -155,6 +155,8 @@ test('lecture cards expose metadata, search and player actions without altering 
   assert.match(src, /التصنيف: /);
   assert.match(src, /المدة: /);
   assert.match(src, /النوع: /);
+  assert.match(src, /var typeKnown = item.content_type/);
+  assert.match(src, /typeKnown/);
   assert.match(src, /renderLectures\(\)/);
   assert.match(src, /لا توجد محاضرات منشورة حاليًا/);
 });
@@ -216,6 +218,10 @@ test('archive assets stay deferred and media sources are assigned only after an 
   assert.match(runtime, /player\.preload = 'metadata'/);
   assert.match(runtime, /function closeMediaPlayer\(\)[\s\S]*?pause\(\)[\s\S]*?removeAttribute\('src'\)[\s\S]*?load\(\)/);
   assert.match(runtime, /progressKey\(item\.id\)/);
+  assert.match(runtime, /playbackRate = Number\(this\.value\)/);
+  assert.match(runtime, /volume = Number\(this\.value\)/);
+  assert.match(runtime, /seekPlayer\(-15\)/);
+  assert.match(runtime, /seekPlayer\(15\)/);
   assert.doesNotMatch(runtime, /activateMediaSources|data-src/);
 });
 

@@ -121,3 +121,11 @@ test('lecture metadata migration adds optional fields and does not alter RLS or 
   assert.match(lectureMetadataMigration,/content_type in \('audio', 'video', 'document'\)/i);
   assert.doesNotMatch(lectureMetadataMigration,/enable row level security|create policy|drop policy|grant |revoke /i);
 });
+
+test('lecture content type remains unknown until a media type is supplied',()=>{
+  const migration=fs.readFileSync(path.join(__dirname,'migrations','20261128040941_make_lecture_content_type_optional.sql'),'utf8');
+  assert.match(migration,/alter column content_type drop not null/i);
+  assert.match(migration,/alter column content_type drop default/i);
+  assert.match(migration,/where stream_url is null and recording_url is null/i);
+  assert.doesNotMatch(migration,/enable row level security|create policy|drop policy|grant |revoke /i);
+});

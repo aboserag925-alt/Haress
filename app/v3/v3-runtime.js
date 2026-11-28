@@ -391,7 +391,7 @@
     var sheikh = item.sheikh || item.lecturer || item.author || 'غير محدد';
     var category = item.categoryName || item.category || 'غير محدد';
     var duration = window.HaressLibraryMedia.durationLabel(item);
-    var kind = type === 'audio' ? 'صوتي' : type === 'video' ? 'مرئي' : 'مادة مكتوبة';
+    var kind = type === 'audio' ? 'صوتي' : type === 'video' ? 'مرئي' : type === 'document' ? 'مادة مكتوبة' : 'غير محدد';
     return 'الشيخ: ' + sheikh + ' · التصنيف: ' + category + ' · المدة: ' + duration + ' · النوع: ' + kind;
   }
   function isDirectMediaUrl(value, type, mimeType) {
@@ -413,7 +413,8 @@
     items.forEach(function (item) {
       var article = document.createElement('article'); article.className = 'v3-library-entry';
       var title = document.createElement('h3'); title.textContent = item.title || 'محاضرة علمية';
-      var type = H.mediaType({ kind: item.content_type || item.kind, mimeType: item.mime_type || item.mimeType, url: item.recording_url || item.stream_url });
+      var typeKnown = item.content_type || item.kind || item.mime_type || item.mimeType || item.recording_url || item.stream_url;
+      var type = typeKnown ? H.mediaType({ kind: item.content_type || item.kind, mimeType: item.mime_type || item.mimeType, url: item.recording_url || item.stream_url }) : 'unknown';
       var meta = document.createElement('p'); meta.className = 'library-card-meta'; meta.textContent = cardDetails(item, type);
       article.append(title, meta);
       if (item.description) { var description = document.createElement('p'); description.textContent = item.description; article.appendChild(description); }

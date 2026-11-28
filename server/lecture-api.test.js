@@ -25,6 +25,7 @@ test('accepts a complete lecture with HTTPS media links and structured metadata'
 
 test('validates sheikh, duration and content type without requiring them on legacy partial updates', () => {
   assert.equal(validateLecture({ status: 'archived' }, true), null);
+  assert.equal(validateLecture({ ...valid, content_type: null }, false), null);
   assert.match(validateLecture({ ...valid, sheikh: 'x'.repeat(121) }, false), /اسم الشيخ/);
   assert.match(validateLecture({ ...valid, duration_seconds: 86401 }, false), /مدة المحاضرة/);
   assert.match(validateLecture({ ...valid, duration_seconds: 1.5 }, false), /مدة المحاضرة/);

@@ -45,7 +45,7 @@ function validateLecture(body, partial) {
       (typeof body.category !== 'string' || body.category.length > 80)) return 'تصنيف المحاضرة غير صالح.';
   if (Object.hasOwn(body, 'sheikh') && (typeof body.sheikh !== 'string' || body.sheikh.length > MAX_SHEIKH)) return 'اسم الشيخ غير صالح (الحد الأقصى 120 حرفًا).';
   if (Object.hasOwn(body, 'duration_seconds') && body.duration_seconds !== null && (!Number.isInteger(body.duration_seconds) || body.duration_seconds < 0 || body.duration_seconds > MAX_DURATION_SECONDS)) return 'مدة المحاضرة يجب أن تكون رقمًا صحيحًا بين صفر و86400 ثانية.';
-  if (Object.hasOwn(body, 'content_type') && !['audio', 'video', 'document'].includes(body.content_type)) return 'نوع المحتوى غير صالح.';
+  if (Object.hasOwn(body, 'content_type') && body.content_type !== null && !['audio', 'video', 'document'].includes(body.content_type)) return 'نوع المحتوى غير صالح.';
   if (Object.hasOwn(body, 'stream_url') && !validUrl(body.stream_url)) return 'رابط البث يجب أن يكون HTTPS صحيحًا.';
   if (Object.hasOwn(body, 'recording_url') && !validUrl(body.recording_url)) return 'رابط التسجيل يجب أن يكون HTTPS صحيحًا.';
   if (Object.hasOwn(body, 'status') && !['draft', 'published', 'archived'].includes(body.status)) return 'حالة النشر غير صالحة.';
