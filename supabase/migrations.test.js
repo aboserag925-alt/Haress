@@ -13,7 +13,7 @@ test('approval guard supports legacy approval tables without assuming a task/act
   assert.match(approvalSchema,/Recovered verbatim from Production PostgreSQL statement logs/i);
   assert.match(approvalSchema,/Applied at 2026-11-18 17:24:23 UTC; SQLSTATE 00000/i);
   assert.match(approvalGuard,/from public\.ai_approvals a[\s\S]*?where a\.task_id = p_task_id[\s\S]*?and a\.action = p_action[\s\S]*?order by a\.created_at desc, a\.id desc[\s\S]*?limit 1[\s\S]*?for update/i);
-  assert.match(approvalGuard,/if found then[\s\S]*?update public\.ai_approvals[\s\S]*?else[\s\S]*?insert into public\.ai_approvals/i);
+  assert.match(approvalGuard,/if v_has_existing then[\s\S]*?update public\.ai_approvals[\s\S]*?else[\s\S]*?insert into public\.ai_approvals/i);
   assert.doesNotMatch(approvalGuard,/on conflict \(task_id, action\)/i);
 });
 
@@ -47,7 +47,7 @@ test('latest AI approval RPC enforces taint, administrator, and task-state guard
 
 test('latest AI approval RPC clears stale approval booleans and writes an audit event for each decision',()=>{
   assert.match(approvalGuard,/insert into public\.ai_approvals\(task_id, actor_user_id, action, decision, reason\)/i);
-  assert.match(approvalGuard,/if found then[\s\S]*?update public\.ai_approvals/i);
+  assert.match(approvalGuard,/if v_has_existing then[\s\S]*?update public\.ai_approvals/i);
   assert.match(approvalGuard,/insert into public\.ai_audit_events\(event_type, actor_user_id, metadata\)/i);
   assert.match(approvalGuard,/approved = \(p_decision = 'APPROVED'\)/i);
   assert.match(approvalGuard,/human_approved = \(p_decision = 'APPROVED'\)/i);
