@@ -523,7 +523,8 @@ function createServer(options) {
         return;
       }
 
-      const body = await readJsonBody(request, response);
+      let body;
+      try { body = await readJsonBody(request, response); } catch { response.destroy(); return; }
       if (body === null) return;
       if (!body || typeof body.question !== 'string') {
         sendJson(response, 400, { error: 'اكتب السؤال بصيغة صحيحة.' });
