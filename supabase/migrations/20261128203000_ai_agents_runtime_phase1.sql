@@ -1,9 +1,10 @@
 -- Phase 1 AI task runtime: atomic task creation, persisted analysis evidence,
 -- and strict database-side approval gates. Apply to haress-test only after review.
 begin;
+-- Phase 1 AI task runtime: atomic task creation, persisted analysis evidence,
+-- and strict database-side approval gates. Apply to haress-test only after review.
 -- Preserve the original task request alongside its review lifecycle.
 -- Additive and safe for existing task rows; no existing data is rewritten.
-begin;
 alter table public.ai_tasks add column if not exists task_type text;
 alter table public.ai_tasks add column if not exists title text;
 alter table public.ai_tasks add column if not exists description text;
@@ -23,8 +24,6 @@ $constraint$;
 
 -- Atomically create an AI task and its provenance audit event.
 -- Either both rows commit, or neither row is persisted.
-begin;
-
 create or replace function public.create_ai_task_with_audit(
   p_suggestion_id uuid,
   p_actor_user_id uuid,
@@ -94,8 +93,6 @@ grant execute on function public.create_ai_task_with_audit(uuid,uuid,text,text,t
 
 -- Persist Maestro analysis plans with source provenance and a tamper-evident digest.
 -- Reviews, artifact, task state and audit event commit or roll back together.
-begin;
-
 create table if not exists public.ai_task_artifacts (
   id uuid primary key default gen_random_uuid(),
   task_id uuid not null references public.ai_tasks(id) on delete restrict,
@@ -313,5 +310,4 @@ end;
 $record_approval$;
 revoke all on function public.record_ai_approval(uuid,uuid,text,text,text) from public, anon, authenticated;
 grant execute on function public.record_ai_approval(uuid,uuid,text,text,text) to service_role;
-
 commit;
