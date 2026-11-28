@@ -23,3 +23,10 @@ describe('live status', () => {
     assert.equal(post.status, 405);
   });
 });
+
+describe('live status newer layout', () => { it('reads currentVideoEndpoint', () => {
+  const html = '<link rel="canonical" href="undefined">"currentVideoEndpoint":{"commandMetadata":{"webCommandMetadata":{"url":"/watch?v=jYFxlHRRjcQ","webPageType":"WEB_PAGE_TYPE_WATCH"}}},"isLive":true';
+  assert.deepEqual(parseLiveStatus(html), { state: 'live', videoId: 'jYFxlHRRjcQ' });
+  assert.deepEqual(parseLiveStatus(html + '"isUpcoming":true'), { state: 'offline' });
+  assert.deepEqual(parseLiveStatus(html + '"status":"LIVE_STREAM_OFFLINE"'), { state: 'offline' });
+}); });
