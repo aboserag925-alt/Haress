@@ -292,6 +292,37 @@ async function publicDiscovery(request, env) {
   return new Response(request.method === 'HEAD' ? null : response.body, {status:response.status, headers});
 }
 
+
+// Live status for the sheikh's YouTube channel (@Khaled_Najm). Public page read only.
+const LIVE_CHANNEL_ID = 'UCV5OsYvO1DU44VcmhYSIe7w';
+export function parseLiveStatus(html) {
+  const text = String(html || '');
+  const canonical = text.match(/rel="canonical" href="https:\/\/www\.youtube\.com\/watch\?v=([A-Za-z0-9_-]{11})"/);
+  const live = /"isLiveNow":true/.test(text);
+  if (live && canonical) return { state: 'live', videoId: canonical[1] };
+  if (/"isLiveNow":false/.test(text) || /"isLive":true/.test(text) || canonical) return { state: 'offline' };
+  return { state: 'unknown' };
+}
+async function liveStatusRoute(request, fetchImpl) {
+  const url = new URL(request.url);
+  if (url.pathname !== '/api/live-status') return null;
+  const headers = {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'public, max-age=30',
+    'X-Content-Type-Options': 'nosniff'
+  };
+  if (request.method !== 'GET') return new Response(JSON.stringify({ error: 'method' }), { status: 405, headers });
+  let body = { state: 'unknown' };
+  try {
+    const res = await fetchImpl(`https://www.youtube.com/channel/${LIVE_CHANNEL_ID}/live`, {
+      headers: { 'Accept-Language': 'en', 'User-Agent': 'Mozilla/5.0 (compatible; HaressLiveCheck/1.0)' },
+      signal: AbortSignal.timeout(5000)
+    });
+    if (res.ok) body = parseLiveStatus(await res.text());
+  } catch { /* unknown */ }
+  return new Response(JSON.stringify({ channelId: LIVE_CHANNEL_ID, checkedAt: new Date().toISOString(), ...body }), { status: 200, headers });
+}
+
 export async function handleRequest(request, env, fetchImpl = globalThis.fetch) {
   const discovery = await publicDiscovery(request, env);
   if (discovery) return discovery;
@@ -311,6 +342,9 @@ export async function handleRequest(request, env, fetchImpl = globalThis.fetch) 
 
   // Production-only public routes (library list/files, question form) go to the recovered
   // Railway service. They drop credentials and never receive the proxy secret.
+  const liveStatus = await liveStatusRoute(request, fetchImpl);
+  if (liveStatus) return liveStatus;
+
   const libraryPublic = await proxyPublicLibraryRoutes(request, env, fetchImpl, entryUrl);
   if (libraryPublic) return libraryPublic;
 
