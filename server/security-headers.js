@@ -5,7 +5,7 @@
 // 'unsafe-inline' for scripts is a temporary concession: app/index.html, index.html and
 // app/admin.html still use inline <script> blocks and onclick="" handlers. Remove it after
 // moving them to external files, then switch script-src to 'self' only.
-const CONTENT_SECURITY_POLICY = "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https:; connect-src 'self' https://*.supabase.co https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com https://www.youtube-nocookie.com; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+const CONTENT_SECURITY_POLICY = "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://www.youtube.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https:; connect-src 'self' https://*.supabase.co https://challenges.cloudflare.com https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com https://www.youtube-nocookie.com; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
 const PERMISSIONS_POLICY = 'geolocation=(self), camera=(), microphone=(), payment=()';
 
 // Headers for static page responses. HSTS is opt-in (ENABLE_HSTS=true) because the server
