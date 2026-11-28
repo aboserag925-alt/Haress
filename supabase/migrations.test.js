@@ -8,8 +8,8 @@ const migration=fs.readFileSync(path.join(__dirname,'migrations','202611140001_s
 
 test('suggestions and AI storage migration creates the required service-side tables',()=>{
   for(const table of ['suggestions','ai_tasks','ai_reviews','ai_approvals','ai_audit_events']){
-    assert.match(migration,new RegExp('create table if not exists public\\.'+table+'\\b','i'));
-    assert.match(migration,new RegExp('alter table public\\.'+table+' enable row level security','i'));
+    assert.match(migration,new RegExp('create table if not exists public\.'+table+'\b','i'));
+    assert.match(migration,new RegExp('alter table public\.'+table+' enable row level security','i'));
   }
 });
 
@@ -148,13 +148,13 @@ test('AI runtime migration adds request context and atomic analysis artifacts wi
     'grant execute on function public.create_ai_task_with_audit',
     'grant execute on function public.record_ai_task_analysis'
   ]) assert.ok(aiRuntimeMigration.includes(fragment),fragment);
-  assert.match(aiRuntimeMigration,/^\\s*begin;/i);
-  assert.match(aiRuntimeMigration,/commit;\\s*$/i);
-  assert.doesNotMatch(aiRuntimeMigration,/\\b(drop table|truncate|delete from)\\b/i);
+  assert.match(aiRuntimeMigration,/^\s*begin;/i);
+  assert.match(aiRuntimeMigration,/commit;\s*$/i);
+  assert.doesNotMatch(aiRuntimeMigration,/\b(drop table|truncate|delete from)\b/i);
 });
 
 test('AI approval RPC refuses tainted tasks and requires independent review evidence before approval',()=>{
-  assert.match(aiRuntimeMigration,/if v_task\\.tainted then raise exception 'Tainted tasks cannot be approved'/i);
+  assert.match(aiRuntimeMigration,/if v_task\.tainted then raise exception 'Tainted tasks cannot be approved'/i);
   assert.match(aiRuntimeMigration,/Task is not waiting for implementation approval/);
   assert.match(aiRuntimeMigration,/Task is not ready for human review/);
   assert.match(aiRuntimeMigration,/agent = 'security' and result = 'PASS'/);
