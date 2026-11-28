@@ -26,7 +26,7 @@ jobs:
     environment:
       # PR builds must not receive Cloudflare deployment secrets from the Preview environment.
       # Production builds use the production environment for public Supabase build inputs.
-      name: ${{ github.event_name == 'pull_request' && 'Preview-Build-CI' || 'production' }}
+      name: ${{ github.event_name == 'pull_request' && 'Preview-Build-CI' || 'Main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -226,7 +226,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:
-      name: production
+      name: Main
       url: https://hares.aboserag925.workers.dev
     steps:
       - name: Check out repository
