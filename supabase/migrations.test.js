@@ -8,8 +8,8 @@ const migration=fs.readFileSync(path.join(__dirname,'migrations','202611140001_s
 
 test('suggestions and AI storage migration creates the required service-side tables',()=>{
   for(const table of ['suggestions','ai_tasks','ai_reviews','ai_approvals','ai_audit_events']){
-    assert.match(migration,new RegExp('create table if not exists public\.'+table+'\b','i'));
-    assert.match(migration,new RegExp('alter table public\.'+table+' enable row level security','i'));
+    assert.ok(migration.includes('create table if not exists public.'+table),'missing table '+table);
+    assert.ok(migration.includes('alter table public.'+table+' enable row level security'),'RLS missing for '+table);
   }
 });
 
