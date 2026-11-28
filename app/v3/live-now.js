@@ -19,16 +19,32 @@
     current = key;
     body.textContent = '';
     if (state === 'live' && /^[A-Za-z0-9_-]{11}$/.test(id || '')) {
-      var f = document.createElement('iframe');
-      f.src = 'https://www.youtube-nocookie.com/embed/' + id + '?rel=0';
-      f.title = 'البث المباشر للدكتور خالد الحارس';
-      f.allow = 'accelerometer; encrypted-media; picture-in-picture; fullscreen';
-      f.allowFullscreen = true; f.loading = 'lazy'; f.referrerPolicy = 'strict-origin-when-cross-origin';
-      f.style.aspectRatio = '16/9';
-      var p = document.createElement('p');
-      p.className = 'status'; p.setAttribute('role', 'status');
-      p.textContent = 'بث مباشر الآن على يوتيوب.';
-      body.appendChild(p); body.appendChild(f);
+      var badge = document.createElement('span');
+      badge.className = 'live-badge'; badge.textContent = 'مباشر';
+      var stage = document.createElement('button');
+      stage.type = 'button'; stage.className = 'live-stage';
+      stage.setAttribute('aria-label', 'شاهد البث الآن');
+      var img = document.createElement('img');
+      img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
+      img.src = 'https://i.ytimg.com/vi/' + id + '/hqdefault_live.jpg';
+      img.onerror = function () { img.onerror = null; img.src = 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg'; };
+      var play = document.createElement('span');
+      play.className = 'live-play'; play.setAttribute('aria-hidden', 'true');
+      stage.appendChild(img); stage.appendChild(play);
+      function start() {
+        var f = document.createElement('iframe');
+        f.src = 'https://www.youtube-nocookie.com/embed/' + id + '?rel=0&autoplay=1';
+        f.title = 'البث المباشر للدكتور خالد الحارس';
+        f.allow = 'autoplay; accelerometer; encrypted-media; picture-in-picture; fullscreen';
+        f.allowFullscreen = true; f.referrerPolicy = 'strict-origin-when-cross-origin';
+        stage.replaceWith(f);
+        watch.hidden = true;
+      }
+      stage.addEventListener('click', start);
+      var watch = document.createElement('button');
+      watch.type = 'button'; watch.className = 'gold-action live-watch'; watch.textContent = 'شاهد البث الآن';
+      watch.addEventListener('click', start);
+      body.appendChild(badge); body.appendChild(stage); body.appendChild(watch);
       body.appendChild(link('https://www.youtube.com/watch?v=' + id, 'افتح على يوتيوب'));
       box.hidden = false;
       return;
