@@ -48,19 +48,25 @@ test('approval gate accepts persisted snake-case approval records',()=>{
 test('supervisor fails closed when required verifier agent is missing',async()=>{const pass={run:async()=>({status:'PASS',data:{}})};const supervisor=new HaresAISupervisor({security:pass,developer:pass,test:pass});const r=await supervisor.analyze({id:'task-verifier-missing',type:'implementation'});assert.equal(r.task.status,'FAILED');assert.equal(r.task.tainted,true);assert.equal(r.reports.at(-1).agent,'verifier');assert.equal(r.reports.at(-1).status,'BLOCKED');});
 test('supervisor fails closed when the verifier cannot produce a passing result',async()=>{const pass={run:async()=>({status:'PASS',data:{}})};const supervisor=new HaresAISupervisor({security:pass,developer:pass,test:pass,verifier:{run:async()=>({status:'NEEDS_REVIEW',data:{}})}});const r=await supervisor.analyze({id:'task-verifier-review',type:'implementation'});assert.equal(r.task.status,'FAILED');assert.equal(r.task.tainted,true);});
 
-test('untrusted tasks default to tainted in the in-memory and persisted task paths',async()=>{
+test('untrusted tasks default to tainted and trust flags are never accepted by task creation RPC',async()=>{
  const assessment=assess({affectedAreas:[]});
  assert.equal(createTask({source:'suggestion'},assessment).tainted,true);
  assert.equal(createTask({source:'internal',trustedSource:true},assessment).tainted,false);
- const bodies=[];
+ const payloads=[];
  const service=createTaskService({env:{SUPABASE_URL:'https://example.invalid',SUPABASE_SERVICE_ROLE_KEY:'test-only'},fetch:async(url,init)=>{
-  if(url.includes('/ai_tasks?')){const body=JSON.parse(init.body);bodies.push(body);return {ok:true,status:201,json:async()=>[{id:'task-1',suggestion_id:null,...body}]};}
-  return {ok:true,status:201,json:async()=>[]};
+  assert.ok(url.endsWith('/rpc/create_ai_task_with_audit'));
+  const body=JSON.parse(init.body);payloads.push(body);
+  return {ok:true,status:200,json:async()=>[{id:'task-'+payloads.length,tainted:true,approved:false}]};
  }});
  await service.create({source:'suggestion'});
- await service.create({source:'internal',trustedSource:true});
- assert.equal(bodies[0].tainted,true);
- assert.equal(bodies[1].tainted,false);
+ await service.create({source:'internal',trustedSource:true,tainted:false,approved:true,status:'APPROVED'});
+ assert.equal(payloads[0].p_source,'suggestion');
+ assert.equal(payloads[1].p_source,'internal');
+ for(const payload of payloads){
+  assert.equal(Object.hasOwn(payload,'p_tainted'),false);
+  assert.equal(Object.hasOwn(payload,'p_approved'),false);
+  assert.equal(Object.hasOwn(payload,'p_status'),false);
+ }
 });
 test('tainted tasks are blocked from approval, implementation and merge',()=>{
  const tainted={tainted:true,approved:true,approvalId:'approval-1',humanApproved:true,humanApprovalId:'approval-2'};
