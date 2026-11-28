@@ -6,5 +6,11 @@ function createAgent(name,handler) {
     catch(error) { return result(name,'NEEDS_REVIEW',{},[String(error.message||'Agent failed').slice(0,240)]); }
   }});
 }
-const reportOnly=(name)=>createAgent(name,({task,input})=>({taskId:task.id||null,summary:'Analysis only; no direct repository writes.',inputType:input.type||'suggestion'}));
+const reportOnly=(name)=>Object.freeze({name,async run({task={},input={}}={}) {
+  return result(name,'NEEDS_REVIEW',{
+    taskId:task.id||null,
+    summary:'This agent is report-only; no independent checks or repository changes were performed.',
+    inputType:input.type||'suggestion'
+  },['Automated execution is not implemented for this agent.']);
+}});
 module.exports={createAgent,reportOnly};
