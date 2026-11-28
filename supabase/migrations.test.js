@@ -24,6 +24,17 @@ test('approval_id and human_approval_id columns exist before the guarded RPC wri
   assert.match(approvalGuard,/human_approval_id = v_approval_id/i);
 });
 
+test('approval retries are idempotent only for the same administrator and decision',()=>{
+  const lookup=approvalGuard.indexOf('select a.id, a.actor_user_id, a.decision');
+  const stateGuard=approvalGuard.indexOf("p_action = 'IMPLEMENT' and v_task.status <> 'WAITING_APPROVAL'");
+  assert.ok(lookup >= 0 && stateGuard > lookup, 'existing approval must be locked before terminal-state retry checks');
+  assert.match(approvalGuard,/v_has_existing\s+and v_existing_actor_user_id = p_actor_user_id\s+and v_existing_decision = p_decision/i);
+  assert.match(approvalGuard,/v_task\.status = 'APPROVED' and p_decision = 'APPROVED'/i);
+  assert.match(approvalGuard,/v_task\.status = 'HUMAN_APPROVED' and p_decision = 'APPROVED'/i);
+  assert.match(approvalGuard,/v_task\.status = 'REJECTED' and p_decision = 'REJECTED'/i);
+  assert.match(approvalGuard,/if v_has_existing then[\s\S]*?update public\.ai_approvals/i);
+});
+
 test('latest AI approval RPC enforces taint, administrator, and task-state guards in the database',()=>{
   assert.match(approvalGuard,/security definer\s+set search_path = ''/i);
   assert.match(approvalGuard,/v_task\.tainted is distinct from false/i);
