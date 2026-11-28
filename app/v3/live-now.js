@@ -1,6 +1,7 @@
 (function () {
   'use strict';
   var CHANNEL = 'https://www.youtube.com/@Khaled_Najm';
+  var TELEGRAM = 'https://t.me/horaselsona96';
   var TIKTOK = ''; // optional: set the sheikh's TikTok live link here when known
   var box = document.getElementById('liveNow');
   var body = document.getElementById('liveNowBody');
@@ -46,6 +47,7 @@
       watch.addEventListener('click', start);
       body.appendChild(badge); body.appendChild(stage); body.appendChild(watch);
       body.appendChild(link('https://www.youtube.com/watch?v=' + id, 'افتح على يوتيوب'));
+      body.appendChild(link(TELEGRAM, 'قناة تيليجرام'));
       box.hidden = false;
       return;
     }
@@ -55,6 +57,7 @@
     body.appendChild(q);
     if (TIKTOK) body.appendChild(link(TIKTOK, 'بث مباشر الآن على تيك توك'));
     body.appendChild(link(CHANNEL, 'قناة الدكتور خالد على يوتيوب'));
+    body.appendChild(link(TELEGRAM, 'قناة تيليجرام'));
     // Show the card only when it has a live link-out; otherwise stay hidden when simply offline.
     box.hidden = !(TIKTOK || state === 'unknown') && state === 'offline';
   }
