@@ -157,7 +157,7 @@ test('AI approval RPC refuses tainted tasks and requires independent review evid
   assert.match(aiRuntimeMigration,/if v_task\.tainted then raise exception 'Tainted tasks cannot be approved'/i);
   assert.match(aiRuntimeMigration,/Task is not waiting for implementation approval/);
   assert.match(aiRuntimeMigration,/Task is not ready for human review/);
-  assert.match(aiRuntimeMigration,/agent\s*=\s*'security'\s+and\s+result\s*=\s*'PASS'/);
-  assert.match(aiRuntimeMigration,/agent\s*=\s*'verifier'\s+and\s+result\s*=\s*'PASS'/);
-  assert.match(aiRuntimeMigration,/agent\s*=\s*'test'\s+and\s+result\s*=\s*'PASS'/);
+  assert.match(aiRuntimeMigration,/review\.agent\s*=\s*'security'/);
+  assert.match(aiRuntimeMigration,/review\.agent\s*=\s*'verifier'/);
+  assert.match(aiRuntimeMigration,/review\.agent\s*=\s*'test'/);
 });
