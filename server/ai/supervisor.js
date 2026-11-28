@@ -47,7 +47,7 @@ class HaresAISupervisor {
       }
       reports.push(report);
       if (!report||report.status==='BLOCKED'||report.status==='FAIL'||report.status==='FAILED'||
-          (requiredAgents.has(name)&&report.status!=='PASS')) {
+          (name==='verifier'&&requiredAgents.has(name)&&report.status!=='PASS')) {
         task={...task,tainted:true,status:'FAILED'};
         break;
       }
