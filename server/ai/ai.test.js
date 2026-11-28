@@ -96,3 +96,15 @@ test('supervisor does not invoke developer during analysis',async()=>{
  assert.equal(result.task.status,'ANALYZED');
  assert.equal(result.task.tainted,true);
 });
+
+test('clean heuristic security screening remains NEEDS_REVIEW and cannot clear task taint',async()=>{
+ const security=require('./agents/security-agent');
+ const report=await security.run({input:{title:'مراجعة آمنة',description:'فحص مبدئي لا يحتوي على مؤشرات تجاوز معروفة'}});
+ assert.equal(report.status,'NEEDS_REVIEW');
+ assert.equal(report.data.reviewRequired,true);
+ const supervisor=new HaresAISupervisor({security});
+ const analysis=await supervisor.analyze({type:'security',title:'مراجعة آمنة',description:'فحص مبدئي لا يحتوي على مؤشرات تجاوز معروفة'});
+ assert.equal(analysis.task.status,'ANALYZED');
+ assert.equal(analysis.task.tainted,true);
+ assert.equal(analysis.reports[0].status,'NEEDS_REVIEW');
+});
