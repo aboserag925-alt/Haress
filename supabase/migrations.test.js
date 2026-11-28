@@ -111,3 +111,13 @@ test('approval audit event is recorded once by the guarded database RPC',()=>{
   assert.match(migration,/ai\.approval\.granted/);
   assert.match(migration,/ai\.approval\.rejected/);
 });
+
+const lectureMetadataMigration=fs.readFileSync(path.join(__dirname,'migrations','20261128035523_add_lecture_media_metadata.sql'),'utf8');
+test('lecture metadata migration adds optional fields and does not alter RLS or grants',()=>{
+  assert.match(lectureMetadataMigration,/alter table public\.lectures/i);
+  for(const column of ['sheikh','duration_seconds','content_type']) assert.match(lectureMetadataMigration,new RegExp('add column if not exists '+column,'i'));
+  assert.match(lectureMetadataMigration,/char_length\(sheikh\) <= 120/i);
+  assert.match(lectureMetadataMigration,/duration_seconds between 0 and 86400/i);
+  assert.match(lectureMetadataMigration,/content_type in \('audio', 'video', 'document'\)/i);
+  assert.doesNotMatch(lectureMetadataMigration,/enable row level security|create policy|drop policy|grant |revoke /i);
+});

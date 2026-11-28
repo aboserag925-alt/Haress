@@ -1,13 +1,16 @@
 'use strict';
 var CACHE_NAMESPACE = 'haress-v3-cache-';
-var CACHE_NAME = CACHE_NAMESPACE + 'perf-loading-20261128';
+var CACHE_NAME = CACHE_NAMESPACE + 'library-v1-20261128';
 var SHELL = [
   '/v3/',
   '/v3/index.html',
   '/v3/identity.css?v=20261128',
   '/v3/council.jpg?v=20261128',
   '/v3/v3.js?v=20261128',
-  '/v3/v3-runtime.js?v=20261128',
+  '/v3/v3-runtime.js?v=20261128-library1',
+  '/v3/v3-books.js?v=20261128-library1',
+  '/v3/library-media.js?v=20261128-library1',
+  '/v3/royal-v4.css?v=20261128-library1',
   '/v3/v3-adapter.js?v=20261128',
   '/v3/manifest.json?v=20261128'
 ];

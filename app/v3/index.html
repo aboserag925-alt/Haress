@@ -21,15 +21,16 @@
 <link rel="stylesheet" href="/v3/royal.css?v=20261128">
 <link rel="stylesheet" href="/v3/royal-v2.css?v=20261128">
 <link rel="stylesheet" href="/v3/royal-v3.css?v=20261128">
-<link rel="stylesheet" href="/v3/royal-v4.css?v=20261128">
+<link rel="stylesheet" href="/v3/royal-v4.css?v=20261128-library1">
 <script src="/supabase-config.js"></script>
 <script src="/runtime-config.js"></script>
 <script defer src="/vendor/adhan.umd.min.js?v=20261128"></script>
 <script src="/turnstile-config.js"></script>
 <script src="/auth-client.js?v=20261128"></script>
 <script defer src="/v3/v3.js?v=20261128"></script>
-<script defer src="/v3/v3-runtime.js?v=20261128"></script>
-<script defer src="/v3/v3-books.js?v=20261128"></script>
+<script defer src="/v3/library-media.js?v=20261128-library1"></script>
+<script defer src="/v3/v3-runtime.js?v=20261128-library1"></script>
+<script defer src="/v3/v3-books.js?v=20261128-library1"></script>
 <script defer src="/v3/v3-adapter.js?v=20261128"></script>
 
 </head>
@@ -151,11 +152,33 @@
 
         <section id="media" hidden tabindex="-1" class="scene">
           <header class="scene-heading"><p class="eyebrow">أرشيف المعرفة</p><h2>مكتبة <em>المجلس</em></h2><p>مواد صوتية ومرئية ومقالات، تُنشر بعد المراجعة والاعتماد.</p></header>
-          <div class="library-tools"><div class="library-index">المجموعة <b>05</b></div><div class="media-filters" id="mediaFilters">
-            <button class="media-filter on" type="button" data-media-category="all" aria-pressed="true">الكل</button><button class="media-filter" type="button" data-media-category="audio" aria-pressed="false">صوتيات</button><button class="media-filter" type="button" data-media-category="video" aria-pressed="false">مرئيات</button><button class="media-filter" type="button" data-media-category="books" aria-pressed="false">كتب</button><button class="media-filter" type="button" data-media-category="images" aria-pressed="false">صور</button><button class="media-filter" type="button" data-media-category="other" aria-pressed="false">أخرى</button>
-          </div></div>
-          <h3>كتب PDF</h3><p>نسخ مصورة من مقتنيات المكتبات الجامعية، مع بيان نطاق كل نسخة ومصدرها.</p><div id="bookItems" class="editorial-library"></div><h3>مواد المكتبة الأخرى</h3><p id="mediaStatus" class="status" role="status" aria-live="polite">جارٍ تحميل المكتبة…</p><div id="mediaItems" class="editorial-library"></div>
+          <div class="library-tools"><div class="library-index">المكتبة والمحاضرات <b>01</b></div></div>
+          <div id="mediaFilters" hidden aria-hidden="true"></div>
+          <div class="library-controls" aria-label="البحث وتصفية المواد">
+            <label class="field library-search" for="librarySearch">بحث فوري<input id="librarySearch" type="search" inputmode="search" placeholder="العنوان أو الشيخ أو الوصف أو التصنيف" autocomplete="off"></label>
+            <button class="outline-action library-clear" id="librarySearchClear" type="button" disabled>مسح البحث</button>
+            <label class="field" for="libraryCategoryFilter">التصنيف<select id="libraryCategoryFilter"><option value="all">الكل</option></select></label>
+            <label class="field" for="librarySheikhFilter">الشيخ<select id="librarySheikhFilter"><option value="all">كل الشيوخ</option></select></label>
+            <label class="field" for="librarySort">الترتيب<select id="librarySort"><option value="newest">الأحدث</option><option value="name">الاسم</option></select></label>
+          </div>
+          <section class="library-results" aria-labelledby="lecturesHeading"><h3 id="lecturesHeading">المحاضرات والدروس</h3><p id="lecturesStatus" class="status" role="status" aria-live="polite">جارٍ تحميل المحاضرات…</p><div id="lectureItems" class="editorial-library"></div></section>
+          <section class="library-results" aria-labelledby="booksHeading"><h3 id="booksHeading">كتب PDF</h3><p>نسخ مصورة من مقتنيات المكتبات الجامعية، مع بيان نطاق كل نسخة ومصدرها.</p><p id="booksStatus" class="status" role="status" aria-live="polite">جارٍ تحميل الكتب…</p><div id="bookItems" class="editorial-library"></div></section>
+          <section class="library-results" aria-labelledby="mediaHeading"><h3 id="mediaHeading">مواد المكتبة</h3><p id="mediaStatus" class="status" role="status" aria-live="polite">جارٍ تحميل المكتبة…</p><div id="mediaItems" class="editorial-library"></div></section>
+
         </section>
+
+          <section id="libraryPlayer" class="library-player" hidden aria-label="مشغل المحاضرة أو المادة">
+            <div class="library-player-heading"><strong id="libraryPlayerTitle">المشغل</strong><button id="libraryPlayerClose" class="outline-action" type="button" aria-label="إغلاق المشغل">إغلاق ×</button></div>
+            <div id="libraryPlayerMedia" class="library-player-media"></div>
+            <div class="library-player-controls">
+              <button id="librarySeekBack" type="button" class="outline-action">−١٥ ثانية</button>
+              <button id="libraryPlayPause" type="button" class="gold-action">تشغيل / إيقاف</button>
+              <button id="librarySeekForward" type="button" class="outline-action">+١٥ ثانية</button>
+              <label class="field" for="librarySpeed">السرعة<select id="librarySpeed"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label>
+              <label class="field" for="libraryVolume">الصوت<input id="libraryVolume" type="range" min="0" max="1" step="0.05" value="1"></label>
+            </div>
+            <p id="libraryPlayerStatus" class="status" role="status" aria-live="polite"></p>
+          </section>
 
         <section id="archive" hidden tabindex="-1" class="scene">
           <header class="scene-heading"><p class="eyebrow">الأقسام العلمية</p><h2>الأقسام <em>والشروح</em></h2><p>دفعة أولى من قناة الدكتور خالد على يوتيوب. حالة كل شرح غير محددة حتى تُراجع، ولا يُدّعى اكتمال أي سلسلة.</p></header>

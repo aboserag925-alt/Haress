@@ -2,6 +2,8 @@
 
 const MAX_TITLE = 180;
 const MAX_DESCRIPTION = 4000;
+const MAX_SHEIKH = 120;
+const MAX_DURATION_SECONDS = 86400;
 
 // Remove a leading UTF-8 BOM and surrounding whitespace before using secrets
 // as HTTP header values. A BOM in a Railway variable makes Fetch reject it.
@@ -30,7 +32,7 @@ function validUrl(value) {
 
 function validateLecture(body, partial) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return 'بيانات المحاضرة غير صالحة.';
-  const fields = ['title', 'description', 'starts_at', 'category', 'stream_url', 'recording_url', 'status'];
+  const fields = ['title', 'description', 'starts_at', 'category', 'stream_url', 'recording_url', 'status', 'sheikh', 'duration_seconds', 'content_type'];
   if (Object.keys(body).some((key) => !fields.includes(key))) return 'توجد حقول غير معروفة.';
   if (!partial || Object.hasOwn(body, 'title')) {
     if (typeof body.title !== 'string' || !body.title.trim() || body.title.trim().length > MAX_TITLE) return 'عنوان المحاضرة مطلوب وبحد أقصى 180 حرفًا.';
@@ -41,6 +43,9 @@ function validateLecture(body, partial) {
       (typeof body.starts_at !== 'string' || !Number.isFinite(Date.parse(body.starts_at)))) return 'موعد المحاضرة غير صالح.';
   if (Object.hasOwn(body, 'category') &&
       (typeof body.category !== 'string' || body.category.length > 80)) return 'تصنيف المحاضرة غير صالح.';
+  if (Object.hasOwn(body, 'sheikh') && (typeof body.sheikh !== 'string' || body.sheikh.length > MAX_SHEIKH)) return 'اسم الشيخ غير صالح (الحد الأقصى 120 حرفًا).';
+  if (Object.hasOwn(body, 'duration_seconds') && body.duration_seconds !== null && (!Number.isInteger(body.duration_seconds) || body.duration_seconds < 0 || body.duration_seconds > MAX_DURATION_SECONDS)) return 'مدة المحاضرة يجب أن تكون رقمًا صحيحًا بين صفر و86400 ثانية.';
+  if (Object.hasOwn(body, 'content_type') && !['audio', 'video', 'document'].includes(body.content_type)) return 'نوع المحتوى غير صالح.';
   if (Object.hasOwn(body, 'stream_url') && !validUrl(body.stream_url)) return 'رابط البث يجب أن يكون HTTPS صحيحًا.';
   if (Object.hasOwn(body, 'recording_url') && !validUrl(body.recording_url)) return 'رابط التسجيل يجب أن يكون HTTPS صحيحًا.';
   if (Object.hasOwn(body, 'status') && !['draft', 'published', 'archived'].includes(body.status)) return 'حالة النشر غير صالحة.';
@@ -103,7 +108,7 @@ function createAdminApi(options) {
     if (pathname === '/api/lectures' && request.method === 'GET') {
       try {
         const responseFromSupabase = await fetchImpl(
-          env.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/lectures?select=id,title,description,starts_at,category,stream_url,recording_url,status,created_at,updated_at&status=eq.published&order=starts_at.asc.nullslast',
+          env.SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/lectures?select=id,title,description,starts_at,category,stream_url,recording_url,status,sheikh,duration_seconds,content_type,created_at,updated_at&status=eq.published&order=starts_at.asc.nullslast',
           {
             headers: {
               apikey: anonKey,
@@ -143,7 +148,7 @@ function createAdminApi(options) {
           sendJson(response, 200, { user: { id: admin.id, email: admin.email || null } });
           return true;
         }
-        const allRows = await supabase('/rest/v1/lectures?select=id,title,description,starts_at,category,stream_url,recording_url,status,created_at,updated_at&order=starts_at.asc.nullslast');
+        const allRows = await supabase('/rest/v1/lectures?select=id,title,description,starts_at,category,stream_url,recording_url,status,sheikh,duration_seconds,content_type,created_at,updated_at&order=starts_at.asc.nullslast');
         sendJson(response, 200, { items: allRows });
         return true;
       }

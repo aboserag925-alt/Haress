@@ -69,9 +69,11 @@ test('Reference-led identity loads one active stylesheet and preserves accessibl
 test('Identity offline shell caches the active stylesheet and project image', () => {
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   assert.match(sw, /'\/v3\/identity\.css\?v=\d+'/);
+  assert.match(sw, /'\/v3\/royal-v4\.css\?v=20261128-library1'/);
+  assert.match(sw, /'\/v3\/library-media\.js\?v=20261128-library1'/);
   assert.match(sw, /'\/v3\/council\.jpg\?v=\d+'/);
   assert.doesNotMatch(sw, /'\/v3\/v3\.css'/);
-  assert.match(sw, /perf-loading-20261128/);
+  assert.match(sw, /library-v1-20261128/);
 });
 
 test('V3.1 page has no root base URL and keeps fragment navigation local', () => {
@@ -125,22 +127,46 @@ test('account recovery exposes reset and update actions and handles the recovery
   assert.match(authClient, /auth\.updateUser\(\{\s*password:\s*password\s*\}\)/);
 });
 
-test('library filters use the category ids the server sends (audio, video, books, images, other)', () => {
+test('library category and sheikh filters default to all and preserve API-provided categories', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  const ids = [...html.matchAll(/data-media-category="([^"]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(ids, ['all', 'audio', 'video', 'books', 'images', 'other']);
+  const src = fs.readFileSync(path.join(root, 'v3-runtime.js'), 'utf8');
+  assert.match(html, /id="libraryCategoryFilter"><option value="all">الكل/);
+  assert.match(html, /id="librarySheikhFilter"><option value="all">كل الشيوخ/);
+  assert.match(src, /state\.lectures\.concat\(state\.media\)/);
+  assert.match(src, /unique\(all\.map\(function \(item\) \{ return item\.category; \}\)\.concat\(\['books'\]\)\)/);
 });
 
-test('lectures request sends the public apikey when configured, like the legacy app', () => {
+test('public lecture and library reads use GET only and never attach user or service credentials', () => {
+  const helper = fs.readFileSync(path.join(root, 'library-media.js'), 'utf8');
   const src = fs.readFileSync(path.join(root, 'v3-runtime.js'), 'utf8');
-  assert.match(src, /AHL_SUPABASE_CONFIG\s*&&\s*window\.AHL_SUPABASE_CONFIG\.anonKey/);
-  assert.match(src, /api\('\/api\/lectures'\)[^;]*apikey:\s*publishableKey/);
+  assert.match(helper, /method: 'GET'/);
+  assert.match(src, /fetchList\(window\.fetch\.bind\(window\), api\('\/api\/lectures'\)\)/);
+  assert.match(src, /fetchList\(window\.fetch\.bind\(window\), api\('\/api\/library'\)\)/);
+  assert.doesNotMatch(helper, /service_role|SUPABASE_SERVICE_ROLE_KEY|authorization:/i);
 });
 
-test('managed lectures show only in the schedule section and skip finished lectures', () => {
+test('lecture cards expose metadata, search and player actions without altering the schedule', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const src = fs.readFileSync(path.join(root, 'v3-runtime.js'), 'utf8');
-  assert.match(src, /managed\.hidden\s*=\s*!scheduleView/);
-  assert.match(src, /new Date\(item\.starts_at\)\.getTime\(\)\s*>=\s*cutoff/);
+  for (const id of ['lectureItems', 'lecturesStatus', 'librarySearch', 'librarySearchClear', 'librarySort']) {
+    assert.ok(html.includes('id="' + id + '"'), 'missing library UI element: ' + id);
+  }
+  assert.match(src, /الشيخ: /);
+  assert.match(src, /التصنيف: /);
+  assert.match(src, /المدة: /);
+  assert.match(src, /النوع: /);
+  assert.match(src, /renderLectures\(\)/);
+  assert.match(src, /لا توجد محاضرات منشورة حاليًا/);
+});
+
+test('PDF books share the live library search and category filters',()=>{
+  const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+  const books=fs.readFileSync(path.join(root,'v3-books.js'),'utf8');
+  assert.match(html,/id="booksStatus"/);
+  assert.match(books,/window.HaressBooksRender = render/);
+  assert.match(books,/filters.category !== 'books'/);
+  assert.match(books,/book.title, book.scope, book.description/);
+  assert.match(books,/credentials: 'omit'/);
 });
 
 test('radio never autoplays: init does not call play, only visitor clicks do', () => {
@@ -157,7 +183,7 @@ test('v3 service worker caches the adhan bundle and other page files from outsid
   assert.match(sw, /'\/vendor\/adhan\.umd\.min\.js\?v=\d+'/);
   assert.match(html, /<script defer src="\/vendor\/adhan\.umd\.min\.js\?v=\d+"><\/script>/);
   assert.match(sw, /isExternal\(url\.pathname\)/);
-  assert.match(sw, /perf-loading-20261128/);
+  assert.match(sw, /library-v1-20261128/);
   assert.ok(fs.existsSync(path.join(root, '..', 'vendor', 'adhan.umd.min.js')));
 });
 
@@ -177,15 +203,20 @@ test('legacy public lecture and library reads also avoid forced no-store caching
   assert.doesNotMatch(runtimeConfig, /cache:\s*['"]no-store['"]/);
 });
 
-test('archive, audio and video assets are deferred until their sections open', () => {
+test('archive assets stay deferred and media sources are assigned only after an explicit play action', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const runtime = fs.readFileSync(path.join(root, 'v3-runtime.js'), 'utf8');
   assert.doesNotMatch(html, /<script[^>]+src="[^"]*\/archive\//);
   assert.match(runtime, /function loadArchiveAssets/);
   assert.match(runtime, /if \(id === 'archive'\) loadArchiveAssets\(\)/);
   assert.match(runtime, /if \(id === 'prayers'\) loadPrayerAudio\(\)/);
-  assert.match(runtime, /data-src',api\(item\.url\)/);
-  assert.match(runtime, /if \(id === 'media'\) loadLibrary\(\)\.then\(activateMediaSources\)/);
+  assert.match(html, /id="libraryPlayer"[^>]*hidden/);
+  assert.match(runtime, /play\.addEventListener\('click', function \(\) \{ openMediaPlayer/);
+  assert.match(runtime, /player\.src = url/);
+  assert.match(runtime, /player\.preload = 'metadata'/);
+  assert.match(runtime, /function closeMediaPlayer\(\)[\s\S]*?pause\(\)[\s\S]*?removeAttribute\('src'\)[\s\S]*?load\(\)/);
+  assert.match(runtime, /progressKey\(item\.id\)/);
+  assert.doesNotMatch(runtime, /activateMediaSources|data-src/);
 });
 
 test('question section tells the visitor plainly that no answer can be sent to them', () => {

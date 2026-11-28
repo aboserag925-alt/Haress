@@ -7,7 +7,7 @@
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   var state = { location: null, prayerTimes: null, compass: null, period: 'morning',
-    media: [], mediaCategory: 'all', libraryPromise: null, archivePromise: null, prayerAudioLoaded: false, turnstileId: null, suggestionTurnstileId: null, turnstilePromise: null,
+    media: [], lectures: [], lectureLoadError: false, libraryLoadError: false, libraryFilters: { query: '', category: 'all', sheikh: 'all', sort: 'newest' }, mediaCategory: 'all', libraryPromise: null, lecturePromise: null, activePlayer: null, archivePromise: null, prayerAudioLoaded: false, turnstileId: null, suggestionTurnstileId: null, turnstilePromise: null,
     installPrompt: null, account: null, syncTimer: null, nextPrayer: null,
     nextPrayerName: '', radioTimer: null, radioMuted: false };
 
@@ -71,48 +71,23 @@
     friday.textContent = 'الجمعة · لا دروس'; host.appendChild(friday);
   }
   async function loadLectures() {
-    var initialHost = $('managedLectures');
-    if (initialHost) { initialHost.replaceChildren(); var loading = document.createElement('p'); loading.className = 'status'; loading.textContent = 'جارٍ تحميل المحاضرات…'; initialHost.appendChild(loading); initialHost.hidden = !!($('sched') && $('sched').hidden); }
+    var host = $('lectureItems');
+    if (host) host.replaceChildren();
+    state.lectureLoadError = false;
+    status('lecturesStatus', 'جارٍ تحميل المحاضرات…');
     try {
-      var publishableKey = window.AHL_SUPABASE_CONFIG && window.AHL_SUPABASE_CONFIG.anonKey;
-      var response = await fetch(api('/api/lectures'), { headers: publishableKey ? { apikey: publishableKey } : {} });
-      if (!response.ok) throw new Error('lecture');
-      var result = await response.json();
-      var host = $('managedLectures'); if (!host) return;
-      host.replaceChildren();
-      if (!Array.isArray(result.items) || !result.items.length) {
-        var empty = document.createElement('p'); empty.className = 'status'; empty.textContent = 'لا توجد محاضرات منشورة حاليًا.';
-        host.appendChild(empty); host.hidden = !!($('sched') && $('sched').hidden); return;
-      }
-      var cutoff = Date.now() - 6 * 3600 * 1000;
-      var upcoming = result.items.filter(function (item) {
-        return item.recording_url || !item.starts_at || new Date(item.starts_at).getTime() >= cutoff;
-      });
-      if (!upcoming.length) {
-        var empty = document.createElement('p'); empty.className = 'status'; empty.textContent = 'لا توجد محاضرات قادمة أو تسجيلات منشورة.';
-        host.appendChild(empty); host.hidden = !!($('sched') && $('sched').hidden); return;
-      }
-      upcoming.forEach(function (item) {
-        var article = document.createElement('article'); article.className = 'v3-managed-entry';
-        var title = document.createElement('h3'); title.textContent = item.title || 'محاضرة';
-        var meta = document.createElement('p');
-        meta.textContent = (item.starts_at ? new Date(item.starts_at).toLocaleString('ar-EG') : 'موعد يحدد لاحقًا') + ' · ' + (item.category || 'محاضرة');
-        article.append(title, meta);
-        if (item.description) { var desc = document.createElement('p'); desc.textContent = item.description; article.appendChild(desc); }
-        [['stream_url','مشاهدة البث'],['recording_url','مشاهدة التسجيل']].forEach(function (pair) {
-          if (!item[pair[0]]) return;
-          var link = document.createElement('a'); link.href = item[pair[0]]; link.target = '_blank';
-          link.rel = 'noopener noreferrer'; link.textContent = pair[1]; article.appendChild(link);
-        });
-        host.appendChild(article);
-      });
-      var schedHost = $('sched');
-      host.hidden = !!(schedHost && schedHost.hidden);
-    } catch (e) {
-      var host = $('managedLectures');
-      if (host) { host.replaceChildren(); var error = document.createElement('p'); error.className = 'status error'; error.textContent = 'تعذر تحميل المحاضرات الآن. الجدول الأساسي ما زال متاحًا.'; host.appendChild(error); host.hidden = !!($('sched') && $('sched').hidden); }
+      state.lectures = await window.HaressLibraryMedia.fetchList(window.fetch.bind(window), api('/api/lectures'));
+      renderLibraryFilters();
+      renderLectures();
+    } catch (error) {
+      state.lectures = []; state.lectureLoadError = true;
+      if (host) host.replaceChildren();
+      status('lecturesStatus', 'تعذر تحميل المحاضرات الآن. تحقق من الاتصال ثم أعد المحاولة.', true);
+      state.lecturePromise = null;
     }
   }
+
+
   function updateScheduleClock() {
     var now = cairoClock(), slots = [19 * 3600, 22 * 3600], lessonDays = ['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس'];
     for (var offset = 0; offset < 8; offset++) {
@@ -136,12 +111,7 @@
     var source = readStore('ahl-athar-adhan-url');
     if (source) { audio.src = source; audio.hidden = false; audio.load(); state.prayerAudioLoaded = true; }
   }
-  function activateMediaSources() {
-    var host = $('mediaItems'); if (!host) return;
-    host.querySelectorAll('audio[data-src],video[data-src]').forEach(function (player) {
-      if (!player.src) { player.src = player.getAttribute('data-src'); player.removeAttribute('data-src'); player.load(); }
-    });
-  }
+
   function loadArchiveAssets() {
     if (state.archivePromise) return state.archivePromise;
     state.archivePromise = (async function () {
@@ -184,7 +154,7 @@
       target.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
       target.focus({ preventScroll: true });
     }
-    if (id === 'media') loadLibrary().then(activateMediaSources);
+    if (id === 'media') { loadLectures(); loadLibrary(); }
     if (id === 'prayers') loadPrayerAudio();
     if (id === 'archive') loadArchiveAssets();
     if (id === 'adhkar') renderAdhkar();
@@ -384,43 +354,198 @@
     renderAdhkar();
   }
 
-  /* Published library API contract: GET /api/library -> { items: [...] }. */
+  function currentLibraryFilters() {
+    return {
+      query: $('librarySearch') ? $('librarySearch').value : '',
+      category: $('libraryCategoryFilter') ? $('libraryCategoryFilter').value : 'all',
+      sheikh: $('librarySheikhFilter') ? $('librarySheikhFilter').value : 'all',
+      sort: $('librarySort') ? $('librarySort').value : 'newest'
+    };
+  }
+  function renderLibraryFilters() {
+    var categorySelect = $('libraryCategoryFilter');
+    var sheikhSelect = $('librarySheikhFilter');
+    if (!categorySelect || !sheikhSelect || !window.HaressLibraryMedia) return;
+    var all = state.lectures.concat(state.media);
+    var categories = window.HaressLibraryMedia.unique(all.map(function (item) { return item.category; }).concat(['books']));
+    var sheikhs = window.HaressLibraryMedia.unique(all.map(function (item) { return item.sheikh || item.lecturer || item.author; }));
+    var selectedCategory = categorySelect.value || 'all';
+    var selectedSheikh = sheikhSelect.value || 'all';
+    categorySelect.replaceChildren();
+    var allCategory = document.createElement('option'); allCategory.value = 'all'; allCategory.textContent = 'الكل'; categorySelect.appendChild(allCategory);
+    categories.forEach(function (value) {
+      var item = all.find(function (candidate) { return candidate.category === value; });
+      var option = document.createElement('option'); option.value = value;
+      option.textContent = item && item.categoryName ? item.categoryName : (value === 'books' ? 'كتب PDF' : value);
+      categorySelect.appendChild(option);
+    });
+    sheikhSelect.replaceChildren();
+    var allSheikhs = document.createElement('option'); allSheikhs.value = 'all'; allSheikhs.textContent = 'كل الشيوخ'; sheikhSelect.appendChild(allSheikhs);
+    sheikhs.forEach(function (value) { var option = document.createElement('option'); option.value = value; option.textContent = value; sheikhSelect.appendChild(option); });
+    categorySelect.value = categories.indexOf(selectedCategory) >= 0 ? selectedCategory : 'all';
+    sheikhSelect.value = sheikhs.indexOf(selectedSheikh) >= 0 ? selectedSheikh : 'all';
+    if ($('librarySearchClear')) $('librarySearchClear').disabled = !currentLibraryFilters().query;
+    if (typeof window.HaressBooksRender === 'function') window.HaressBooksRender(currentLibraryFilters());
+  }
+  function cardDetails(item, type) {
+    var sheikh = item.sheikh || item.lecturer || item.author || 'غير محدد';
+    var category = item.categoryName || item.category || 'غير محدد';
+    var duration = window.HaressLibraryMedia.durationLabel(item);
+    var kind = type === 'audio' ? 'صوتي' : type === 'video' ? 'مرئي' : 'مادة مكتوبة';
+    return 'الشيخ: ' + sheikh + ' · التصنيف: ' + category + ' · المدة: ' + duration + ' · النوع: ' + kind;
+  }
+  function isDirectMediaUrl(value, type, mimeType) {
+    if (mimeType && new RegExp('^' + type + '/').test(String(mimeType).toLowerCase())) return true;
+    try {
+      var url = new URL(value, window.location.origin);
+      return /\.(mp3|m4a|aac|ogg|oga|opus|wav|flac|mp4|m4v|webm|m3u8|mpd)(?:$|[?#])/i.test(url.pathname + url.search);
+    } catch (error) { return false; }
+  }
+  function renderLectures() {
+    var host = $('lectureItems'); if (!host) return;
+    host.replaceChildren();
+    var H = window.HaressLibraryMedia;
+    var items = H.filterSort(state.lectures, currentLibraryFilters());
+    if (state.lectureLoadError) { status('lecturesStatus', 'تعذر تحميل المحاضرات الآن. تحقق من الاتصال ثم أعد المحاولة.', true); return; }
+    if (!state.lectures.length) { status('lecturesStatus', 'لا توجد محاضرات منشورة حاليًا.'); return; }
+    if (!items.length) { status('lecturesStatus', 'لا توجد نتائج مطابقة لبحثك أو عوامل التصفية.'); return; }
+    status('lecturesStatus', 'عدد المحاضرات: ' + items.length);
+    items.forEach(function (item) {
+      var article = document.createElement('article'); article.className = 'v3-library-entry';
+      var title = document.createElement('h3'); title.textContent = item.title || 'محاضرة علمية';
+      var type = H.mediaType({ kind: item.content_type || item.kind, mimeType: item.mime_type || item.mimeType, url: item.recording_url || item.stream_url });
+      var meta = document.createElement('p'); meta.className = 'library-card-meta'; meta.textContent = cardDetails(item, type);
+      article.append(title, meta);
+      if (item.description) { var description = document.createElement('p'); description.textContent = item.description; article.appendChild(description); }
+      var mediaUrl = item.recording_url || item.stream_url || '';
+      if (mediaUrl && isDirectMediaUrl(mediaUrl, type, item.mime_type || item.mimeType)) {
+        var play = document.createElement('button'); play.type = 'button'; play.className = 'gold-action library-play-action';
+        play.textContent = type === 'audio' ? 'تشغيل المحاضرة الصوتية' : 'تشغيل المحاضرة المرئية';
+        play.addEventListener('click', function () { openMediaPlayer(item, mediaUrl, type); });
+        article.appendChild(play);
+      } else if (mediaUrl) {
+        var link = document.createElement('a'); link.className = 'outline-action'; link.href = H.safeUrl(mediaUrl);
+        link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = item.recording_url ? 'فتح التسجيل' : 'فتح البث';
+        if (!link.href || link.href === 'about:blank') { link.removeAttribute('href'); link.textContent = 'رابط المحتوى غير صالح'; }
+        article.appendChild(link);
+      } else {
+        var unavailable = document.createElement('p'); unavailable.className = 'status'; unavailable.textContent = 'لم يُرفق تسجيل أو رابط بث لهذه المحاضرة.'; article.appendChild(unavailable);
+      }
+      host.appendChild(article);
+    });
+  }
   async function loadLibrary() {
     if (state.libraryPromise) return state.libraryPromise;
-    status('mediaStatus','جارٍ تحميل المكتبة…');
+    state.libraryLoadError = false;
+    status('mediaStatus', 'جارٍ تحميل المكتبة…');
     state.libraryPromise = (async function () {
       try {
-        var response = await fetch(api('/api/library'));
-        if (!response.ok) throw new Error('request failed');
-        var decoded = new TextDecoder('utf-8',{fatal:true}).decode(await response.arrayBuffer());
-        var result = JSON.parse(decoded);
-        if (!Array.isArray(result.items)) throw new Error('invalid');
-        state.media = result.items; renderLibrary();
-      } catch (e) { status('mediaStatus','تعذر تحميل المكتبة الآن. حاول مرة أخرى.',true); }
+        state.media = await window.HaressLibraryMedia.fetchList(window.fetch.bind(window), api('/api/library'));
+        renderLibraryFilters(); renderLibrary();
+      } catch (error) {
+        state.media = []; state.libraryLoadError = true;
+        if ($('mediaItems')) $('mediaItems').replaceChildren();
+        status('mediaStatus', 'تعذر تحميل المكتبة الآن. تحقق من الاتصال ثم أعد المحاولة.', true);
+        state.libraryPromise = null;
+      }
     })();
     return state.libraryPromise;
   }
   function renderLibrary() {
-    var host = $('mediaItems'); host.replaceChildren();
-    var items = state.media.filter(function (item) { return state.mediaCategory==='all' || item.category===state.mediaCategory; });
-    status('mediaStatus',items.length?'عدد المواد: '+items.length:(state.media.length?'لا توجد مواد في هذا التصنيف.':'لا توجد مواد منشورة بعد.'));
+    var host = $('mediaItems'); if (!host) return;
+    host.replaceChildren();
+    var H = window.HaressLibraryMedia;
+    var items = H.filterSort(state.media, currentLibraryFilters());
+    if (state.libraryLoadError) { status('mediaStatus', 'تعذر تحميل المكتبة الآن. تحقق من الاتصال ثم أعد المحاولة.', true); return; }
+    if (!state.media.length) { status('mediaStatus', 'لا توجد مواد منشورة في المكتبة حتى الآن.'); return; }
+    if (!items.length) { status('mediaStatus', 'لا توجد نتائج مطابقة لبحثك أو عوامل التصفية.'); return; }
+    status('mediaStatus', 'عدد مواد المكتبة: ' + items.length);
     items.forEach(function (item) {
       var article = document.createElement('article'); article.className = 'v3-library-entry';
-      var kind = document.createElement('span'); kind.textContent = item.categoryName || item.category || 'مادة';
       var title = document.createElement('h3'); title.textContent = item.title || 'مادة علمية';
-      article.append(kind,title);
-      if (item.kind==='audio' || item.kind==='video') {
-        var player = document.createElement(item.kind); player.controls=true; player.preload='none'; player.setAttribute('data-src',api(item.url)); article.appendChild(player);
-      } else if (item.kind==='image') {
-        var image = document.createElement('img'); image.src=api(item.url); image.alt=item.title||'مادة من المكتبة'; image.loading='lazy'; article.appendChild(image);
+      var type = H.mediaType(item);
+      var meta = document.createElement('p'); meta.className = 'library-card-meta'; meta.textContent = cardDetails(item, type);
+      article.append(title, meta);
+      if (item.description) { var description = document.createElement('p'); description.textContent = item.description; article.appendChild(description); }
+      if (type === 'audio' || type === 'video') {
+        var play = document.createElement('button'); play.type = 'button'; play.className = 'gold-action library-play-action';
+        play.textContent = type === 'audio' ? 'تشغيل الصوت' : 'تشغيل الفيديو';
+        play.addEventListener('click', function () { openMediaPlayer(item, api(item.url), type); });
+        article.appendChild(play);
       } else {
-        var link = document.createElement('a'); link.href=api(item.url); link.download=''; link.textContent='تحميل المادة'; article.appendChild(link);
+        var link = document.createElement('a'); link.className = 'outline-action'; link.href = H.safeUrl(api(item.url));
+        link.textContent = 'فتح / تحميل المادة'; link.target = '_blank'; link.rel = 'noopener noreferrer';
+        article.appendChild(link);
       }
-      if (item.uploadedAt) { var date = document.createElement('time'); date.dateTime=item.uploadedAt; date.textContent=new Intl.DateTimeFormat('ar-EG',{dateStyle:'medium'}).format(new Date(item.uploadedAt)); article.appendChild(date); }
+      if (item.uploadedAt) { var date = document.createElement('time'); date.dateTime = item.uploadedAt; date.textContent = new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(new Date(item.uploadedAt)); article.appendChild(date); }
       host.appendChild(article);
     });
   }
-  /* Turnstile + questions: preserve POST /api/questions and payload contract. */
+
+
+  function closeMediaPlayer() {
+    var panel = $('libraryPlayer'), host = $('libraryPlayerMedia');
+    if (state.activePlayer) {
+      try { state.activePlayer.pause(); state.activePlayer.removeAttribute('src'); state.activePlayer.load(); } catch (error) {}
+      state.activePlayer = null;
+    }
+    if (host) host.replaceChildren();
+    if (panel) { panel.hidden = true; panel.classList.remove('is-open'); }
+    document.body.classList.remove('library-player-open');
+    document.body.classList.remove('library-player-open');
+  }
+  function openMediaPlayer(item, source, type) {
+    if (!['audio', 'video'].includes(type)) return;
+    var H = window.HaressLibraryMedia, url = H.safeUrl(source);
+    if (!url || !isDirectMediaUrl(url, type, item.mimeType || item.mime_type)) {
+      status('libraryPlayerStatus', 'رابط الوسائط غير مباشر أو غير مدعوم داخل المشغل.', true); return;
+    }
+    closeMediaPlayer();
+    var panel = $('libraryPlayer'), host = $('libraryPlayerMedia');
+    if (!panel || !host) return;
+    var player = document.createElement(type);
+    player.controls = true; player.preload = 'metadata'; player.playsInline = true;
+    player.setAttribute('playsinline', '');
+    player.setAttribute('aria-label', item.title || 'مشغل الوسائط');
+    player.src = url;
+    state.activePlayer = player;
+    $('libraryPlayerTitle').textContent = item.title || 'مشغل الوسائط';
+    host.appendChild(player);
+    panel.hidden = false; panel.classList.add('is-open'); document.body.classList.add('library-player-open'); document.body.classList.add('library-player-open');
+    var saved = Number(readStore(H.progressKey(item.id)));
+    player.addEventListener('loadedmetadata', function () {
+      if (Number.isFinite(saved) && saved > 0 && (!Number.isFinite(player.duration) || saved < player.duration - 2)) {
+        try { player.currentTime = saved; } catch (error) {}
+      }
+      status('libraryPlayerStatus', 'يمكنك متابعة التشغيل من آخر موضع محفوظ على هذا الجهاز.');
+    }, { once: true });
+    player.addEventListener('timeupdate', function () {
+      if (player.currentTime > 0 && Number.isFinite(player.currentTime)) store(H.progressKey(item.id), String(Math.floor(player.currentTime)));
+    });
+    player.addEventListener('error', function () { status('libraryPlayerStatus', 'تعذر تشغيل هذا الملف. تحقق من الرابط أو صيغة الوسائط.', true); });
+    player.load();
+    var attempt = player.play();
+    if (attempt && attempt.catch) attempt.catch(function () { status('libraryPlayerStatus', 'اضغط زر التشغيل داخل المشغل لبدء المحتوى.'); });
+  }
+  function seekPlayer(seconds) {
+    if (!state.activePlayer || !Number.isFinite(state.activePlayer.duration)) return;
+    state.activePlayer.currentTime = Math.max(0, Math.min(state.activePlayer.duration, state.activePlayer.currentTime + seconds));
+  }
+  function initLibraryPlayer() {
+    $('libraryPlayerClose').addEventListener('click', closeMediaPlayer);
+    $('librarySeekBack').addEventListener('click', function () { seekPlayer(-15); });
+    $('librarySeekForward').addEventListener('click', function () { seekPlayer(15); });
+    $('libraryPlayPause').addEventListener('click', function () {
+      if (!state.activePlayer) return;
+      if (state.activePlayer.paused) state.activePlayer.play().catch(function () { status('libraryPlayerStatus', 'تعذر بدء التشغيل.', true); });
+      else state.activePlayer.pause();
+    });
+    $('librarySpeed').addEventListener('change', function () { if (state.activePlayer) state.activePlayer.playbackRate = Number(this.value) || 1; });
+    $('libraryVolume').addEventListener('input', function () { if (state.activePlayer) state.activePlayer.volume = Number(this.value); });
+  }
+
+  /* Turnstile + questions: */
+
   function siteKey() { return String(window.AHL_TURNSTILE_SITE_KEY || '').trim(); }
   function loadTurnstile() {
     if (window.turnstile) return Promise.resolve();
@@ -623,9 +748,11 @@
     $('asrMadhab').addEventListener('change',function(){store('ahl-athar-asr-madhab',this.value);updatePrayerTimes();scheduleSync();});
     $('saveLocation').addEventListener('click',saveLocation);$('locateBtn').addEventListener('click',locate);$('qiblaLocateBtn').addEventListener('click',locate);$('compassBtn').addEventListener('click',startCompass);
     $('morningBtn').addEventListener('click',function(){selectPeriod('morning');});$('eveningBtn').addEventListener('click',function(){selectPeriod('evening');});
-    $('mediaFilters').addEventListener('click',function(event){var button=event.target.closest('[data-media-category]');if(!button)return;
-      state.mediaCategory=button.getAttribute('data-media-category');
-      $('mediaFilters').querySelectorAll('[data-media-category]').forEach(function(item){var active=item===button;item.classList.toggle('on',active);item.setAttribute('aria-pressed',String(active));});renderLibrary();if(!$('media').hidden)activateMediaSources();});
+    $('librarySearch').addEventListener('input',function(){ $('librarySearchClear').disabled=!this.value; renderLectures(); renderLibrary(); if (typeof window.HaressBooksRender === 'function') window.HaressBooksRender(currentLibraryFilters()); });
+    $('librarySearchClear').addEventListener('click',function(){ $('librarySearch').value=''; this.disabled=true; renderLectures(); renderLibrary(); if (typeof window.HaressBooksRender === 'function') window.HaressBooksRender(currentLibraryFilters()); $('librarySearch').focus(); });
+    ['libraryCategoryFilter','librarySheikhFilter','librarySort'].forEach(function(id){ $(id).addEventListener('change',function(){renderLectures();renderLibrary();}); });
+    initLibraryPlayer();
+    window.addEventListener('pagehide', closeMediaPlayer);
     $('questionConsent').addEventListener('change',function(){ $('sendQuestionBtn').disabled=!this.checked;if(this.checked&&siteKey())prepareTurnstile();if(!this.checked&&window.turnstile&&state.turnstileId!==null)window.turnstile.reset(state.turnstileId);});
     $('sendQuestionBtn').addEventListener('click',sendQuestion);
     $('sendSuggestionBtn').addEventListener('click',sendSuggestion);
