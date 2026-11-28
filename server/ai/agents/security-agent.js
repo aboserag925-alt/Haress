@@ -19,5 +19,5 @@ module.exports=Object.freeze({name:'security',async run({input={}}) {
   const secretExposure=/\b(?:sk-[A-Za-z0-9]{20,}|gh[pousr]_[A-Za-z0-9]{20,})\b/.test(text);
   const blocked=!validAreas || areas.some(x=>['secrets_exposure','rls_disabled','auth_bypass','prompt_injection','data_exfiltration'].includes(x)) || promptInjection || secretExposure;
   const flags={promptInjection,secretExposure};
-  return result('security',blocked?'BLOCKED':'PASS',{blocked,reviewRequired:true,areas,flags,tainted:true},blocked?['Untrusted or prohibited input detected']:[]);
+  return result('security',blocked?'BLOCKED':'NEEDS_REVIEW',{blocked,reviewRequired:true,areas,flags,tainted:true},blocked?['Untrusted or prohibited input detected']:['Heuristic screening is not a complete independent security review.']);
 }});
