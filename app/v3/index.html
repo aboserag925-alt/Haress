@@ -11,32 +11,27 @@
 <meta property="og:description" content="استراحة أهل الأثر — مجلس للعلم والذكر">
 <meta property="og:image" content="https://hares.aboserag925.workers.dev/v3/hero-featured.jpg">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="manifest" href="/v3/manifest.json">
-<link rel="icon" href="/v3/favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="/v3/manifest.json?v=20261128">
+<link rel="icon" href="/v3/favicon.svg?v=20261128" type="image/svg+xml">
 <title>استراحة أهل الأثر | مجلس العلم والذكر</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/v3/identity.css">
-<link rel="stylesheet" href="/v3/archive/archive.css"><link rel="stylesheet" href="/v3/royal.css">
-<link rel="stylesheet" href="/v3/royal-v2.css">
-<link rel="stylesheet" href="/v3/royal-v3.css">
-<link rel="stylesheet" href="/v3/royal-v4.css">
+<link rel="stylesheet" href="/v3/identity.css?v=20261128">
+<link rel="stylesheet" href="/v3/royal.css?v=20261128">
+<link rel="stylesheet" href="/v3/royal-v2.css?v=20261128">
+<link rel="stylesheet" href="/v3/royal-v3.css?v=20261128">
+<link rel="stylesheet" href="/v3/royal-v4.css?v=20261128">
 <script src="/supabase-config.js"></script>
 <script src="/runtime-config.js"></script>
-<script src="/vendor/adhan.umd.min.js"></script>
+<script defer src="/vendor/adhan.umd.min.js?v=20261128"></script>
 <script src="/turnstile-config.js"></script>
-<script src="/auth-client.js"></script>
-<script defer src="/v3/v3.js"></script>
-<script defer src="/v3/v3-runtime.js"></script>
-<script defer src="/v3/v3-books.js"></script>
-<script defer src="/v3/v3-adapter.js"></script>
-<script defer src="/v3/archive/youtube.js"></script>
-<script defer src="/v3/archive/source-links.js"></script>
-<script defer src="/v3/archive/video-live/model.js"></script>
-<script defer src="/v3/archive/video-live/player.js"></script>
-<script defer src="/v3/archive/v3-archive.js"></script>
-<script defer src="/v3/archive/archive-init.js"></script>
+<script src="/auth-client.js?v=20261128"></script>
+<script defer src="/v3/v3.js?v=20261128"></script>
+<script defer src="/v3/v3-runtime.js?v=20261128"></script>
+<script defer src="/v3/v3-books.js?v=20261128"></script>
+<script defer src="/v3/v3-adapter.js?v=20261128"></script>
+
 </head>
 <body>
 <a class="skip-link" href="#main">تجاوز إلى المحتوى</a>
@@ -71,7 +66,7 @@
         </div>
       </div>
       <aside class="opening-aside" aria-label="شعار مجلس أهل الأثر">
-        <div class="council-art"><img src="/v3/hero-featured.jpg" alt="شعار استراحة أهل الأثر، مجلس تدارس العلم والأدب" width="640" height="640"></div>
+        <div class="council-art"><img src="/v3/hero-featured.jpg?v=20261128" alt="شعار استراحة أهل الأثر، مجلس تدارس العلم والأدب" width="640" height="640"></div>
         <div class="art-caption"><span class="live-dot"></span><span>مجلس تدارس العلم والأدب</span><span class="art-arrow">↗</span></div>
       </aside>
     </section>
@@ -185,7 +180,7 @@
         <section id="account" hidden tabindex="-1" class="scene account-scene">
           <header class="scene-heading"><p class="eyebrow">مساحتك الخاصة</p><h2>حساب <em>المجلس</em></h2><p>سجّل الدخول لحفظ تقدم الأذكار وطريقة الحساب ومزامنتها بين أجهزتك.</p></header>
           <div class="scene-card account-card"><div class="account-monogram">أ</div><p id="authMessage" class="status" role="status" aria-live="polite"></p>
-            <div id="authConfigMissing" class="notice" hidden>تسجيل الدخول غير مفعّل بعد. أضف رابط Supabase والمفتاح العام إلى app/supabase-config.js. لا تضع مفتاح service_role هنا.</div>
+            <div id="authConfigMissing" class="notice" hidden>إعداد Supabase غير مكتمل أو الخدمة غير متاحة حاليًا. تحقق من رابط المشروع والمفتاح العام والاتصال. لا تضع مفتاح service_role هنا.</div>
             <form id="authForm" class="auth-form" hidden><label class="field" for="authEmail">البريد الإلكتروني<input id="authEmail" type="email" autocomplete="email" inputmode="email" required placeholder="name@example.com"></label><label class="field" for="authPassword">كلمة المرور<input id="authPassword" type="password" autocomplete="current-password" minlength="8" required placeholder="ثمانية أحرف على الأقل"></label><div class="auth-actions"><button id="signInBtn" class="gold-action" type="submit">تسجيل الدخول</button><button id="signUpBtn" class="outline-action" type="button">إنشاء حساب</button><button id="resetPasswordBtn" class="outline-action" type="button">نسيت كلمة المرور؟</button></div></form>
             <div id="passwordResetPanel" class="notice" hidden><p>اكتب كلمة المرور الجديدة بعد فتح رابط الاستعادة من بريدك الإلكتروني.</p><label class="field" for="newAuthPassword">كلمة المرور الجديدة<input id="newAuthPassword" type="password" autocomplete="new-password" minlength="8" placeholder="ثمانية أحرف على الأقل"></label><button id="updatePasswordBtn" class="gold-action" type="button">حفظ كلمة المرور الجديدة</button></div>
             <div id="accountSignedIn" hidden><p>تم تسجيل الدخول بالبريد:</p><p id="accountEmail" class="account-email"></p><p id="syncStatus" class="status" role="status" aria-live="polite">جاري مزامنة بيانات الحساب…</p><button id="signOutBtn" class="outline-action" type="button">تسجيل الخروج</button></div>

@@ -115,7 +115,7 @@ function cairo() {
 async function loadPublishedLectures() {
   try {
     var publishableKey = window.AHL_SUPABASE_CONFIG && window.AHL_SUPABASE_CONFIG.anonKey;
-    var response = await fetch(apiUrl('/api/lectures'), { cache: 'no-store', headers: publishableKey ? { apikey: publishableKey } : {} });
+    var response = await fetch(apiUrl('/api/lectures'), { headers: publishableKey ? { apikey: publishableKey } : {} });
     if (!response.ok) throw new Error('Lecture request failed');
     var result = await response.json();
     if (!Array.isArray(result.items) || result.items.length === 0) return;
@@ -287,7 +287,7 @@ async function loadMediaLibrary() {
   status.className = 'status';
   status.textContent = 'جارٍ تحميل المكتبة…';
   try {
-    var response = await fetch(apiUrl('/api/library'), { cache: 'no-store' });
+    var response = await fetch(apiUrl('/api/library'));
     var text = new TextDecoder('utf-8', { fatal: true }).decode(await response.arrayBuffer());
     var result = JSON.parse(text);
     if (!response.ok || !Array.isArray(result.items)) {

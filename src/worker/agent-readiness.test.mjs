@@ -19,8 +19,18 @@ test('explicit Markdown preference returns only the authored public representati
  assert.match(response.headers.get('Content-Type'),/^text\/markdown/);
  assert.match(await response.text(),/^# استراحة أهل الأثر/);
  assert.match(response.headers.get('Vary'),/Accept/);
- assert.equal(response.headers.get('Cache-Control'),'no-store');
+ assert.equal(response.headers.get('Cache-Control'),'public, max-age=60');
  for(const [key,value] of Object.entries(SECURITY_HEADERS))assert.equal(response.headers.get(key),value);
+});
+test('HTML remains short-lived and versioned static assets receive long immutable caching',async()=>{
+ const html=await get('/v3/index.html');
+ assert.equal(html.headers.get('Cache-Control'),'public, max-age=60');
+ const asset=await get('/v3/identity.css?v=20261128');
+ assert.equal(asset.headers.get('Cache-Control'),'public, max-age=31536000, immutable');
+ const externalAsset=await get('/auth-client.js?v=20261128');
+ assert.equal(externalAsset.headers.get('Cache-Control'),'public, max-age=31536000, immutable');
+ const privateHtml=await get('/v3/index.html',{Cookie:'session=private'});
+ assert.equal(privateHtml.headers.get('Cache-Control'),'no-store');
 });
 test('HTML stays default and carries real discovery links',async()=>{
  for(const accept of ['', '*/*','text/markdown;q=0,text/html','text/html;q=1,text/markdown;q=0.5']){
@@ -78,8 +88,8 @@ test('approved robots policy separates public retrieval from training and advert
  const response=await get('/robots.txt');assert.match(response.headers.get('Content-Type'),/^text\/plain/);
  const robots=await response.text();
  assert.match(robots,/Content-Signal: search=yes, ai-input=yes, ai-train=no/);
- assert.match(robots,/User-agent: GPTBot\nUser-agent: ClaudeBot\nDisallow: \//);
- assert.match(robots,/User-agent: OAI-SearchBot\nUser-agent: Claude-SearchBot\nUser-agent: Claude-User\nAllow: \//);
+ assert.match(robots,/User-agent: GPTBot\r?\nUser-agent: ClaudeBot\r?\nDisallow: \//);
+ assert.match(robots,/User-agent: OAI-SearchBot\r?\nUser-agent: Claude-SearchBot\r?\nUser-agent: Claude-User\r?\nAllow: \//);
  assert.equal((robots.match(/Disallow: \/api\//g)||[]).length,2);
  assert.equal((robots.match(/Disallow: \/admin\.html/g)||[]).length,2);
  assert.match(robots,/Sitemap: https:\/\/hares\.aboserag925\.workers\.dev\/sitemap\.xml/);

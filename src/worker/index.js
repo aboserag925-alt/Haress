@@ -134,7 +134,8 @@ async function proxyToSupabaseFunction(request, env, fetchImpl) {
     }
     outHeaders['Cache-Control'] = 'no-store';
     outHeaders['X-Content-Type-Options'] = 'nosniff';
-    return new Response(response.body, { status: response.status, statusText: response.statusText, headers: outHeaders });
+    const proxiedResponse = new Response(response.body, { status: response.status, statusText: response.statusText, headers: outHeaders });
+    return withPublicGetCache(request, proxiedResponse, requestUrl.pathname);
   } catch {
     return new Response(JSON.stringify({ error: 'تعذر الاتصال بخدمة Supabase.' }), {
       status: 502,
@@ -143,7 +144,20 @@ async function proxyToSupabaseFunction(request, env, fetchImpl) {
   }
 }
 
-async function proxyToBackend(request, backendUrl, fetchImpl, env) {
+function withPublicGetCache(request, response, pathname) {
+  if (!['/api/lectures', '/api/library'].includes(pathname)) return response;
+  const headers = new Headers(response.headers);
+  const isPublicGet = request.method === 'GET' && !request.headers.has('authorization') &&
+    !request.headers.has('cookie') && response.ok;
+  headers.set('Cache-Control', isPublicGet ? 'public, max-age=120, s-maxage=120' : 'no-store');
+  if (headers.get('Vary') !== '*') {
+    const vary = headers.get('Vary');
+    headers.set('Vary', [vary, 'Authorization', 'Cookie'].filter(Boolean).join(', '));
+  }
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+async function proxyToBackend(request, backendUrl, fetchImpl, env, cacheRequest = request) {
   const requestUrl = new URL(request.url);
   const apiPath = apiPathFrom(requestUrl.pathname);
   if (!apiPath) return null;
@@ -193,11 +207,12 @@ async function proxyToBackend(request, backendUrl, fetchImpl, env) {
     }
     // Add security headers to API responses too
     outHeaders['X-Content-Type-Options'] = 'nosniff';
-    return new Response(response.body, {
+    const proxiedResponse = new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
       headers: outHeaders
     });
+    return withPublicGetCache(cacheRequest, proxiedResponse, requestUrl.pathname);
   } catch {
     return new Response(
       JSON.stringify({ error: 'تعذر الاتصال بالخادم الخلفي.' }),
@@ -230,7 +245,7 @@ async function proxyPublicLibraryRoutes(request, env, fetchImpl, url) {
   forwarded.headers.delete('authorization');
   forwarded.headers.delete('cookie');
   forwarded.headers.delete('apikey');
-  return proxyToBackend(forwarded, LIBRARY_BACKEND_ORIGIN, fetchImpl, {});
+  return proxyToBackend(forwarded, LIBRARY_BACKEND_ORIGIN, fetchImpl, {}, request);
 }
 
 // Only explicitly public, static representations participate in negotiation.
@@ -269,7 +284,7 @@ async function publicDiscovery(request, env) {
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
   if (response.ok) headers.set('Content-Type', type);
   headers.set('Vary', 'Accept, Authorization, Cookie');
-  headers.set('Cache-Control', 'no-store');
+  headers.set('Cache-Control', privateRequest ? 'no-store' : 'public, max-age=60');
   return new Response(request.method === 'HEAD' ? null : response.body, {status:response.status, headers});
 }
 
@@ -312,6 +327,15 @@ export async function handleRequest(request, env, fetchImpl = globalThis.fetch) 
     }
     for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
       newHeaders.set(key, value);
+    }
+    const privateAssetRequest = request.headers.has('authorization') || request.headers.has('cookie');
+    if (response.ok && url.searchParams.has('v') &&
+        /\.(?:css|js|json|svg|jpg|png|webp|woff2?)$/i.test(url.pathname)) {
+      newHeaders.set('Cache-Control', 'public, max-age=31536000, immutable');
+    } else if (privateAssetRequest) {
+      newHeaders.set('Cache-Control', 'no-store');
+    } else if (response.ok && (url.pathname.endsWith('.html') || url.pathname === '/v3/')) {
+      newHeaders.set('Cache-Control', 'public, max-age=60');
     }
     return new Response(response.body, {
       status: response.status,

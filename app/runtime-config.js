@@ -21,7 +21,7 @@ window.addEventListener('load', function () {
     var controller = typeof AbortController === 'function' ? new AbortController() : null;
     var timer = controller ? setTimeout(function () { controller.abort(); }, 15000) : null;
     try {
-      var options = { cache: 'no-store' };
+      var options = {};
       if (controller) options.signal = controller.signal;
       var response = await fetch(window.apiUrl('/api/library'), options);
       var text = new TextDecoder('utf-8', { fatal: true }).decode(await response.arrayBuffer());

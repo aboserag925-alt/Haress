@@ -12,7 +12,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(appDirectory, 'manifest.js
 test('provides an iOS home-screen icon and supported PWA metadata', function () {
   assert.match(html, /name="viewport" content="[^"]*viewport-fit=cover/);
   assert.match(html, /name="apple-mobile-web-app-capable" content="yes"/);
-  assert.match(html, /rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon\.png"/);
+  assert.match(html, /rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon\.png(?:\?v=\d+)?"/);
 
   const icon = fs.readFileSync(path.join(appDirectory, 'apple-touch-icon.png'));
   assert.deepEqual([...icon.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);

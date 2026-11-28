@@ -41,12 +41,20 @@ window.ahlAuth = {
       onStateChange({ configured: false, user: null, event: 'UNCONFIGURED' });
       return;
     }
-    client.auth.onAuthStateChange(function (event, session) {
-      onStateChange({
-        configured: true,
-        user: session ? session.user : null,
-        event: event
+    fetch(new URL('/auth/v1/health', config.url).toString(), {
+      method: 'GET',
+      headers: { apikey: config.anonKey }
+    }).then(function (response) {
+      if (!response.ok) throw new Error('Supabase Auth unavailable');
+      client.auth.onAuthStateChange(function (event, session) {
+        onStateChange({
+          configured: true,
+          user: session ? session.user : null,
+          event: event
+        });
       });
+    }).catch(function () {
+      onStateChange({ configured: false, user: null, event: 'CONFIG_ERROR' });
     });
   },
   signIn: function (email, password) {

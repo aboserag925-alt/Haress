@@ -19,6 +19,28 @@ test('library GET goes to the recovered backend without credentials or proxy sec
   assert.equal(res.status, 200);
   assert.equal(r.calls[0].url, ORIGIN + '/api/library');
   for (const h of ['authorization', 'cookie', 'apikey', 'x-proxy-secret']) assert.equal(r.calls[0].headers.get(h), null);
+  assert.equal(res.headers.get('cache-control'), 'no-store');
+});
+
+test('public library GET is cached briefly while private requests are not', async () => {
+  const r = recorder();
+  const publicResponse = await handleRequest(new Request('https://x.test/api/library'), env, r.fetchImpl);
+  assert.equal(publicResponse.headers.get('cache-control'), 'public, max-age=120, s-maxage=120');
+
+  const privateResponse = await handleRequest(new Request('https://x.test/api/library', { headers: { authorization: 'Bearer user-token' } }), env, r.fetchImpl);
+  assert.equal(privateResponse.headers.get('cache-control'), 'no-store');
+});
+
+test('public lectures GET receives a short cache while authenticated GET and POST do not', async () => {
+  const r = recorder();
+  const publicResponse = await handleRequest(new Request('https://x.test/api/lectures'), env, r.fetchImpl);
+  assert.equal(publicResponse.headers.get('cache-control'), 'public, max-age=120, s-maxage=120');
+
+  const privateResponse = await handleRequest(new Request('https://x.test/api/lectures', { headers: { cookie: 'session=private' } }), env, r.fetchImpl);
+  assert.equal(privateResponse.headers.get('cache-control'), 'no-store');
+
+  const postResponse = await handleRequest(new Request('https://x.test/api/lectures', { method: 'POST', body: '{}' }), env, r.fetchImpl);
+  assert.equal(postResponse.headers.get('cache-control'), 'no-store');
 });
 
 test('library file route accepts only a uuid path and GET/HEAD', async () => {

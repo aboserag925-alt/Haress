@@ -1,19 +1,19 @@
 'use strict';
 var CACHE_NAMESPACE = 'haress-v3-cache-';
-var CACHE_NAME = CACHE_NAMESPACE + 'identity-review-2';
+var CACHE_NAME = CACHE_NAMESPACE + 'perf-loading-20261128';
 var SHELL = [
   '/v3/',
   '/v3/index.html',
-  '/v3/identity.css',
-  '/v3/council.jpg',
-  '/v3/v3.js',
-  '/v3/v3-runtime.js',
-  '/v3/v3-adapter.js',
-  '/v3/manifest.json'
+  '/v3/identity.css?v=20261128',
+  '/v3/council.jpg?v=20261128',
+  '/v3/v3.js?v=20261128',
+  '/v3/v3-runtime.js?v=20261128',
+  '/v3/v3-adapter.js?v=20261128',
+  '/v3/manifest.json?v=20261128'
 ];
 // Files the page loads from outside /v3/. adhan is required for prayer times offline.
-var EXTERNAL = ['/vendor/adhan.umd.min.js', '/supabase-config.js', '/runtime-config.js', '/turnstile-config.js', '/auth-client.js'];
-function isExternal(pathname) { return EXTERNAL.indexOf(pathname) !== -1; }
+var EXTERNAL = ['/vendor/adhan.umd.min.js?v=20261128', '/supabase-config.js', '/runtime-config.js', '/turnstile-config.js', '/auth-client.js?v=20261128'];
+function isExternal(pathname) { return EXTERNAL.some(function (url) { return url.split('?')[0] === pathname; }); }
 self.addEventListener('install', function (event) {
   event.waitUntil((async function () {
     var cache = await caches.open(CACHE_NAME);

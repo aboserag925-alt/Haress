@@ -52,14 +52,14 @@ test('V3 native runtime owns required feature entry points', () => {
 test('Reference-led identity loads one active stylesheet and preserves accessible themes', () => {
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   const css = fs.readFileSync(path.join(root, 'identity.css'), 'utf8');
-  assert.match(html, /href="\/v3\/identity\.css"/);
+  assert.match(html, /href="\/v3\/identity\.css\?v=\d+"/);
   assert.doesNotMatch(html, /href="\/v3\/v3\.css"/);
   assert.match(css, /prefers-reduced-motion:\s*reduce/);
   assert.match(css, /focus-visible/);
   assert.match(css, /:root\[data-theme=dark\]/);
   assert.match(css, /\.discovery-grid\{display:grid;grid-template-columns:repeat\(2,/);
   assert.match(html, /<html lang="ar" dir="rtl"/);
-  assert.match(html, /src="\/v3\/hero-featured\.jpg"/);
+  assert.match(html, /src="\/v3\/hero-featured\.jpg\?v=\d+"/);
   for (const target of ['sched','prayers','qibla','adhkar','media','q','about','account']) {
     assert.ok(html.includes('data-v3-target="' + target + '"'));
     assert.ok(html.includes('id="' + target + '"'));
@@ -68,10 +68,10 @@ test('Reference-led identity loads one active stylesheet and preserves accessibl
 
 test('Identity offline shell caches the active stylesheet and project image', () => {
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert.match(sw, /'\/v3\/identity\.css'/);
-  assert.match(sw, /'\/v3\/council\.jpg'/);
+  assert.match(sw, /'\/v3\/identity\.css\?v=\d+'/);
+  assert.match(sw, /'\/v3\/council\.jpg\?v=\d+'/);
   assert.doesNotMatch(sw, /'\/v3\/v3\.css'/);
-  assert.match(sw, /identity-review-2/);
+  assert.match(sw, /perf-loading-20261128/);
 });
 
 test('V3.1 page has no root base URL and keeps fragment navigation local', () => {
@@ -154,11 +154,38 @@ test('radio never autoplays: init does not call play, only visitor clicks do', (
 test('v3 service worker caches the adhan bundle and other page files from outside /v3/', () => {
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  assert.match(sw, /'\/vendor\/adhan\.umd\.min\.js'/);
-  assert.match(html, /<script src="\/vendor\/adhan\.umd\.min\.js">/);
+  assert.match(sw, /'\/vendor\/adhan\.umd\.min\.js\?v=\d+'/);
+  assert.match(html, /<script defer src="\/vendor\/adhan\.umd\.min\.js\?v=\d+"><\/script>/);
   assert.match(sw, /isExternal\(url\.pathname\)/);
-  assert.match(sw, /identity-review-2/);
+  assert.match(sw, /perf-loading-20261128/);
   assert.ok(fs.existsSync(path.join(root, '..', 'vendor', 'adhan.umd.min.js')));
+});
+
+test('public lecture and library requests run in parallel and settle without no-store', () => {
+  const runtime = fs.readFileSync(path.join(root, 'v3-runtime.js'), 'utf8');
+  assert.match(runtime, /Promise\.all\(\[loadLectures\(\), loadLibrary\(\)\]\)/);
+  assert.doesNotMatch(runtime, /fetch\(api\('\/api\/(?:lectures|library)'\),\s*\{\s*cache:\s*['"]no-store['"]/);
+  assert.match(runtime, /لا توجد محاضرات منشورة حاليًا/);
+  assert.match(runtime, /تعذر تحميل المحاضرات الآن/);
+  assert.match(runtime, /تعذر تحميل المكتبة الآن/);
+});
+
+test('legacy public lecture and library reads also avoid forced no-store caching', () => {
+  const legacy = fs.readFileSync(path.join(root, '..', 'app.js'), 'utf8');
+  const runtimeConfig = fs.readFileSync(path.join(root, '..', 'runtime-config.js'), 'utf8');
+  assert.doesNotMatch(legacy, /cache:\s*['"]no-store['"]/);
+  assert.doesNotMatch(runtimeConfig, /cache:\s*['"]no-store['"]/);
+});
+
+test('archive, audio and video assets are deferred until their sections open', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const runtime = fs.readFileSync(path.join(root, 'v3-runtime.js'), 'utf8');
+  assert.doesNotMatch(html, /<script[^>]+src="[^"]*\/archive\//);
+  assert.match(runtime, /function loadArchiveAssets/);
+  assert.match(runtime, /if \(id === 'archive'\) loadArchiveAssets\(\)/);
+  assert.match(runtime, /if \(id === 'prayers'\) loadPrayerAudio\(\)/);
+  assert.match(runtime, /data-src',api\(item\.url\)/);
+  assert.match(runtime, /if \(id === 'media'\) loadLibrary\(\)\.then\(activateMediaSources\)/);
 });
 
 test('question section tells the visitor plainly that no answer can be sent to them', () => {
