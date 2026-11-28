@@ -129,3 +129,35 @@ test('lecture content type remains unknown until a media type is supplied',()=>{
   assert.match(migration,/where stream_url is null and recording_url is null/i);
   assert.doesNotMatch(migration,/enable row level security|create policy|drop policy|grant |revoke /i);
 });
+
+const aiRuntimeMigration = fs.readFileSync(path.join(__dirname,'migrations','20261128203000_ai_agents_runtime_phase1.sql'),'utf8');
+
+test('AI runtime migration adds request context and atomic analysis artifacts without destructive table changes',()=>{
+  for(const fragment of [
+    'add column if not exists task_type text',
+    'add column if not exists title text',
+    'add column if not exists description text',
+    'create or replace function public.create_ai_task_with_audit',
+    'create table if not exists public.ai_task_artifacts',
+    'create or replace function public.record_ai_task_analysis',
+    'insert into public.ai_reviews',
+    'insert into public.ai_task_artifacts',
+    'insert into public.ai_audit_events',
+    "set search_path = ''",
+    'for update',
+    'grant execute on function public.create_ai_task_with_audit',
+    'grant execute on function public.record_ai_task_analysis'
+  ]) assert.ok(aiRuntimeMigration.includes(fragment),fragment);
+  assert.match(aiRuntimeMigration,/^\\s*begin;/i);
+  assert.match(aiRuntimeMigration,/commit;\\s*$/i);
+  assert.doesNotMatch(aiRuntimeMigration,/\\b(drop table|truncate|delete from)\\b/i);
+});
+
+test('AI approval RPC refuses tainted tasks and requires independent review evidence before approval',()=>{
+  assert.match(aiRuntimeMigration,/if v_task\\.tainted then raise exception 'Tainted tasks cannot be approved'/i);
+  assert.match(aiRuntimeMigration,/Task is not waiting for implementation approval/);
+  assert.match(aiRuntimeMigration,/Task is not ready for human review/);
+  assert.match(aiRuntimeMigration,/agent = 'security' and result = 'PASS'/);
+  assert.match(aiRuntimeMigration,/agent = 'verifier' and result = 'PASS'/);
+  assert.match(aiRuntimeMigration,/agent = 'test' and result = 'PASS'/);
+});
