@@ -300,6 +300,11 @@ export function parseLiveStatus(html) {
   const canonical = text.match(/rel="canonical" href="https:\/\/www\.youtube\.com\/watch\?v=([A-Za-z0-9_-]{11})"/);
   const live = /"isLiveNow":true/.test(text);
   if (live && canonical) return { state: 'live', videoId: canonical[1] };
+  // Newer YouTube layout: no isLiveNow/canonical, the current video is in currentVideoEndpoint.
+  const current = text.match(/"currentVideoEndpoint":\{[^}]*?"url":"\/watch\?v=([A-Za-z0-9_-]{11})"/);
+  if (current && /"isLive":true/.test(text) && !/"isUpcoming":true/.test(text) && !/"status":"LIVE_STREAM_OFFLINE"/.test(text)) {
+    return { state: 'live', videoId: current[1] };
+  }
   if (/"isLiveNow":false/.test(text) || /"isLive":true/.test(text) || canonical) return { state: 'offline' };
   return { state: 'unknown' };
 }
