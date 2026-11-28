@@ -148,7 +148,7 @@ test('AI runtime migration adds request context and atomic analysis artifacts wi
     'grant execute on function public.create_ai_task_with_audit',
     'grant execute on function public.record_ai_task_analysis'
   ]) assert.ok(aiRuntimeMigration.includes(fragment),fragment);
-  assert.match(aiRuntimeMigration,/^\s*begin;/i);
+  assert.match(aiRuntimeMigration,/^\s*(?:--[^\n]*\n\s*)*begin;/i);
   assert.match(aiRuntimeMigration,/commit;\s*$/i);
   assert.doesNotMatch(aiRuntimeMigration,/\b(drop table|truncate|delete from)\b/i);
 });
@@ -157,7 +157,7 @@ test('AI approval RPC refuses tainted tasks and requires independent review evid
   assert.match(aiRuntimeMigration,/if v_task\.tainted then raise exception 'Tainted tasks cannot be approved'/i);
   assert.match(aiRuntimeMigration,/Task is not waiting for implementation approval/);
   assert.match(aiRuntimeMigration,/Task is not ready for human review/);
-  assert.match(aiRuntimeMigration,/agent = 'security' and result = 'PASS'/);
-  assert.match(aiRuntimeMigration,/agent = 'verifier' and result = 'PASS'/);
-  assert.match(aiRuntimeMigration,/agent = 'test' and result = 'PASS'/);
+  assert.match(aiRuntimeMigration,/agent\s*=\s*'security'\s+and\s+result\s*=\s*'PASS'/);
+  assert.match(aiRuntimeMigration,/agent\s*=\s*'verifier'\s+and\s+result\s*=\s*'PASS'/);
+  assert.match(aiRuntimeMigration,/agent\s*=\s*'test'\s+and\s+result\s*=\s*'PASS'/);
 });
