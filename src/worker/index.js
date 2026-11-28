@@ -91,10 +91,13 @@ function supabaseFunctionRoute(pathname) {
 }
 
 async function proxyToSupabaseFunction(request, env, fetchImpl) {
-  if (!env || env.DEPLOYMENT_ENV !== 'preview') return null;
+  if (!env || !['preview', 'production'].includes(env.DEPLOYMENT_ENV)) return null;
   const requestUrl = new URL(request.url);
   const functionRoute = supabaseFunctionRoute(requestUrl.pathname);
   if (!functionRoute) return null;
+  // Production exposes only public suggestion submission through this Edge Function.
+  // Other production API routes retain their existing backend and authorization boundaries.
+  if (env.DEPLOYMENT_ENV === 'production' && requestUrl.pathname !== '/api/suggestions') return null;
 
   const supabaseUrl = typeof env.SUPABASE_URL === 'string' ? env.SUPABASE_URL.trim() : '';
   const publishableKey = (request.headers.get('apikey') || '').trim();
@@ -109,7 +112,7 @@ async function proxyToSupabaseFunction(request, env, fetchImpl) {
   } catch {
     approvedProject = false;
   }
-  if (!isSecureBackendUrl(supabaseUrl) || !publishableKey || !approvedProject) {
+  if (!isSecureBackendUrl(supabaseUrl) || (request.method !== 'OPTIONS' && !publishableKey) || !approvedProject) {
     return new Response(JSON.stringify({ error: 'إعداد خدمة Supabase غير مكتمل أو لا يطابق مشروع البيئة المعتمد.' }), {
       status: 503,
       headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }

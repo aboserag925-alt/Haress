@@ -90,9 +90,13 @@ test('AI migration reconciles legacy production columns without replacing existi
   assert.match(migration,/ai_audit_events_id_seq/i);
 });
 
-test('all Supabase Edge Functions allow only the approved Preview and Production origins',()=>{
+test('public suggestions Edge Function allows only the production website origin',()=>{
+  const source=fs.readFileSync(path.join(__dirname,'functions','submit-suggestion','index.ts'),'utf8');
+  assert.match(source,/https:\/\/hares\.aboserag925\.workers\.dev/);
+  assert.doesNotMatch(source,/hares-preview\.aboserag925\.workers\.dev|localhost:8787|127\.0\.0\.1:8787/);
+});
+test('admin and lecture Edge Functions retain approved Preview and Production origins',()=>{
   for(const file of [
-    path.join(__dirname,'functions','submit-suggestion','index.ts'),
     path.join(__dirname,'functions','lectures-admin','index.ts'),
     path.join(__dirname,'functions','admin-operations','index.ts')
   ]){

@@ -263,3 +263,27 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
+
+      - name: Verify production public suggestions route and CORS
+        env:
+          PRODUCTION_URL: https://hares.aboserag925.workers.dev
+        run: |
+          publishable_key=$(node -e "const fs=require('fs'),vm=require('vm'),sandbox={window:{}};vm.runInNewContext(fs.readFileSync('app/supabase-config.js','utf8'),sandbox);process.stdout.write(sandbox.window.AHL_SUPABASE_CONFIG.anonKey)")
+          test -n "$publishable_key" || { echo "Missing public Supabase key in the tested build artifact"; exit 1; }
+          get_status=$(curl --silent --show-error --output /tmp/suggestions-get.json --write-out '%{http_code}' -H "apikey: $publishable_key" -X GET "$PRODUCTION_URL/api/suggestions")
+          test "$get_status" = "405" || { echo "GET /api/suggestions must return 405; got $get_status"; cat /tmp/suggestions-get.json; exit 1; }
+          empty_status=$(curl --silent --show-error --output /tmp/suggestions-empty.json --write-out '%{http_code}' -H "apikey: $publishable_key" -H 'content-type: application/json' --data '{}' "$PRODUCTION_URL/api/suggestions")
+          test "$empty_status" = "400" || { echo "POST {} /api/suggestions must return 400; got $empty_status"; cat /tmp/suggestions-empty.json; exit 1; }
+          curl --silent --show-error --output /dev/null --dump-header /tmp/suggestions-cors-allowed.headers -X OPTIONS \
+            -H 'Origin: https://hares.aboserag925.workers.dev' \
+            -H 'Access-Control-Request-Method: POST' \
+            -H 'Access-Control-Request-Headers: apikey,content-type' \
+            "$PRODUCTION_URL/api/suggestions"
+          grep -Eiq '^access-control-allow-origin: https://hares\.aboserag925\.workers\.dev' /tmp/suggestions-cors-allowed.headers || { echo "Production CORS origin was not allowed"; cat /tmp/suggestions-cors-allowed.headers; exit 1; }
+          blocked_status=$(curl --silent --show-error --output /tmp/suggestions-cors-blocked.json --write-out '%{http_code}' -X OPTIONS \
+            -H 'Origin: https://untrusted.example' \
+            -H 'Access-Control-Request-Method: POST' \
+            -H 'Access-Control-Request-Headers: apikey,content-type' \
+            "$PRODUCTION_URL/api/suggestions")
+          test "$blocked_status" = "403" || { echo "Untrusted CORS origin must be rejected with 403; got $blocked_status"; cat /tmp/suggestions-cors-blocked.json; exit 1; }
+          echo "Production suggestions GET=405, empty POST=400, production CORS allowed, untrusted CORS blocked."

@@ -41,7 +41,7 @@
       <span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
       <span><b>أهل الأثر</b><small>مجلس العلم والذكر</small></span>
     </a>
-    <nav class="primary-links" aria-label="التنقل الرئيسي"><button type="button" data-v3-target="sched">الرئيسية</button><button type="button" data-v3-target="media">المكتبة</button><button type="button" data-v3-target="archive">الأقسام</button><button type="button" data-v3-target="about">عن المجلس</button><button type="button" data-v3-target="q">تواصل</button></nav><div class="masthead-meta">
+    <nav class="primary-links" aria-label="التنقل الرئيسي"><button type="button" data-v3-target="sched">الرئيسية</button><button type="button" data-v3-target="media">المكتبة</button><button type="button" data-v3-target="archive">الأقسام</button><button type="button" data-v3-target="about">عن المجلس</button><button type="button" data-v3-target="q">تواصل</button><button type="button" data-v3-target="suggestions">اقتراحات</button></nav><div class="masthead-meta">
       <span class="edition">القرآن والسنة بفهم أهل السنة</span>
       <button class="radio-launch" id="quranRadioButton" type="button" aria-expanded="false" aria-controls="quranRadioPanel">استمع إلى القرآن <span aria-hidden="true">◖</span></button>
       <button class="icon-button" type="button" data-v3-theme-toggle aria-label="تبديل المظهر">◐</button>
@@ -77,6 +77,7 @@
         <button type="button" class="discovery-card" data-v3-target="about"><span class="discovery-icon">⌘</span><span><b>عن المجلس</b><small>المنهج والرسالة</small><p>تعرّف على مجلس أهل الأثر، وغايتنا من تدارس العلم والعمل به.</p></span><i>↗</i></button>
         <button type="button" class="discovery-card" data-v3-target="sched"><span class="discovery-icon">◷</span><span><b>الدروس والمحاضرات</b><small>برنامج أسبوعي متجدد</small><p>دروس الحديث والعقيدة والتفسير والفقه، من السبت إلى الخميس.</p></span><i>↗</i></button>
         <button type="button" class="discovery-card" data-v3-target="q"><span class="discovery-icon">؟</span><span><b>الأسئلة والتوجيه</b><small>حسن السؤال بداية العلم</small><p>اكتب سؤالك بوضوح ليصل إلى الشيخ. لا توجد حاليًا وسيلة لإرسال الجواب إليك.</p></span><i>↗</i></button>
+        <button type="button" class="discovery-card" data-v3-target="suggestions"><span class="discovery-icon">✎</span><span><b>الاقتراحات العامة</b><small>شاركنا تطوير المجلس</small><p>أرسل اقتراحًا أو بلّغ عن مشكلة بعد التحقق الأمني.</p></span><i>↗</i></button>
         <button type="button" class="discovery-card" data-v3-target="media"><span class="discovery-icon">▤</span><span><b>مكتبة المجلس</b><small>صوتيات ومرئيات</small><p>تصفّح المواد المنشورة بعد المراجعة والاعتماد.</p></span><i>↗</i></button>
       </div>
     </section>
@@ -98,6 +99,7 @@
         <button class="nav-item" id="t6" type="button" data-v3-target="q" aria-pressed="false"><i>06</i><span>السؤال</span></button>
         <button class="nav-item" id="t7" type="button" data-v3-target="about" aria-pressed="false"><i>07</i><span>عن المجلس</span></button>
         <button class="nav-item" id="t8" type="button" data-v3-target="account" aria-pressed="false"><i>08</i><span>حسابي</span></button>
+        <button class="nav-item" id="t9" type="button" data-v3-target="suggestions" aria-pressed="false"><i>09</i><span>اقتراحات</span></button>
         <span class="index-caption">اختر بابًا للقراءة</span>
       </aside>
       <div class="content-stage">
@@ -174,6 +176,19 @@
             <label class="question-consent"><input id="questionConsent" type="checkbox"><span>أوافق على إرسال سؤالي كما كتبته إلى الشيخ عبر Telegram.</span></label>
             <div class="question-actions"><button class="gold-action" id="sendQuestionBtn" type="button" disabled>إرسال للمراجعة <span>←</span></button><button class="outline-action" type="button" onclick="copyQ()">نسخ السؤال</button></div>
             <p class="status" id="qm" role="status" aria-live="polite">لن يُرسل السؤال قبل موافقتك.</p>
+          </div>
+        </section>
+
+        <section id="suggestions" hidden tabindex="-1" class="scene consultation">
+          <header class="scene-heading"><p class="eyebrow">شارك في تطوير المجلس</p><h2>اقتراحات <em>أهل الأثر</em></h2><p>نستقبل ملاحظاتك وأفكارك لتحسين الموقع. لا ترسل بيانات شخصية أو معلومات حساسة.</p></header>
+          <div class="scene-card">
+            <label class="field" for="suggestionCategory">نوع الاقتراح<select id="suggestionCategory"><option value="feature">ميزة جديدة</option><option value="bug">الإبلاغ عن مشكلة</option><option value="design">التصميم</option><option value="content">المحتوى العلمي</option><option value="performance">الأداء والسرعة</option><option value="usability">سهولة الاستخدام</option><option value="other">أخرى</option></select></label>
+            <label class="field" for="suggestionTitle">عنوان الاقتراح<input id="suggestionTitle" type="text" minlength="4" maxlength="120" required placeholder="عنوان واضح ومختصر"></label>
+            <label class="field" for="suggestionDescription">التفاصيل<textarea id="suggestionDescription" minlength="10" maxlength="3000" rows="6" required placeholder="اشرح اقتراحك أو المشكلة التي واجهتك…"></textarea></label>
+            <div id="suggestionTurnstile" class="question-turnstile" hidden aria-label="التحقق الأمني"></div>
+            <p id="suggestionTurnstileStatus" class="status" role="status" aria-live="polite" hidden></p>
+            <div class="question-actions"><button class="gold-action" id="sendSuggestionBtn" type="button">إرسال الاقتراح <span>←</span></button></div>
+            <p id="suggestionStatus" class="status" role="status" aria-live="polite">أكمل بيانات الاقتراح والتحقق الأمني ثم أرسله.</p>
           </div>
         </section>
 

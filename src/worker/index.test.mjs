@@ -357,7 +357,7 @@ describe('production routing with API_BACKEND_URL', () => {
     API_BACKEND_URL: 'https://haress-production.up.railway.app',
     PROXY_SHARED_SECRET: 'test-shared-secret'
   };
-  for (const route of ['/api/lectures', '/api/suggestions']) {
+  for (const route of ['/api/lectures']) {
     it('sends ' + route + ' to the Node backend, never to Supabase Edge Functions', async () => {
       let captured;
       const req = makeRequest('https://hares.aboserag925.workers.dev' + route, {
@@ -374,4 +374,61 @@ describe('production routing with API_BACKEND_URL', () => {
       assert.equal(captured.headers.get('x-proxy-secret'), 'test-shared-secret');
     });
   }
+
+  it('routes production public suggestions only to submit-suggestion and never to the Node backend', async () => {
+    let captured;
+    const req = makeRequest('https://hares.aboserag925.workers.dev/api/suggestions', {
+      method: 'POST',
+      headers: { origin: 'https://hares.aboserag925.workers.dev', apikey: 'sb_publishable_test_only', 'content-type': 'application/json' },
+      body: '{}'
+    });
+    const res = await handleRequest(req, productionEnv, async (url, init) => {
+      captured = { url: String(url), method: init.method, headers: new Headers(init.headers), body: await new Response(init.body).text() };
+      return new Response(JSON.stringify({ error: 'بيانات الطلب غير صالحة.' }), { status: 400 });
+    });
+    assert.equal(res.status, 400);
+    assert.equal(captured.url, 'https://uzepglfimareggswjzlf.supabase.co/functions/v1/submit-suggestion');
+    assert.equal(captured.method, 'POST');
+    assert.equal(captured.headers.get('apikey'), 'sb_publishable_test_only');
+    assert.equal(captured.headers.get('origin'), 'https://hares.aboserag925.workers.dev');
+    assert.equal(captured.headers.get('x-proxy-secret'), null);
+    assert.equal(captured.body, '{}');
+  });
+
+  it('forwards production suggestions CORS preflight without requiring an apikey header', async () => {
+    let captured;
+    const req = makeRequest('https://hares.aboserag925.workers.dev/api/suggestions', {
+      method: 'OPTIONS',
+      headers: {
+        origin: 'https://hares.aboserag925.workers.dev',
+        'access-control-request-method': 'POST',
+        'access-control-request-headers': 'apikey,content-type'
+      }
+    });
+    const res = await handleRequest(req, productionEnv, async (url, init) => {
+      captured = { url: String(url), method: init.method, headers: new Headers(init.headers) };
+      return new Response(null, { status: 204, headers: {
+        'Access-Control-Allow-Origin': 'https://hares.aboserag925.workers.dev',
+        'Access-Control-Allow-Methods': 'POST,OPTIONS'
+      }});
+    });
+    assert.equal(res.status, 204);
+    assert.equal(captured.url, 'https://uzepglfimareggswjzlf.supabase.co/functions/v1/submit-suggestion');
+    assert.equal(captured.method, 'OPTIONS');
+    assert.equal(captured.headers.get('apikey'), null);
+    assert.equal(res.headers.get('access-control-allow-origin'), 'https://hares.aboserag925.workers.dev');
+  });
+
+  it('does not route production admin suggestion reads through the public submission Function', async () => {
+    let capturedUrl = '';
+    const req = makeRequest('https://hares.aboserag925.workers.dev/api/admin/suggestions', {
+      headers: { origin: 'https://hares.aboserag925.workers.dev', apikey: 'sb_publishable_test_only' }
+    });
+    const res = await handleRequest(req, productionEnv, async (url) => {
+      capturedUrl = String(url);
+      return new Response(null, { status: 401 });
+    });
+    assert.equal(res.status, 401);
+    assert.equal(capturedUrl, 'https://haress-production.up.railway.app/api/admin/suggestions');
+  });
 });

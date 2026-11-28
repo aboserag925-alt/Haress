@@ -7,7 +7,7 @@
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   var state = { location: null, prayerTimes: null, compass: null, period: 'morning',
-    media: [], mediaCategory: 'all', libraryPromise: null, archivePromise: null, prayerAudioLoaded: false, turnstileId: null, turnstilePromise: null,
+    media: [], mediaCategory: 'all', libraryPromise: null, archivePromise: null, prayerAudioLoaded: false, turnstileId: null, suggestionTurnstileId: null, turnstilePromise: null,
     installPrompt: null, account: null, syncTimer: null, nextPrayer: null,
     nextPrayerName: '', radioTimer: null, radioMuted: false };
 
@@ -165,7 +165,7 @@
     return state.archivePromise;
   }
   function navigate(id) {
-    var ids = ['sched','prayers','qibla','adhkar','media','archive','q','about','account'];
+    var ids = ['sched','prayers','qibla','adhkar','media','archive','q','about','account','suggestions'];
     if (ids.indexOf(id) < 0) return;
     ids.forEach(function (key) { var el = $(key); if (el) el.hidden = key !== id; });
     var scheduleView = id === 'sched';
@@ -468,6 +468,53 @@
     finally { if(window.turnstile&&state.turnstileId!==null)window.turnstile.reset(state.turnstileId); button.disabled=!$('questionConsent').checked; }
   }
 
+  async function prepareSuggestionTurnstile() {
+    if (!siteKey()) { status('suggestionTurnstileStatus','التحقق الأمني غير مهيأ. لا يمكن إرسال الاقتراح الآن.',true); return false; }
+    $('suggestionTurnstile').hidden=false; $('suggestionTurnstileStatus').hidden=false;
+    try {
+      await loadTurnstile();
+      if (state.suggestionTurnstileId===null) state.suggestionTurnstileId=window.turnstile.render($('suggestionTurnstile'),{
+        sitekey:siteKey(),action:'suggestion',
+        callback:function(){status('suggestionTurnstileStatus','اكتمل التحقق الأمني.');},
+        'expired-callback':function(){status('suggestionTurnstileStatus','انتهت صلاحية التحقق. أعد التحقق.');},
+        'error-callback':function(){status('suggestionTurnstileStatus','تعذر إكمال التحقق الأمني.',true);}
+      });
+      return true;
+    } catch(e) { status('suggestionTurnstileStatus','تعذر تحميل التحقق الأمني. حاول مجددًا.',true); return false; }
+  }
+  async function sendSuggestion() {
+    var button=$('sendSuggestionBtn');
+    var title=$('suggestionTitle').value.trim();
+    var description=$('suggestionDescription').value.trim();
+    var category=$('suggestionCategory').value;
+    if(title.length<4||title.length>120){status('suggestionStatus','اكتب عنوانًا بين 4 و120 حرفًا.',true);return;}
+    if(description.length<10||description.length>3000){status('suggestionStatus','اكتب تفاصيل بين 10 و3000 حرف.',true);return;}
+    var config=window.AHL_SUPABASE_CONFIG||{};
+    if(!config.anonKey){status('suggestionStatus','إعداد الاتصال بالخدمة غير مكتمل. حاول لاحقًا.',true);return;}
+    if(!await prepareSuggestionTurnstile()) return;
+    var token=window.turnstile.getResponse(state.suggestionTurnstileId)||'';
+    if(!token){status('suggestionStatus','أكمل التحقق الأمني قبل الإرسال.',true);return;}
+    button.disabled=true; button.textContent='جارٍ إرسال الاقتراح…'; status('suggestionStatus','جارٍ إرسال اقتراحك بأمان…');
+    try {
+      var response=await fetch(api('/api/suggestions'),{
+        method:'POST',
+        headers:{'Content-Type':'application/json; charset=utf-8',apikey:config.anonKey},
+        body:JSON.stringify({category:category,title:title,description:description,turnstileToken:token})
+      });
+      var result;
+      try { result=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(await response.arrayBuffer())); }
+      catch(e) { throw new Error('استجابة الخادم غير صالحة. حاول لاحقًا.'); }
+      if(!response.ok) throw new Error(result.error||'تعذر إرسال الاقتراح. حاول مجددًا.');
+      status('suggestionStatus','تم إرسال اقتراحك بنجاح. شكرًا لمساهمتك في تطوير المجلس.');
+      $('suggestionTitle').value=''; $('suggestionDescription').value='';
+    } catch(e) {
+      status('suggestionStatus',e instanceof TypeError?'تعذر الاتصال بالخدمة. تحقق من الإنترنت وحاول مجددًا.':e.message,true);
+    } finally {
+      if(window.turnstile&&state.suggestionTurnstileId!==null) window.turnstile.reset(state.suggestionTurnstileId);
+      button.disabled=false; button.textContent='إرسال الاقتراح ←';
+    }
+  }
+
   /* Supabase client contract is provided by the generated authentication bundle. */
   function collectDhikr() {
     var data={}, prefix='ahl-athar-dhikr-'+dateKey(new Date())+'-';
@@ -581,6 +628,7 @@
       $('mediaFilters').querySelectorAll('[data-media-category]').forEach(function(item){var active=item===button;item.classList.toggle('on',active);item.setAttribute('aria-pressed',String(active));});renderLibrary();if(!$('media').hidden)activateMediaSources();});
     $('questionConsent').addEventListener('change',function(){ $('sendQuestionBtn').disabled=!this.checked;if(this.checked&&siteKey())prepareTurnstile();if(!this.checked&&window.turnstile&&state.turnstileId!==null)window.turnstile.reset(state.turnstileId);});
     $('sendQuestionBtn').addEventListener('click',sendQuestion);
+    $('sendSuggestionBtn').addEventListener('click',sendSuggestion);
     $('adhanUrl').value=readStore('ahl-athar-adhan-url')||'';
     $('saveAdhan').addEventListener('click',function(){
       try{var url=new URL($('adhanUrl').value.trim());if(url.protocol!=='https:')throw new Error('protocol');

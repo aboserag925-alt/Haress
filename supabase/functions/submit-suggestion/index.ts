@@ -1,10 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 
 const ALLOWED_ORIGINS = new Set([
-  "https://hares-preview.aboserag925.workers.dev",
   "https://hares.aboserag925.workers.dev",
-  "http://localhost:8787",
-  "http://127.0.0.1:8787",
 ]);
 const CATEGORIES = new Set(["feature", "bug", "design", "content", "performance", "usability", "other"]);
 const MAX_BODY_BYTES = 8 * 1024;

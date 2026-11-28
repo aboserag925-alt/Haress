@@ -193,3 +193,15 @@ test('question section tells the visitor plainly that no answer can be sent to t
   assert.match(html, /id="questionNoReply"[^>]*>[\s\S]*لا توجد حاليًا وسيلة لإرسال الجواب إليك/);
   assert.doesNotMatch(html, /اعتماد أي رد/);
 });
+
+test('public suggestion form validates, posts to the Edge Function and always restores its button', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const runtime = fs.readFileSync(path.join(root, 'v3-runtime.js'), 'utf8');
+  assert.match(html, /id="suggestions"/);
+  assert.match(html, /id="sendSuggestionBtn"/);
+  assert.match(runtime, /fetch\(api\('\/api\/suggestions'\)/);
+  assert.match(runtime, /action:'suggestion'/);
+  assert.match(runtime, /finally\s*\{[\s\S]*button\.disabled=false/);
+  assert.match(runtime, /تم إرسال اقتراحك بنجاح/);
+  assert.match(runtime, /تعذر الاتصال بالخدمة/);
+});
