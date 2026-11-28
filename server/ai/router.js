@@ -1,6 +1,6 @@
 'use strict';
 const ROUTES=Object.freeze({
-  product:['product'], suggestion:['suggestion','security'], security:['security'],
+  product:['product','security'], suggestion:['suggestion','security'], security:['security'],
   implementation:['security','developer','test','verifier'], ux:['ux','security'],
   content:['content','security'], performance:['performance','security']
 });
