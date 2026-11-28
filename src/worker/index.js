@@ -100,7 +100,7 @@ async function proxyToSupabaseFunction(request, env, fetchImpl) {
   if (env.DEPLOYMENT_ENV === 'production' && requestUrl.pathname !== '/api/suggestions') return null;
 
   const supabaseUrl = typeof env.SUPABASE_URL === 'string' ? env.SUPABASE_URL.trim() : '';
-  const publishableKey = (request.headers.get('apikey') || '').trim();
+  const publishableKey = (env.SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_ANON_KEY || request.headers.get('apikey') || '').trim();
   const approvedProjects = {
     preview: 'bevyztwoijjzfngutnys.supabase.co',
     production: 'uzepglfimareggswjzlf.supabase.co'
@@ -122,6 +122,7 @@ async function proxyToSupabaseFunction(request, env, fetchImpl) {
   const targetUrl = new URL('/functions/v1/' + functionRoute.name + functionRoute.path, supabaseUrl);
   targetUrl.search = requestUrl.search;
   const headers = copyHeaders(request.headers);
+  if (request.method !== 'OPTIONS' && publishableKey) headers.set('apikey', publishableKey);
 
   try {
     const response = await fetchImpl(targetUrl.href, {

@@ -395,6 +395,40 @@ describe('production routing with API_BACKEND_URL', () => {
     assert.equal(captured.body, '{}');
   });
 
+  it('injects the production Worker publishable key when the browser omits apikey', async () => {
+    let captured;
+    const configuredEnv = { ...productionEnv, SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_from_worker_binding' };
+    const req = makeRequest('https://hares.aboserag925.workers.dev/api/suggestions', {
+      method: 'POST',
+      headers: { origin: 'https://hares.aboserag925.workers.dev', 'content-type': 'application/json' },
+      body: '{}'
+    });
+    const res = await handleRequest(req, configuredEnv, async (url, init) => {
+      captured = { url: String(url), headers: new Headers(init.headers), body: await new Response(init.body).text() };
+      return new Response(JSON.stringify({ error: 'بيانات الطلب غير صالحة.' }), { status: 400 });
+    });
+    assert.equal(res.status, 400);
+    assert.equal(captured.url, 'https://uzepglfimareggswjzlf.supabase.co/functions/v1/submit-suggestion');
+    assert.equal(captured.headers.get('apikey'), 'sb_publishable_from_worker_binding');
+    assert.equal(captured.body, '{}');
+  });
+
+  it('prefers the configured Worker publishable key over a client-supplied apikey', async () => {
+    let captured;
+    const configuredEnv = { ...productionEnv, SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_from_worker_binding' };
+    const req = makeRequest('https://hares.aboserag925.workers.dev/api/suggestions', {
+      method: 'POST',
+      headers: { origin: 'https://hares.aboserag925.workers.dev', apikey: 'sb_publishable_wrong_client_key', 'content-type': 'application/json' },
+      body: '{}'
+    });
+    const res = await handleRequest(req, configuredEnv, async (url, init) => {
+      captured = new Headers(init.headers);
+      return new Response(JSON.stringify({ error: 'بيانات الطلب غير صالحة.' }), { status: 400 });
+    });
+    assert.equal(res.status, 400);
+    assert.equal(captured.get('apikey'), 'sb_publishable_from_worker_binding');
+  });
+
   it('forwards production suggestions CORS preflight without requiring an apikey header', async () => {
     let captured;
     const req = makeRequest('https://hares.aboserag925.workers.dev/api/suggestions', {
