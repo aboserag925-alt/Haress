@@ -18,6 +18,9 @@ as $function$
 declare
   v_task public.ai_tasks%rowtype;
   v_approval_id uuid;
+  v_existing_actor_user_id uuid;
+  v_existing_decision text;
+  v_has_existing boolean := false;
   v_reason text := coalesce(p_reason, '');
 begin
   if p_task_id is null
@@ -53,28 +56,52 @@ begin
     raise exception 'Tainted tasks cannot be approved' using errcode = '42501';
   end if;
 
-  if p_action = 'IMPLEMENT' and v_task.status <> 'WAITING_APPROVAL' then
-    raise exception 'Task is not waiting for implementation approval' using errcode = '55000';
-  end if;
-
-  if p_action = 'MERGE' and v_task.status <> 'READY_FOR_REVIEW' then
-    raise exception 'Task is not ready for human review' using errcode = '55000';
-  end if;
-
   -- Reuse the latest approval row when one exists. The recovered historical
   -- migrations used CREATE TABLE IF NOT EXISTS, so older installations may not
   -- have the task/action unique constraint. Lock the task above to serialize
   -- concurrent decisions for this task without depending on that constraint.
-  select a.id
-  into v_approval_id
+  select a.id, a.actor_user_id, a.decision
+  into v_approval_id, v_existing_actor_user_id, v_existing_decision
   from public.ai_approvals a
   where a.task_id = p_task_id
     and a.action = p_action
   order by a.created_at desc, a.id desc
   limit 1
   for update;
+  v_has_existing := found;
 
-  if found then
+  -- A retry after a committed decision is idempotent only for the same
+  -- administrator and the same decision. A different actor or decision must
+  -- not reopen or reverse a task that has already left its approval state.
+  if p_action = 'IMPLEMENT' and v_task.status <> 'WAITING_APPROVAL' then
+    if not (
+      v_has_existing
+      and v_existing_actor_user_id = p_actor_user_id
+      and v_existing_decision = p_decision
+      and (
+        (v_task.status = 'APPROVED' and p_decision = 'APPROVED')
+        or (v_task.status = 'REJECTED' and p_decision = 'REJECTED')
+      )
+    ) then
+      raise exception 'Task is not waiting for implementation approval' using errcode = '55000';
+    end if;
+  end if;
+
+  if p_action = 'MERGE' and v_task.status <> 'READY_FOR_REVIEW' then
+    if not (
+      v_has_existing
+      and v_existing_actor_user_id = p_actor_user_id
+      and v_existing_decision = p_decision
+      and (
+        (v_task.status = 'HUMAN_APPROVED' and p_decision = 'APPROVED')
+        or (v_task.status = 'REJECTED' and p_decision = 'REJECTED')
+      )
+    ) then
+      raise exception 'Task is not ready for human review' using errcode = '55000';
+    end if;
+  end if;
+
+  if v_has_existing then
     update public.ai_approvals
     set actor_user_id = p_actor_user_id,
         decision = p_decision,
