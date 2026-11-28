@@ -9,6 +9,8 @@ const { createSuggestionsApi } = require('./suggestions/suggestion-api');
 const { createSuggestionService } = require('./suggestions/suggestion-service');
 const { createApprovalApi } = require('./ai/approval-api');
 const { createTaskService } = require('./ai/task-service');
+const { createTaskApi } = require('./ai/task-api');
+const { HaresAISupervisor } = require('./ai/supervisor');
 const { normalizeSupabaseEnv } = require('./supabase-env');
 const { staticSecurityHeaders } = require('./security-headers');
 
@@ -392,6 +394,19 @@ function createServer(options) {
   };
   const suggestionService = options.suggestionService || createSuggestionService({ env: env, fetch: fetchImpl });
   const taskService = options.taskService || createTaskService({ env: env, fetch: fetchImpl });
+  const aiAgents = options.aiAgents || {
+    security: require('./ai/agents/security-agent'),
+    developer: require('./ai/agents/developer-agent'),
+    test: require('./ai/agents/test-agent'),
+    verifier: require('./ai/agents/verifier-agent'),
+    product: require('./ai/agents/product-agent'),
+    suggestion: require('./ai/agents/suggestion-agent'),
+    ux: require('./ai/agents/ux-agent'),
+    content: require('./ai/agents/content-agent'),
+    performance: require('./ai/agents/performance-agent')
+  };
+  const supervisor = options.supervisor || new HaresAISupervisor(aiAgents);
+  const taskApi = createTaskApi({env,fetch:fetchImpl,taskService,supervisor,rateLimit});
   const suggestionsApi = createSuggestionsApi({
     env: env,
     fetch: fetchImpl,
@@ -428,6 +443,7 @@ function createServer(options) {
       }
     }
     if (await suggestionsApi(request, response, requestUrl.pathname)) return;
+    if (await taskApi(request, response, requestUrl.pathname)) return;
     if (await approvalApi(request, response, requestUrl.pathname)) return;
     if (await adminApi(request, response, requestUrl.pathname)) return;
     if (requestUrl.pathname === '/api/health' && request.method === 'GET') {
