@@ -44,6 +44,12 @@ declare
   v_source text;
   v_areas text[];
 begin
+  if p_actor_user_id is null or not exists (
+    select 1 from public.admin_users where user_id = p_actor_user_id
+  ) then
+    raise exception 'Administrator authorization required';
+  end if;
+
   if p_source not in ('suggestion','internal')
      or p_risk not in ('low','medium','high','critical')
      or p_requires_approval is null then
@@ -258,6 +264,7 @@ declare
   v_approval_id uuid;
 begin
   if p_task_id is null or p_actor_user_id is null
+     or p_action is null or p_decision is null
      or p_action not in ('IMPLEMENT','MERGE')
      or p_decision not in ('APPROVED','REJECTED')
      or (p_decision = 'REJECTED' and pg_catalog.char_length(pg_catalog.btrim(coalesce(p_reason,''))) = 0)
@@ -276,15 +283,18 @@ begin
   if p_action = 'MERGE' and v_task.status <> 'READY_FOR_REVIEW' then
     raise exception 'Task is not ready for human review';
   end if;
-  if p_decision = 'APPROVED' and p_action = 'IMPLEMENT' and not exists (
-    select 1 from public.ai_reviews where task_id=p_task_id and agent='security' and result='PASS'
-  ) then
+  if p_decision = 'APPROVED' and p_action = 'IMPLEMENT' and
+     coalesce((
+       select review.result from public.ai_reviews review
+       where review.task_id = p_task_id and review.agent = 'security'
+       order by review.created_at desc, review.id desc limit 1
+     ), '') <> 'PASS' then
     raise exception 'A passing security review is required before implementation approval';
   end if;
   if p_decision = 'APPROVED' and p_action = 'MERGE' and (
-    not exists (select 1 from public.ai_reviews where task_id=p_task_id and agent='security' and result='PASS')
-    or not exists (select 1 from public.ai_reviews where task_id=p_task_id and agent='test' and result='PASS')
-    or not exists (select 1 from public.ai_reviews where task_id=p_task_id and agent='verifier' and result='PASS')
+    coalesce((select review.result from public.ai_reviews review where review.task_id=p_task_id and review.agent='security' order by review.created_at desc,review.id desc limit 1),'') <> 'PASS'
+    or coalesce((select review.result from public.ai_reviews review where review.task_id=p_task_id and review.agent='test' order by review.created_at desc,review.id desc limit 1),'') <> 'PASS'
+    or coalesce((select review.result from public.ai_reviews review where review.task_id=p_task_id and review.agent='verifier' order by review.created_at desc,review.id desc limit 1),'') <> 'PASS'
   ) then
     raise exception 'Passing security, test and verifier reviews are required before merge approval';
   end if;
