@@ -1,0 +1,7 @@
+# Use the default gitleaks rules, plus one narrow exception.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Cloudflare Web Analytics site id. Public by design (visible in page source), not a secret."
+regexes = ['''afd700eef0b94e34812e471adcd8a38a''']
